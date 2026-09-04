@@ -1,0 +1,48 @@
+import { z } from 'zod'
+
+export const ReportRangeSchema = z.object({
+  from: z.string().date().optional(),
+  to: z.string().date().optional(),
+})
+
+export const SalesReportRowSchema = z.object({
+  receipt_number: z.string(),
+  created_at: z.string(),
+  cashier_name: z.string(),
+  subtotal_won: z.number().int(),
+  discount_won: z.number().int(),
+  revenue_won: z.number().int(),
+  cogs_won: z.number().int(),
+  gross_profit_won: z.number().int(),
+  coupon_name: z.string().nullable(),
+  coupon_code_masked: z.string().nullable(),
+  student_code: z.string(),
+  balance_after_won: z.number().int(),
+})
+export const SalesReportSchema = z.array(SalesReportRowSchema)
+
+export const InventoryReportRowSchema = z.object({
+  product_name: z.string(), sku: z.string(), quantity_on_hand: z.number().int(),
+  inventory_value_won: z.number().int(), oldest_receipt_date: z.string().nullable(),
+  next_expiration_date: z.string().nullable(),
+})
+export const InventoryReportSchema = z.array(InventoryReportRowSchema)
+
+export const WalletReportRowSchema = z.object({
+  student_code: z.string(), display_name: z.string(), balance_won: z.number().int(),
+  debt_won: z.number().int().nonnegative(), last_movement_at: z.string().nullable(),
+})
+export const WalletReportSchema = z.array(WalletReportRowSchema)
+
+export const CouponReportRowSchema = z.object({
+  coupon_name: z.string(),
+  code_masked: z.string(),
+  redemption_count: z.number().int().nonnegative(),
+  discount_given_won: z.number().int().nonnegative(),
+  sales_revenue_won: z.number().int().nonnegative(),
+  starts_at: z.string(),
+  ends_at: z.string().nullable(),
+  active: z.boolean(),
+})
+export type CouponReportRow = z.infer<typeof CouponReportRowSchema>
+export const CouponReportSchema = z.array(CouponReportRowSchema)
