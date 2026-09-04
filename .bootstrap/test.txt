@@ -1,1 +1,0 @@
-CampusPay bootstrap connectivity test
