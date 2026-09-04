@@ -1,0 +1,47 @@
+{
+  "name": "campuspay-school-pos",
+  "version": "0.7.1",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate": "npm run typecheck && npm run test && npm run lint",
+    "db:bootstrap": "node scripts/rebuild-bootstrap.mjs",
+    "security:audit": "node scripts/security-audit.mjs",
+    "validate:static": "node scripts/transpile-check.mjs && npm run validate:imports && npm run test:coupon-policy && npm run validate:sql-structure && npm run security:audit",
+    "test:coupon-policy": "node --experimental-strip-types --no-warnings scripts/coupon-policy-check.mjs",
+    "validate:sql-structure": "node scripts/sql-structure-check.mjs",
+    "connection:check": "node scripts/check-connection-config.mjs",
+    "db:prepare-bootstrap": "node scripts/rebuild-bootstrap.mjs",
+    "db:types:after-connect": "supabase gen types typescript --linked > src/lib/supabase/database.generated.ts",
+    "db:status:after-connect": "supabase status",
+    "validate:imports": "node scripts/import-check.mjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.10.0",
+    "@supabase/supabase-js": "2.78.0",
+    "jose": "6.1.0",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "server-only": "0.0.1",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "eslint": "9.39.0",
+    "eslint-config-next": "16.0.1",
+    "typescript": "5.9.3",
+    "vitest": "4.0.6"
+  }
+}
