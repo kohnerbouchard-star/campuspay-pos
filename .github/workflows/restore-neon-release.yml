@@ -1,0 +1,46 @@
+name: Install CampusPay Neon release
+
+on:
+  push:
+    paths:
+      - '.bootstrap/READY'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore validated release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .bootstrap/READY
+          cat .bootstrap/neon-release.part* | base64 --decode > /tmp/campuspay-neon-release.tar.gz
+          echo '7baccc5c242a31d64ac3fdf064bfea0fc7a53b57705ad3abc35cb539b1da16f2  /tmp/campuspay-neon-release.tar.gz' | sha256sum --check
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .bootstrap -exec rm -rf {} +
+          tar -xzf /tmp/campuspay-neon-release.tar.gz -C .
+          rm -rf .bootstrap
+          test -f src/app/page.tsx
+          test -f src/lib/db/rpc.ts
+          test -f database/migrations/20260904190000_initial_campuspay_neon.sql
+          test -f database/migrations/20260905033000_demo_bootstrap.sql
+          test -f .github/workflows/validate.yml
+
+      - name: Commit Neon conversion
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Migrate CampusPay backend from Supabase to Neon'
+          git push origin HEAD:main
