@@ -5,7 +5,7 @@ import {
   StudentWalletSearchSchema, AdjustmentIntentSchema, AdjustmentCardResultSchema, AdjustmentReceiptSchema, AdjustmentDecisionSchema,
   type CreateAdjustmentIntentSchema,
 } from '@/features/wallets/domain'
-import { callApiRpc } from '@/lib/supabase/rpc'
+import { callApiRpc } from '@/lib/db/rpc'
 import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { studentPinProof } from '@/lib/crypto/student-pin'
 import { ApiError } from '@/lib/api/errors'

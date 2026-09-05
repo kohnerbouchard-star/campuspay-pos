@@ -32,9 +32,10 @@ export class ApiError extends Error {
 
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error
+  if (error instanceof Error && error.cause instanceof Error && error.cause !== error) return toApiError(error.cause)
 
   const message = error instanceof Error ? error.message : 'Unexpected error'
-  if (message.includes('SUPABASE_NOT_CONFIGURED')) return new ApiError(503, 'CONNECTION_NOT_CONFIGURED', 'The database connection has not been configured yet')
+  if (message.includes('DATABASE_NOT_CONFIGURED') || message.includes('NEON_NOT_CONFIGURED')) return new ApiError(503, 'CONNECTION_NOT_CONFIGURED', 'The database connection has not been configured yet')
   if (message.includes('SESSION_EXPIRED')) return new ApiError(401, 'SESSION_EXPIRED', 'Session expired')
   if (message.includes('UNAUTHENTICATED')) return new ApiError(401, 'UNAUTHENTICATED', 'Authentication required')
   if (message.includes('FORBIDDEN')) return new ApiError(403, 'FORBIDDEN', 'Permission denied')

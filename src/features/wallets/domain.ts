@@ -26,7 +26,6 @@ export const CreateAdjustmentIntentSchema = z.object({
 
 export const AdjustmentIntentSchema = z.object({
   intent_id: z.string().uuid(),
-  direction: z.enum(['CREDIT', 'DEBIT']),
   amount_won: z.number().int().positive(),
   state: z.enum(['awaiting_card', 'awaiting_pin', 'completed', 'cancelled', 'expired']),
   expires_at: z.string(),
@@ -36,9 +35,8 @@ export type AdjustmentIntent = z.infer<typeof AdjustmentIntentSchema>
 export const AdjustmentCardResultSchema = z.object({
   intent_id: z.string().uuid(),
   state: z.literal('awaiting_pin'),
-  student_id: z.string().uuid(),
   student_display_name: z.string(),
-  balance_before_won: z.number().int(),
+  current_balance_won: z.number().int(),
   projected_balance_won: z.number().int(),
   projected_debt_won: z.number().int().nonnegative(),
 })
@@ -47,7 +45,6 @@ export type AdjustmentCardResult = z.infer<typeof AdjustmentCardResultSchema>
 export const AdjustmentDecisionSchema = z.object({
   approved: z.boolean(),
   error_code: z.string().nullable(),
-  ledger_id: z.string().uuid().nullable(),
   reference_number: z.string().nullable(),
   amount_won: z.number().int().nullable(),
   balance_before_won: z.number().int().nullable(),
@@ -57,7 +54,6 @@ export const AdjustmentDecisionSchema = z.object({
 })
 
 export const AdjustmentReceiptSchema = z.object({
-  ledger_id: z.string().uuid(),
   reference_number: z.string(),
   amount_won: z.number().int(),
   balance_before_won: z.number().int(),

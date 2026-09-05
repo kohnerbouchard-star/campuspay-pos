@@ -14,11 +14,11 @@ function filesUnder(directory: string): string[] {
 }
 
 describe('module boundaries', () => {
-  it('never imports the secret Supabase client into a client component', () => {
+  it('never imports the database client into a client component', () => {
     const source = filesUnder(join(root, 'src')).filter((file) => /\.(ts|tsx)$/.test(file))
     const violations = source.filter((file) => {
       const text = readFileSync(file, 'utf8')
-      return text.startsWith("'use client'") && text.includes("@/lib/supabase/admin")
+      return text.startsWith("'use client'") && text.includes("@/lib/db/client")
     }).map((file) => relative(root, file))
     expect(violations).toEqual([])
   })

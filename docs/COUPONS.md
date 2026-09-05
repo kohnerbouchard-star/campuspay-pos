@@ -131,6 +131,6 @@ The coupon module adds:
 
 Historical sales retain their original subtotal, discount, and final total even after the coupon is deactivated.
 
-## Supabase state
+## Database state
 
-The coupon SQL exists only as the local module `supabase/schema/008_coupon_functions.sql`. It has not been applied to a Supabase project. See `SUPABASE_CONNECTION_LATER.md`.
+Coupon policy and redemption are included in `database/schema/008_coupon_functions.sql` and the combined Neon migration.

@@ -40,8 +40,8 @@ returns table(
   sku text,
   quantity_on_hand bigint,
   inventory_value_won bigint,
-  oldest_receipt_date date,
-  next_expiration_date date
+  reorder_level integer,
+  low_stock boolean
 )
 language plpgsql
 security definer
@@ -53,8 +53,8 @@ begin
   select p.name, p.sku,
     coalesce(sum(l.quantity_remaining),0)::bigint,
     coalesce(round(sum(l.quantity_remaining * l.landed_unit_cost_won)),0)::bigint,
-    min(r.purchase_date) filter (where l.quantity_remaining > 0),
-    min(l.expiration_date) filter (where l.quantity_remaining > 0 and l.expiration_date is not null)
+    p.reorder_level,
+    coalesce(sum(l.quantity_remaining),0) <= p.reorder_level
   from public.products p
   left join private.inventory_lots l on l.product_id = p.id
   left join private.stock_receipt_lines rl on rl.id = l.receipt_line_id
@@ -71,7 +71,7 @@ returns table(
   display_name text,
   balance_won bigint,
   debt_won bigint,
-  last_movement_at timestamptz
+  last_changed_at timestamptz
 )
 language plpgsql
 security definer
@@ -92,8 +92,8 @@ end;
 $$;
 
 -- Functions are not executable by default merely because the schema is exposed.
-revoke all on all functions in schema api from public, anon;
-grant execute on all functions in schema api to authenticated;
+revoke all on all functions in schema api from public;
+grant execute on all functions in schema api to campuspay_runtime;
 
-alter default privileges in schema api revoke execute on functions from public, anon;
-alter default privileges in schema api grant execute on functions to authenticated;
+alter default privileges in schema api revoke execute on functions from public;
+alter default privileges in schema api grant execute on functions to campuspay_runtime;

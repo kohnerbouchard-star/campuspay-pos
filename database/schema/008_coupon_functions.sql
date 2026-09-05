@@ -1,7 +1,7 @@
 -- Coupon module and coupon-aware checkout.
 -- Raw coupon codes are never stored; only server-created HMAC fingerprints and masks reach Postgres.
 
-create type private.coupon_discount_type as enum ('FIXED', 'PERCENTAGE');
+create type private.coupon_discount_type as enum ('FIXED_WON', 'PERCENTAGE');
 
 create table private.coupons (
   id uuid primary key default gen_random_uuid(),
@@ -19,15 +19,15 @@ create table private.coupons (
   starts_at timestamptz not null,
   ends_at timestamptz,
   active boolean not null default true,
-  created_by uuid not null references auth.users(id) on delete restrict,
+  created_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
-  deactivated_by uuid references auth.users(id) on delete restrict,
+  deactivated_by uuid references public.staff_profiles(auth_user_id) on delete restrict,
   deactivated_session_id uuid references private.staff_sessions(id) on delete restrict,
   deactivation_reason text,
   deactivated_at timestamptz,
   created_at timestamptz not null default now(),
   constraint coupon_terms_match_type check (
-    (discount_type = 'FIXED' and fixed_amount_won > 0 and percentage_bps is null)
+    (discount_type = 'FIXED_WON' and fixed_amount_won > 0 and percentage_bps is null)
     or
     (discount_type = 'PERCENTAGE' and percentage_bps between 1 and 10000 and fixed_amount_won is null)
   ),
@@ -43,7 +43,7 @@ create table private.coupon_redemptions (
   subtotal_won bigint not null check (subtotal_won > 0),
   discount_won bigint not null check (discount_won > 0),
   total_won bigint not null check (total_won >= 0),
-  redeemed_by uuid not null references auth.users(id) on delete restrict,
+  redeemed_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   created_at timestamptz not null default now(),
   constraint coupon_redemption_math check (subtotal_won = discount_won + total_won)
@@ -93,7 +93,7 @@ alter table private.sales drop constraint sales_total_won_check;
 alter table private.sales add constraint sales_total_nonnegative check (total_won >= 0);
 alter table private.sales add constraint sales_discount_math check (subtotal_won = discount_won + total_won);
 
-revoke all on private.coupons, private.coupon_redemptions from public, anon, authenticated;
+revoke all on private.coupons, private.coupon_redemptions from public, campuspay_runtime;
 
 create or replace function private.price_cart(p_items jsonb, p_check_stock boolean default true)
 returns table(
@@ -166,7 +166,7 @@ declare
 begin
   if p_subtotal_won <= 0 then return 0; end if;
 
-  if p_discount_type = 'FIXED' then
+  if p_discount_type = 'FIXED_WON' then
     v_discount := p_fixed_amount_won;
   else
     v_discount := greatest(1::bigint, floor((p_subtotal_won::numeric * p_percentage_bps::numeric) / 10000)::bigint);
@@ -201,9 +201,9 @@ begin
 end;
 $$;
 
-revoke all on function private.price_cart(jsonb, boolean) from public, anon, authenticated;
-revoke all on function private.calculate_coupon_discount(private.coupon_discount_type, bigint, integer, bigint, bigint) from public, anon, authenticated;
-revoke all on function private.assert_coupon_window(private.coupons, bigint) from public, anon, authenticated;
+revoke all on function private.price_cart(jsonb, boolean) from public, campuspay_runtime;
+revoke all on function private.calculate_coupon_discount(private.coupon_discount_type, bigint, integer, bigint, bigint) from public, campuspay_runtime;
+revoke all on function private.assert_coupon_window(private.coupons, bigint) from public, campuspay_runtime;
 
 create or replace function api.create_coupon(
   p_session_id uuid,
@@ -247,7 +247,7 @@ begin
 
   if length(p_code_fingerprint) <> 64
      or length(trim(p_name)) not between 2 and 120
-     or p_discount_type not in ('FIXED', 'PERCENTAGE')
+     or p_discount_type not in ('FIXED_WON', 'PERCENTAGE')
      or p_minimum_subtotal_won < 0
      or (p_ends_at is not null and p_ends_at <= p_starts_at) then
     raise exception 'BAD_REQUEST';
@@ -340,10 +340,8 @@ create or replace function api.deactivate_coupon(
 )
 returns table(
   coupon_id uuid,
-  name text,
-  code_masked text,
   active boolean,
-  created_at timestamptz
+  deactivated_at timestamptz
 )
 language plpgsql
 security definer
@@ -378,7 +376,7 @@ begin
     );
   end if;
 
-  return query select v_coupon.id, v_coupon.name, v_coupon.code_masked, v_coupon.active, v_coupon.created_at;
+  return query select v_coupon.id, v_coupon.active, v_coupon.deactivated_at;
 end;
 $$;
 
@@ -803,7 +801,7 @@ create or replace function api.report_sales(
 )
 returns table(
   receipt_number text,
-  created_at timestamptz,
+  sold_at timestamptz,
   cashier_name text,
   subtotal_won bigint,
   discount_won bigint,
@@ -812,7 +810,7 @@ returns table(
   gross_profit_won bigint,
   coupon_name text,
   coupon_code_masked text,
-  student_code text,
+  student_name text,
   balance_after_won bigint
 )
 language plpgsql
@@ -826,7 +824,7 @@ begin
     s.subtotal_won, s.discount_won, s.total_won,
     s.cost_of_goods_sold_won, s.total_won - s.cost_of_goods_sold_won,
     s.coupon_name_snapshot, s.coupon_code_masked,
-    st.student_code, s.balance_after_won
+    st.display_name, s.balance_after_won
   from private.sales s
   join public.staff_profiles sp on sp.auth_user_id = s.cashier_user_id
   join private.students st on st.id = s.student_id
@@ -842,11 +840,9 @@ returns table(
   coupon_name text,
   code_masked text,
   redemption_count bigint,
-  discount_given_won bigint,
-  sales_revenue_won bigint,
-  starts_at timestamptz,
-  ends_at timestamptz,
-  active boolean
+  discount_won bigint,
+  net_sales_won bigint,
+  last_redeemed_at timestamptz
 )
 language plpgsql
 security definer
@@ -858,7 +854,7 @@ begin
   select c.name, c.code_masked, count(cr.id)::bigint,
     coalesce(sum(cr.discount_won), 0)::bigint,
     coalesce(sum(cr.total_won), 0)::bigint,
-    c.starts_at, c.ends_at, c.active
+    max(cr.created_at)
   from private.coupons c
   left join private.coupon_redemptions cr on cr.coupon_id = c.id
   group by c.id
@@ -866,20 +862,20 @@ begin
 end;
 $$;
 
-revoke all on function api.create_coupon(uuid, text, text, text, text, bigint, integer, bigint, bigint, integer, integer, timestamptz, timestamptz, uuid) from public, anon;
-revoke all on function api.list_coupons(uuid) from public, anon;
-revoke all on function api.deactivate_coupon(uuid, uuid, text) from public, anon;
-revoke all on function api.quote_coupon(uuid, jsonb, text) from public, anon;
-revoke all on function api.create_payment_intent(uuid, jsonb, uuid, text) from public, anon;
-revoke all on function api.confirm_payment(uuid, uuid, text) from public, anon;
-revoke all on function api.report_sales(uuid, date, date) from public, anon;
-revoke all on function api.report_coupons(uuid) from public, anon;
+revoke all on function api.create_coupon(uuid, text, text, text, text, bigint, integer, bigint, bigint, integer, integer, timestamptz, timestamptz, uuid) from public;
+revoke all on function api.list_coupons(uuid) from public;
+revoke all on function api.deactivate_coupon(uuid, uuid, text) from public;
+revoke all on function api.quote_coupon(uuid, jsonb, text) from public;
+revoke all on function api.create_payment_intent(uuid, jsonb, uuid, text) from public;
+revoke all on function api.confirm_payment(uuid, uuid, text) from public;
+revoke all on function api.report_sales(uuid, date, date) from public;
+revoke all on function api.report_coupons(uuid) from public;
 
-grant execute on function api.create_coupon(uuid, text, text, text, text, bigint, integer, bigint, bigint, integer, integer, timestamptz, timestamptz, uuid) to authenticated;
-grant execute on function api.list_coupons(uuid) to authenticated;
-grant execute on function api.deactivate_coupon(uuid, uuid, text) to authenticated;
-grant execute on function api.quote_coupon(uuid, jsonb, text) to authenticated;
-grant execute on function api.create_payment_intent(uuid, jsonb, uuid, text) to authenticated;
-grant execute on function api.confirm_payment(uuid, uuid, text) to authenticated;
-grant execute on function api.report_sales(uuid, date, date) to authenticated;
-grant execute on function api.report_coupons(uuid) to authenticated;
+grant execute on function api.create_coupon(uuid, text, text, text, text, bigint, integer, bigint, bigint, integer, integer, timestamptz, timestamptz, uuid) to campuspay_runtime;
+grant execute on function api.list_coupons(uuid) to campuspay_runtime;
+grant execute on function api.deactivate_coupon(uuid, uuid, text) to campuspay_runtime;
+grant execute on function api.quote_coupon(uuid, jsonb, text) to campuspay_runtime;
+grant execute on function api.create_payment_intent(uuid, jsonb, uuid, text) to campuspay_runtime;
+grant execute on function api.confirm_payment(uuid, uuid, text) to campuspay_runtime;
+grant execute on function api.report_sales(uuid, date, date) to campuspay_runtime;
+grant execute on function api.report_coupons(uuid) to campuspay_runtime;

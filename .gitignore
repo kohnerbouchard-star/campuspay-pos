@@ -3,12 +3,10 @@ node_modules/
 out/
 coverage/
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.log
-.DS_Store
-supabase/.branches/
-supabase/.temp/
-supabase/bootstrap.sql
-
+*.tsbuildinfo
 .validation/
+.neon
+.DS_Store

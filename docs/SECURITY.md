@@ -1,58 +1,15 @@
 # Security model
 
-## Roles and minimum permissions
+CampusPay follows default-deny and least privilege.
 
-| Role | Permitted operations |
-|---|---|
-| Cashier | Read sellable catalog; create/scan/confirm POS payment intents |
-| Inventory administrator | Products, prices, receipts, negative stock adjustments, inventory reports |
-| Accountant | Student-wallet lookup, controlled wallet adjustments, debt and finance reports |
-| Super administrator | Staff administration and one-use credential-reset authorization; inherits operational permissions only when explicitly assigned |
+- The web runtime connects as a limited PostgreSQL login that inherits only `campuspay_runtime`.
+- `campuspay_runtime` has no direct access to public/private tables or private functions; it can execute only `api.*` functions.
+- Every privileged function pins `search_path`, rechecks the active staff session, and enforces one specific permission.
+- Staff and student PINs are converted to keyed HMAC proofs in the server and then stored as slow `pgcrypto` hashes. Raw PINs are not stored.
+- Card and coupon codes are stored only as keyed HMAC fingerprints.
+- Wallet and inventory corrections are append-only counter-transactions rather than destructive edits.
+- Checkout uses row locks and idempotency keys so sale, wallet, stock, coupon, and audit changes are atomic.
+- The cashier session expires after 20 seconds of inactivity; administrative sessions expire after two minutes.
+- Student credential resets require a one-use, 60-second super-admin authorization tied to one student and one purpose.
 
-## Staff authentication
-
-The sign-in form accepts an employee code and PIN. The server converts the employee code to an internal Supabase Auth email and performs password authentication. The PIN is never stored in application tables or logs. Staff PINs should be at least six digits and rate-limited.
-
-Supabase Auth identifies the staff member. `public.staff_profiles` supplies the current active role; authorization does not trust user-editable metadata.
-
-## Student PINs
-
-The Next.js server first converts the PIN to an HMAC proof using a server-only pepper. Postgres verifies a salted `pgcrypto` hash of that proof. The hash is in `private.student_credentials`, which has no direct Data API policy. PIN attempts are rate-limited and the credential is temporarily locked after repeated failures. Raw PIN text is never sent to Supabase, returned, selected in reports, or written to audit payloads.
-
-## Card identifiers
-
-Raw card UID data exists only long enough for a server route to calculate:
-
-```text
-HMAC-SHA-256(CARD_HMAC_SECRET, normalized_card_uid)
-```
-
-Only the fingerprint is sent to or stored in Supabase. No screen or report returns a full or partial UID.
-
-## Staff/terminal session
-
-Authentication alone is insufficient on a shared register. A second opaque staff-session cookie is bound to a server-signed terminal cookie. Each API call verifies:
-
-- Supabase identity;
-- active staff profile;
-- active terminal;
-- opaque session fingerprint;
-- matching identity and terminal;
-- inactivity expiration;
-- required permission.
-
-Cashier sessions expire after 20 seconds without a recognized action. The frontend clears local state and returns home, while the server independently rejects stale requests.
-
-## Super-admin step-up
-
-Credential resets require a purpose-bound, target-bound, one-use authorization. It expires after 60 seconds and cannot be replayed for a different student or reset type.
-
-## Supabase controls
-
-- Sensitive tables are in `private` and receive no client grants.
-- Exposed `public` tables have RLS enabled.
-- The `api` schema contains narrow RPC functions.
-- Every privileged RPC checks `auth.uid()`, staff status, session ownership, and permission.
-- Function execution is revoked from `PUBLIC` and `anon`, then granted explicitly to `authenticated`.
-- Functions set an empty search path and fully qualify object names.
-- The server secret key is never included in browser code.
+`DATABASE_URL` and all peppers/HMAC secrets are server-only and must never be committed or prefixed with `NEXT_PUBLIC_`.

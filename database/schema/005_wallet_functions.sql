@@ -101,7 +101,7 @@ returns table(
   state private.intent_state,
   student_id uuid,
   student_display_name text,
-  balance_before_won bigint,
+  current_balance_won bigint,
   projected_balance_won bigint,
   projected_debt_won bigint
 )
@@ -130,7 +130,7 @@ begin
   join private.students s on s.id = c.student_id
   where c.card_fingerprint = p_card_fingerprint and c.active and s.active;
   if not found then raise exception 'NOT_FOUND'; end if;
-  select balance_won into v_balance from private.wallets where student_id = v_student.id;
+  select w.balance_won into v_balance from private.wallets w where w.student_id = v_student.id;
   if not found then raise exception 'NOT_FOUND'; end if;
 
   v_projected := case when v_intent.direction = 'CREDIT'

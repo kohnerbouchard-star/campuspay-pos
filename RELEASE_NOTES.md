@@ -1,23 +1,13 @@
-# CampusPay v0.7.1 release notes
+# Release notes
 
-## Added
+## 0.8.0 — Neon migration
 
-- Order-level coupon-code entry in the cashier cart.
-- Fixed-won and percentage discounts.
-- Minimum subtotal, percentage cap, validity window, total-use limit, and per-student limit.
-- Admin-only coupon creation and deactivation.
-- Coupon reporting permission separate from coupon management.
-- HMAC coupon-code fingerprints and masked code hints.
-- Final coupon revalidation within the atomic checkout transaction.
-- Coupon redemption ledger linked to student and sale.
-- Local import-resolution validation.
-- Offline connection-configuration check.
-- Deferred Supabase connection guide.
+- Replaced Supabase Auth and Supabase client packages with native employee PIN proofs and Neon Postgres.
+- Added a server-only `DATABASE_URL` connection through `@neondatabase/serverless`.
+- Added a whitelisted, parameterized PostgreSQL RPC adapter.
+- Added dedicated staff credential records with lockout controls.
+- Preserved least-privilege workspaces, the −₩15,000 wallet floor, card-first checkout, FIFO/LIFO costing, coupons, reports, and super-admin step-up authorization.
+- Added a ten-module PostgreSQL schema and reproducible initial migration.
+- Added connection, database-health, migration-build, and security-audit scripts.
 
-## Connection state
-
-Supabase is intentionally unconfigured. No project was created, linked, queried, migrated, or modified. `.env.example` contains blank fields for the owner to populate later.
-
-## Validation state
-
-The local static suite, coupon policy runtime checks, SQL structure checks, import checks, and security/modularity audit pass. Full dependency-based Next.js checks remain to be run after installing dependencies. No hosted integration test was attempted.
+- Added a one-time, proof-only demo bootstrap command for local acceptance testing.

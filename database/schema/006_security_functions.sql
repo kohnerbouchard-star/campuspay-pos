@@ -1,6 +1,7 @@
 create or replace function api.create_elevation(
   p_session_id uuid,
-  p_approver_user_id uuid,
+  p_approver_employee_code text,
+  p_approver_pin_proof text,
   p_purpose text,
   p_student_id uuid,
   p_token_hash text
@@ -19,19 +20,17 @@ begin
   if p_purpose not in ('RESET_STUDENT_PIN','RESET_STUDENT_CARD') or length(p_token_hash) <> 64 then raise exception 'BAD_REQUEST'; end if;
   if not exists(select 1 from private.students where id = p_student_id and active) then raise exception 'NOT_FOUND'; end if;
 
-  select * into v_approver from public.staff_profiles
-  where auth_user_id = p_approver_user_id and active and role = 'super_admin';
-  if not found then raise exception 'FORBIDDEN'; end if;
+  v_approver := private.verify_staff_pin(p_approver_employee_code, p_approver_pin_proof, 'super_admin');
 
   insert into private.elevation_tokens(
     token_hash, requested_by, approved_by, staff_session_id, purpose, student_id, expires_at
   ) values (
-    p_token_hash, v_session.auth_user_id, p_approver_user_id, v_session.id, p_purpose, p_student_id, v_expiry
+    p_token_hash, v_session.auth_user_id, v_approver.auth_user_id, v_session.id, p_purpose, p_student_id, v_expiry
   );
 
   insert into private.audit_events(event_type, actor_user_id, approver_user_id, staff_session_id,
     subject_type, subject_id, reference_number, safe_payload)
-  values ('CREDENTIAL_RESET_AUTHORIZED', v_session.auth_user_id, p_approver_user_id, v_session.id,
+  values ('CREDENTIAL_RESET_AUTHORIZED', v_session.auth_user_id, v_approver.auth_user_id, v_session.id,
     'STUDENT', p_student_id, 'AUD-ELEV-' || substr(gen_random_uuid()::text,1,8), jsonb_build_object('purpose', p_purpose));
 
   return query select v_expiry;

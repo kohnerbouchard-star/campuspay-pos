@@ -1,12 +1,24 @@
--- CampusPay foundation. Apply only to a Supabase Postgres project.
+-- CampusPay foundation for Neon or standard PostgreSQL.
+create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
 
 create schema if not exists private;
 create schema if not exists api;
 
-revoke all on schema private from public, anon, authenticated;
-revoke all on schema api from public, anon;
-grant usage on schema api to authenticated;
+revoke all on schema private from public;
+revoke all on schema api from public;
+revoke create on schema public from public;
+
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'campuspay_runtime') then
+    create role campuspay_runtime nologin noinherit;
+  end if;
+end;
+$$;
+
+do $$ begin execute format('grant campuspay_runtime to %I', current_user); end; $$;
+grant usage on schema api to campuspay_runtime;
 
 create type public.staff_role as enum ('cashier', 'inventory_admin', 'accountant', 'super_admin');
 create type public.cost_method as enum ('FIFO', 'LIFO');
@@ -21,13 +33,21 @@ create sequence if not exists private.stock_receipt_sequence;
 create sequence if not exists private.adjustment_sequence;
 
 create table public.staff_profiles (
-  auth_user_id uuid primary key references auth.users(id) on delete restrict,
+  auth_user_id uuid primary key default gen_random_uuid(),
   employee_code text not null unique check (employee_code ~ '^[A-Za-z0-9_-]{2,32}$'),
   display_name text not null check (length(display_name) between 1 and 120),
   role public.staff_role not null,
   active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table private.staff_credentials (
+  staff_user_id uuid primary key references public.staff_profiles(auth_user_id) on delete cascade,
+  pin_hash text not null,
+  failed_attempts integer not null default 0 check (failed_attempts >= 0),
+  locked_until timestamptz,
+  pin_updated_at timestamptz not null default now()
 );
 
 create table public.products (
@@ -38,7 +58,7 @@ create table public.products (
   selling_price_won bigint not null check (selling_price_won >= 0),
   reorder_level integer not null default 0 check (reorder_level >= 0),
   active boolean not null default true,
-  created_by uuid not null references auth.users(id) on delete restrict,
+  created_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -47,7 +67,7 @@ create table private.system_settings (
   singleton boolean primary key default true check (singleton),
   negative_wallet_limit_won bigint not null default -15000 check (negative_wallet_limit_won <= 0),
   inventory_cost_method public.cost_method not null default 'FIFO',
-  updated_by uuid references auth.users(id) on delete restrict,
+  updated_by uuid references public.staff_profiles(auth_user_id) on delete restrict,
   updated_at timestamptz not null default now()
 );
 insert into private.system_settings(singleton) values (true) on conflict (singleton) do nothing;
@@ -63,7 +83,7 @@ create table private.terminals (
 
 create table private.staff_sessions (
   id uuid primary key default gen_random_uuid(),
-  auth_user_id uuid not null references auth.users(id) on delete cascade,
+  auth_user_id uuid not null references public.staff_profiles(auth_user_id) on delete cascade,
   employee_code_snapshot text not null,
   role_snapshot public.staff_role not null,
   terminal_id uuid not null references private.terminals(id) on delete restrict,
@@ -97,7 +117,7 @@ create table private.student_cards (
   student_id uuid not null references private.students(id) on delete cascade,
   card_fingerprint text not null unique check (length(card_fingerprint) = 64),
   active boolean not null default true,
-  issued_by uuid references auth.users(id) on delete restrict,
+  issued_by uuid references public.staff_profiles(auth_user_id) on delete restrict,
   issued_at timestamptz not null default now(),
   deactivated_at timestamptz
 );
@@ -118,7 +138,7 @@ create table private.wallet_ledger (
   reason_code text not null,
   balance_before_won bigint not null,
   balance_after_won bigint not null,
-  staff_user_id uuid not null references auth.users(id) on delete restrict,
+  staff_user_id uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   source_type text not null,
   source_id uuid,
@@ -134,7 +154,7 @@ create table private.product_price_history (
   old_price_won bigint not null,
   new_price_won bigint not null,
   reason text not null,
-  changed_by uuid not null references auth.users(id) on delete restrict,
+  changed_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   changed_at timestamptz not null default now()
 );
@@ -151,7 +171,7 @@ create table private.stock_receipts (
   discount_won bigint not null check (discount_won >= 0),
   total_landed_cost_won bigint not null check (total_landed_cost_won >= 0),
   notes text,
-  received_by uuid not null references auth.users(id) on delete restrict,
+  received_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   idempotency_key uuid not null unique,
   created_at timestamptz not null default now(),
@@ -196,7 +216,7 @@ create table private.inventory_movements (
   total_cost_won bigint not null,
   reason_code text not null,
   notes text,
-  staff_user_id uuid not null references auth.users(id) on delete restrict,
+  staff_user_id uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   source_type text not null,
   source_id uuid,
@@ -234,7 +254,7 @@ create table private.sales (
   id uuid primary key default gen_random_uuid(),
   receipt_number text not null unique,
   student_id uuid not null references private.students(id) on delete restrict,
-  cashier_user_id uuid not null references auth.users(id) on delete restrict,
+  cashier_user_id uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   total_won bigint not null check (total_won > 0),
   cost_of_goods_sold_won bigint not null default 0 check (cost_of_goods_sold_won >= 0),
@@ -289,8 +309,8 @@ create table private.wallet_adjustment_intents (
 create table private.elevation_tokens (
   id uuid primary key default gen_random_uuid(),
   token_hash text not null unique check (length(token_hash) = 64),
-  requested_by uuid not null references auth.users(id) on delete restrict,
-  approved_by uuid not null references auth.users(id) on delete restrict,
+  requested_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
+  approved_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   purpose text not null check (purpose in ('RESET_STUDENT_PIN', 'RESET_STUDENT_CARD')),
   student_id uuid not null references private.students(id) on delete restrict,
@@ -302,8 +322,8 @@ create table private.elevation_tokens (
 create table private.audit_events (
   id uuid primary key default gen_random_uuid(),
   event_type text not null,
-  actor_user_id uuid references auth.users(id) on delete restrict,
-  approver_user_id uuid references auth.users(id) on delete restrict,
+  actor_user_id uuid references public.staff_profiles(auth_user_id) on delete restrict,
+  approver_user_id uuid references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid references private.staff_sessions(id) on delete restrict,
   subject_type text,
   subject_id uuid,
@@ -312,25 +332,7 @@ create table private.audit_events (
   created_at timestamptz not null default now()
 );
 
--- Sensitive data is never directly available through the Data API.
-revoke all on all tables in schema private from public, anon, authenticated;
-revoke all on all sequences in schema private from public, anon, authenticated;
-
-alter table public.staff_profiles enable row level security;
-alter table public.products enable row level security;
-
-create policy staff_can_read_own_profile on public.staff_profiles
-  for select to authenticated
-  using (auth_user_id = auth.uid());
-
-create policy active_staff_can_read_products on public.products
-  for select to authenticated
-  using (
-    exists (
-      select 1 from public.staff_profiles sp
-      where sp.auth_user_id = auth.uid() and sp.active
-    )
-  );
-
-grant select on public.staff_profiles, public.products to authenticated;
-revoke insert, update, delete on public.staff_profiles, public.products from anon, authenticated;
+-- The runtime role receives no direct table or sequence access.
+revoke all on all tables in schema private from public, campuspay_runtime;
+revoke all on all sequences in schema private from public, campuspay_runtime;
+revoke all on public.staff_profiles, public.products from public, campuspay_runtime;

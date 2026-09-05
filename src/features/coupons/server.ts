@@ -8,7 +8,7 @@ import {
   CouponQuoteSchema,
   type CreateCouponInput,
 } from '@/features/coupons/domain'
-import { callApiRpc } from '@/lib/supabase/rpc'
+import { callApiRpc } from '@/lib/db/rpc'
 import { fingerprintCouponCode, maskCouponCode } from '@/lib/crypto/coupon-code'
 
 export function listCoupons(session: SessionContext) {
@@ -21,11 +21,11 @@ export function createCoupon(session: SessionContext, input: CreateCouponInput) 
     p_name: input.name,
     p_code_fingerprint: fingerprintCouponCode(input.code),
     p_code_masked: maskCouponCode(input.code),
-    p_discount_type: input.discountType,
+    p_discount_type: input.discountType === 'FIXED' ? 'FIXED_WON' : 'PERCENTAGE',
     p_fixed_amount_won: input.discountType === 'FIXED' ? input.fixedAmountWon : null,
     p_percentage_bps: input.discountType === 'PERCENTAGE' ? input.percentageBps : null,
     p_minimum_subtotal_won: input.minimumSubtotalWon,
-    p_max_discount_won: input.maxDiscountWon,
+    p_max_discount_won: input.discountType === 'PERCENTAGE' ? input.maxDiscountWon : null,
     p_total_redemption_limit: input.totalRedemptionLimit,
     p_per_student_limit: input.perStudentLimit,
     p_starts_at: input.startsAt,
@@ -39,7 +39,7 @@ export function deactivateCoupon(session: SessionContext, couponId: string, reas
     p_session_id: session.session_id,
     p_coupon_id: couponId,
     p_reason: reason,
-  }, z.array(CouponMutationResultSchema).length(1).transform(([row]) => row))
+  }, z.array(z.object({coupon_id:z.string().uuid(),active:z.boolean(),deactivated_at:z.string().nullable()})).length(1).transform(([row]) => row))
 }
 
 export function quoteCoupon(session: SessionContext, items: CartLine[], code: string) {

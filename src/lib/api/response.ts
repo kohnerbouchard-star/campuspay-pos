@@ -24,6 +24,10 @@ export function failure(error: unknown) {
 }
 
 export async function parseJson<T>(request: Request, parser: { parse(value: unknown): T }): Promise<T> {
+  const origin = request.headers.get('origin')
+  if ((origin && origin !== (process.env.APP_ORIGIN || new URL(request.url).origin)) || request.headers.get('sec-fetch-site') === 'cross-site') {
+    throw new ApiError(403, 'FORBIDDEN', 'Cross-origin requests are not accepted')
+  }
   let body: unknown
   try {
     body = await request.json()
@@ -32,7 +36,7 @@ export async function parseJson<T>(request: Request, parser: { parse(value: unkn
   }
   try {
     return parser.parse(body)
-  } catch (error) {
-    throw new ApiError(400, 'BAD_REQUEST', 'Request validation failed', error)
+  } catch {
+    throw new ApiError(400, 'BAD_REQUEST', 'Request validation failed')
   }
 }

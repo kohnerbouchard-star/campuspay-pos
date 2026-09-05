@@ -7,12 +7,12 @@ create table if not exists private.stock_adjustments (
   reason_code text not null check (reason_code in ('DAMAGED','EXPIRED','SUPPLIER_RETURN','STOCK_COUNT_LOSS')),
   notes text not null,
   total_cost_won bigint not null check (total_cost_won >= 0),
-  adjusted_by uuid not null references auth.users(id) on delete restrict,
+  adjusted_by uuid not null references public.staff_profiles(auth_user_id) on delete restrict,
   staff_session_id uuid not null references private.staff_sessions(id) on delete restrict,
   idempotency_key uuid not null unique,
   created_at timestamptz not null default now()
 );
-revoke all on private.stock_adjustments from public, anon, authenticated;
+revoke all on private.stock_adjustments from public, campuspay_runtime;
 
 create or replace function api.create_product(
   p_session_id uuid,

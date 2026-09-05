@@ -5,7 +5,7 @@ import {
   InventoryLotsSchema, MutationResultSchema, ReceiptResultSchema,
   type ReceiveStockSchema, type StockAdjustmentSchema,
 } from '@/features/inventory/domain'
-import { callApiRpc } from '@/lib/supabase/rpc'
+import { callApiRpc } from '@/lib/db/rpc'
 
 export function listInventoryLots(session: SessionContext) {
   return callApiRpc('inventory_lots', { p_session_id: session.session_id }, InventoryLotsSchema)

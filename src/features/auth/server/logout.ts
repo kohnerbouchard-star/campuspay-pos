@@ -1,16 +1,15 @@
 import 'server-only'
 import { clearAppCookies, readAppCookies } from '@/lib/http/cookies'
-import { fingerprintSessionToken } from '@/lib/crypto/session-fingerprint'
-import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { fingerprintSessionToken, fingerprintTerminalToken } from '@/lib/crypto/session-fingerprint'
+import { callApiCommand } from '@/lib/db/rpc'
 
 export async function logoutStaff(): Promise<void> {
-  const supabase = await createServerSupabaseClient()
-  const { sessionToken } = await readAppCookies()
-  if (sessionToken) {
-    await supabase.schema('api').rpc('revoke_staff_session', {
+  const { sessionToken, terminalToken } = await readAppCookies()
+  if (sessionToken && terminalToken) {
+    await callApiCommand('revoke_staff_session', {
       p_session_token_hash: fingerprintSessionToken(sessionToken),
+      p_terminal_fingerprint: fingerprintTerminalToken(terminalToken),
     })
   }
-  await supabase.auth.signOut()
   await clearAppCookies()
 }

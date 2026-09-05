@@ -1,6 +1,7 @@
 import 'server-only'
+import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
-import { callApiRpc } from '@/lib/supabase/rpc'
+import { callApiRpc } from '@/lib/db/rpc'
 import {
   SalesReportSchema,
   InventoryReportSchema,
@@ -25,5 +26,5 @@ export function walletReport(session: SessionContext) {
 }
 
 export function couponReport(session: SessionContext) {
-  return callApiRpc('report_coupons', { p_session_id: session.session_id }, CouponReportSchema)
+  return callApiRpc('report_coupons', { p_session_id: session.session_id }, z.array(z.object({coupon_name:z.string(),code_masked:z.string(),redemption_count:z.number(),discount_won:z.number(),net_sales_won:z.number(),last_redeemed_at:z.string().nullable()})).transform(rows => CouponReportSchema.parse(rows.map(r => ({...r,discount_given_won:r.discount_won,sales_revenue_won:r.net_sales_won})))))
 }

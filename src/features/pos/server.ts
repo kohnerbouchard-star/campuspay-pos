@@ -9,7 +9,7 @@ import {
   PaymentDecisionSchema,
   type CartLine,
 } from '@/features/pos/domain'
-import { callApiRpc } from '@/lib/supabase/rpc'
+import { callApiRpc } from '@/lib/db/rpc'
 import { ApiError } from '@/lib/api/errors'
 import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { fingerprintCouponCode } from '@/lib/crypto/coupon-code'

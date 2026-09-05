@@ -4,7 +4,7 @@ All endpoints are same-origin JSON endpoints. Every mutation requires an `Idempo
 
 ## Authentication
 
-- `POST /api/auth/login` — employee code + staff PIN; creates Supabase and terminal-bound app sessions.
+- `POST /api/auth/login` — employee code + staff PIN; creates a terminal-bound Neon/PostgreSQL application session.
 - `POST /api/auth/logout` — revokes the app session and signs out.
 - `GET /api/auth/session` — returns sanitized role/workspace data.
 - `POST /api/auth/activity` — extends an active session after a recognized UI action.
