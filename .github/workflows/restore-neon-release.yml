@@ -24,10 +24,10 @@ jobs:
         run: |
           set -euo pipefail
           test -f .bootstrap/READY
-          cat .bootstrap/neon-release.part* | base64 --decode > /tmp/campuspay-neon-release.tar.gz
-          echo '7baccc5c242a31d64ac3fdf064bfea0fc7a53b57705ad3abc35cb539b1da16f2  /tmp/campuspay-neon-release.tar.gz' | sha256sum --check
+          cat .bootstrap/neon-release.part* | base64 --decode > /tmp/campuspay-neon-release.tar.xz
+          echo 'cda7be12b5d5ac0840885df811bbae459fb33808a2ba2a6d0c657b063079a9a7  /tmp/campuspay-neon-release.tar.xz' | sha256sum --check
           find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .bootstrap -exec rm -rf {} +
-          tar -xzf /tmp/campuspay-neon-release.tar.gz -C .
+          tar -xJf /tmp/campuspay-neon-release.tar.xz -C .
           rm -rf .bootstrap
           test -f src/app/page.tsx
           test -f src/lib/db/rpc.ts
