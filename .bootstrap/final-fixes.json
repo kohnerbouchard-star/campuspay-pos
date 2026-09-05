@@ -22,5 +22,9 @@
 {"path":"scripts/integration-test.mjs","old":"COOKIE_SECURE:'false', NODE_ENV:'production'","new":"COOKIE_SECURE:'false', APP_ORIGIN:'http://127.0.0.1:3100', NODE_ENV:'production'"},
 {"path":"scripts/integration-test.mjs","old":" await request(jar(),'/api/pos/catalog',undefined,401)","new":" await request(jar(),'/api/pos/catalog',undefined,401)\n const crossOrigin = await fetch(base+'/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:'https://untrusted.example'},body:JSON.stringify({employeeCode:'1001',pin:'12345678'})});assert.equal(crossOrigin.status,403)"},
 {"path":".env.example","old":"COOKIE_SECURE=false","new":"COOKIE_SECURE=false\n# Exact browser origin; set your HTTPS origin in production.\nAPP_ORIGIN=http://localhost:3000"},
-{"path":"src/lib/db/rpc.ts","old":"${encodeValue(args[argument.name] ?? null, argument.cast)}","new":"${sql.param(encodeValue(args[argument.name] ?? null, argument.cast))}"}
+{"path":"src/lib/db/rpc.ts","old":"${encodeValue(args[argument.name] ?? null, argument.cast)}","new":"${sql.param(encodeValue(args[argument.name] ?? null, argument.cast))}"},
+{"path":"database/schema/005_wallet_functions.sql","old":"  student_display_name text,\n  balance_before_won bigint,\n  projected_balance_won bigint,","new":"  student_display_name text,\n  current_balance_won bigint,\n  projected_balance_won bigint,"},
+{"path":"database/schema/007_reports_and_grants.sql","old":"  oldest_receipt_date date,\n  next_expiration_date date","new":"  reorder_level integer,\n  low_stock boolean"},
+{"path":"database/schema/007_reports_and_grants.sql","old":"    min(r.purchase_date) filter (where l.quantity_remaining > 0),\n    min(l.expiration_date) filter (where l.quantity_remaining > 0 and l.expiration_date is not null)","new":"    p.reorder_level,\n    coalesce(sum(l.quantity_remaining),0) <= p.reorder_level"},
+{"path":"database/schema/007_reports_and_grants.sql","old":"  last_movement_at timestamptz","new":"  last_changed_at timestamptz"}
 ]
