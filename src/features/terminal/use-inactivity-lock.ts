@@ -7,7 +7,7 @@ const EVENTS: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'touchstart'
 
 export function useInactivityLock(timeoutMs = 20_000) {
   const [remainingMs, setRemainingMs] = useState(timeoutMs)
-  const deadline = useRef(Date.now() + timeoutMs)
+  const deadline = useRef(0)
   const lastServerTouch = useRef(0)
   const locking = useRef(false)
 
@@ -29,6 +29,7 @@ export function useInactivityLock(timeoutMs = 20_000) {
   }, [lock, timeoutMs])
 
   useEffect(() => {
+    deadline.current = Date.now() + timeoutMs
     for (const event of EVENTS) window.addEventListener(event, noteActivity, { passive: true })
     const timer = window.setInterval(() => {
       const remaining = Math.max(0, deadline.current - Date.now())
@@ -39,7 +40,7 @@ export function useInactivityLock(timeoutMs = 20_000) {
       for (const event of EVENTS) window.removeEventListener(event, noteActivity)
       window.clearInterval(timer)
     }
-  }, [lock, noteActivity])
+  }, [lock, noteActivity, timeoutMs])
 
   return { remainingMs, noteActivity, warning: remainingMs <= 5_000 }
 }
