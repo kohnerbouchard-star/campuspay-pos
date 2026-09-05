@@ -11,15 +11,19 @@ export function CouponManagementScreen() {
   const [error, setError] = useState<string | null>(null)
 
   async function load() {
-    try {
-      setCoupons(await fetchCoupons())
-      setError(null)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Coupons could not be loaded')
-    }
+    try { setCoupons(await fetchCoupons()); setError(null) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'Coupons could not be loaded') }
   }
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    let active = true
+    void fetchCoupons().then(result => {
+      if (active) { setCoupons(result); setError(null) }
+    }).catch((caught: unknown) => {
+      if (active) setError(caught instanceof Error ? caught.message : 'Coupons could not be loaded')
+    })
+    return () => { active = false }
+  }, [])
 
   return <main className="workspace">
     <header className="workspace-header">
