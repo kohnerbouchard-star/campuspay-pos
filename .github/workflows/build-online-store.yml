@@ -1,0 +1,89 @@
+name: Build CampusPay online store
+on:
+  push:
+    paths:
+      - '.bootstrap/STORE_BUILD_READY'
+  workflow_dispatch:
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash
+jobs:
+  build-store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply online-store source payload
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,lzma,json,hashlib
+          encoded=''.join(p.read_text() for p in sorted(Path('.bootstrap').glob('store.payload.part*')))
+          raw=lzma.decompress(base64.b64decode(encoded))
+          assert hashlib.sha256(raw).hexdigest() == '41bd0e889a3b7144ef06d77c933f7e7652a44c7f08a1b93d1fe8c8238644cd56', 'Payload checksum mismatch'
+          plan=json.loads(raw)
+          def safe(name):
+            p=Path(name)
+            assert not p.is_absolute() and '..' not in p.parts and '.git' not in p.parts
+            return p
+          for name,text in plan['new_files'].items():
+            p=safe(name);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+          for patch in plan['patches']:
+            p=safe(patch['path']);p.parent.mkdir(parents=True,exist_ok=True)
+            if 'full' in patch:
+              p.write_text(patch['full']);continue
+            text=p.read_text()
+            for old,new in patch['replacements']:
+              assert old in text, 'Patch target changed: '+patch['path']+' :: '+old[:80]
+              text=text.replace(old,new,1)
+            p.write_text(text)
+          print('Applied',len(plan['new_files']),'new files and',len(plan['patches']),'patch groups')
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Static security and architecture checks
+        run: npm run validate:static
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Apply all migrations to isolated PostgreSQL
+        run: npm run db:migrate
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Integration test staff POS and online store
+        run: npm run test:integration
+      - name: Commit tested online store
+        run: |
+          rm -rf .bootstrap .validation
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add customer online store and room delivery fulfillment'
+          git push origin HEAD:main
