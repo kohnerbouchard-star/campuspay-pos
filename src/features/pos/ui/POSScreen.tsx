@@ -25,14 +25,18 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   const total = coupon?.quote.total_won ?? subtotal
 
   async function load() {
-    try {
-      setProducts(await fetchCatalog())
-      setError(null)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Catalog could not be loaded')
-    }
+    try { setProducts(await fetchCatalog()); setError(null) }
+    catch (caught) { setError(caught instanceof Error ? caught.message : 'Catalog could not be loaded') }
   }
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    let active = true
+    void fetchCatalog().then(result => {
+      if (active) { setProducts(result); setError(null) }
+    }).catch((caught: unknown) => {
+      if (active) setError(caught instanceof Error ? caught.message : 'Catalog could not be loaded')
+    })
+    return () => { active = false }
+  }, [])
 
   function mutateCart(update: (current: CartState) => CartState) {
     setCoupon(null)
