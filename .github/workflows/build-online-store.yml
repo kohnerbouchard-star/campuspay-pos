@@ -39,8 +39,9 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import lzma,json,hashlib
-          raw=lzma.decompress(Path('.bootstrap/store.payload.xz').read_bytes())
+          import base64,lzma,json,hashlib
+          encoded=''.join(p.read_text() for p in sorted(Path('.bootstrap').glob('store.payload.part*')))
+          raw=lzma.decompress(base64.b64decode(encoded))
           assert hashlib.sha256(raw).hexdigest() == '41bd0e889a3b7144ef06d77c933f7e7652a44c7f08a1b93d1fe8c8238644cd56', 'Payload checksum mismatch'
           plan=json.loads(raw)
           def safe(name):
