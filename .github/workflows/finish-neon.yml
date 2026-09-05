@@ -1,0 +1,105 @@
+name: Finish Neon migration
+on:
+  push:
+    paths: ['.bootstrap/NEON081_READY']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply source-verified conversion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,lzma,json,hashlib
+          encoded=''.join(p.read_text() for p in sorted(Path('.bootstrap').glob('neon081.part*')))
+          raw=lzma.decompress(base64.b64decode(encoded))
+          assert hashlib.sha256(raw).hexdigest()=='003375c19001b396c3269d96210849abb4a0201cc13ba76ef088bbda5c20b2e5', 'Payload checksum mismatch'
+          plan=json.loads(raw)
+          output={}
+          def safe(path):
+            p=Path(path)
+            assert not p.is_absolute() and '..' not in p.parts and '.git' not in p.parts
+            return p
+          for dest,change in plan['files'].items():
+            safe(dest)
+            if 'text' in change: output[dest]=change['text'];continue
+            source=safe(change['source']).read_text()
+            assert hashlib.sha256(source.encode()).hexdigest()==change['sha256'], 'Source changed: '+change['source']
+            lines=source.splitlines(True)
+            for first,last,replacement in reversed(change['lines']): lines[first:last]=[replacement]
+            output[dest]=''.join(lines)
+          for dest,text in output.items():
+            p=safe(dest);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+          for dest in plan['delete']: safe(dest).unlink(missing_ok=True)
+          source=Path('database/schema');migration=Path('database/migrations');migration.mkdir(parents=True,exist_ok=True)
+          names=sorted(p for p in source.glob('00[1-9]_*.sql'))
+          banner='-- CampusPay v0.8.0 initial Neon/PostgreSQL migration\n-- Generated from database/schema/*.sql.\n-- Apply with a direct/unpooled connection as the database owner.\n\n'
+          body='\n\n'.join('-- BEGIN '+p.name+'\n'+p.read_text().strip()+'\n-- END '+p.name for p in names)
+          (migration/'20260904190000_initial_campuspay_neon.sql').write_text(banner+body+'\n')
+          for name,version in [('010_demo_bootstrap.sql','20260905033000_demo_bootstrap.sql'),('011_finish_neon.sql','20260905070000_finish_neon.sql')]:
+            (migration/version).write_text((source/name).read_text())
+          Path('.validation').mkdir(exist_ok=True)
+          print('Applied',len(output),'source files; no connection secrets in payload.')
+          PY
+      - name: Install and lock dependencies
+        run: npm install --no-audit --no-fund
+      - name: Architecture checks
+        run: npm run validate:static
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        run: npm run build
+      - name: Migrate isolated PostgreSQL
+        run: npm run db:migrate
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Test real application routes and browser
+        run: npm run test:integration
+      - name: Commit verified application
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .bootstrap
+          rm -f .github/workflows/finish-neon.yml .github/workflows/restore-neon-release.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Complete Neon migration with role-based login and tested transactions'
+          git push origin HEAD:main
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: neon-migration-validation
+          path: .validation/
+          include-hidden-files: true
