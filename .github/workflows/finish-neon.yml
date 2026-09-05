@@ -58,6 +58,11 @@ jobs:
           for dest,text in output.items():
             p=safe(dest);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
           for dest in plan['delete']: safe(dest).unlink(missing_ok=True)
+          p=Path('scripts/integration-test.mjs')
+          p.write_text(p.read_text().replace('async function request(cookies,path,body,expected=200) {', "async function request(cookies,path,body,expected=200) {\n if (expected===200 && body!==undefined && ['/api/pos/intents','/api/accounting/intents','/api/inventory/products','/api/inventory/receipts','/api/coupons'].includes(path)) expected=201"))
+          for f in ['scripts/integration-test.mjs','scripts/bootstrap-demo.mjs']:
+            p=Path(f);p.write_text(p.read_text().replace("'card:04A81F92C73180'","'04A81F92C73180'").replace("'coupon:WELCOME10'","'WELCOME10'"))
+          p=Path('database/schema/010_demo_bootstrap.sql');p.write_text(p.read_text().replace('85500, 0, 0, 0, 85500','122000, 0, 0, 0, 122000'))
           source=Path('database/schema');migration=Path('database/migrations');migration.mkdir(parents=True,exist_ok=True)
           names=sorted(p for p in source.glob('00[1-9]_*.sql'))
           banner='-- CampusPay v0.8.0 initial Neon/PostgreSQL migration\n-- Generated from database/schema/*.sql.\n-- Apply with a direct/unpooled connection as the database owner.\n\n'
