@@ -33,7 +33,7 @@ export function CouponReportPanel() {
     </div>
     <div className="table-scroll">
       <table>
-        <thead><tr><th>Coupon</th><th>Uses</th><th>Discounts</th><th>Net sales</th><th>Status</th></tr></thead>
+        <thead><tr><th>Coupon</th><th>Uses</th><th>Discounts</th><th>Net sales</th><th>Last redeemed</th></tr></thead>
         <tbody>
           {rows.length === 0 && <tr><td colSpan={5} className="muted">No coupon activity recorded.</td></tr>}
           {rows.map((row) => <tr key={`${row.coupon_name}-${row.code_masked}`}>
@@ -41,7 +41,7 @@ export function CouponReportPanel() {
             <td>{row.redemption_count}</td>
             <td>{formatWon(row.discount_given_won)}</td>
             <td>{formatWon(row.sales_revenue_won)}</td>
-            <td>{row.active ? 'Active' : 'Inactive'}</td>
+            <td>{row.last_redeemed_at ? new Date(row.last_redeemed_at).toLocaleString('en-GB', { timeZone: 'Asia/Seoul' }) : 'Not used'}</td>
           </tr>)}
         </tbody>
       </table>
