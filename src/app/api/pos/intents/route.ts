@@ -8,6 +8,6 @@ export async function POST(request: Request) {
   try {
     const session = await authorizeRequest('pos.checkout')
     const input = await parseJson(request, CreatePaymentIntentSchema)
-    return ok(await createPaymentIntent(session, input.items, input.idempotencyKey, input.couponCode), { status: 201 })
+    return ok(await createPaymentIntent(session, input.items, input.idempotencyKey, input.couponCode ?? null), { status: 201 })
   } catch (error) { return failure(error) }
 }
