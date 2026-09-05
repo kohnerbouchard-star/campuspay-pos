@@ -1,0 +1,9 @@
+[
+  {"path":"src/lib/api/errors.ts","old":"  if (error instanceof ApiError) return error","new":"  if (error instanceof ApiError) return error\n  if (error instanceof Error && error.cause instanceof Error && error.cause !== error) return toApiError(error.cause)"},
+  {"path":"src/lib/db/rpc.ts","old":"  return sql`select * from api.${sql.raw(name)}(${sql.join(parameters, sql`, `)})`","new":"  const functionName = name === 'search_student_wallets' ? 'search_student_wallets_v2' : name === 'list_coupons' ? 'list_coupons_v2' : name\n  return sql`select * from api.${sql.raw(functionName)}(${sql.join(parameters, sql`, `)})`"},
+  {"path":"database/schema/011_finish_neon.sql","old":"drop function api.search_student_wallets(uuid,text);","new":"-- Keep the prior read contract intact for rollback."},
+  {"path":"database/schema/011_finish_neon.sql","old":"create function api.search_student_wallets(","new":"create or replace function api.search_student_wallets_v2("},
+  {"path":"database/schema/011_finish_neon.sql","old":"drop function api.list_coupons(uuid);","new":"-- Versioned read API; no function or table deletion is needed."},
+  {"path":"database/schema/011_finish_neon.sql","old":"create function api.list_coupons(","new":"create or replace function api.list_coupons_v2("},
+  {"path":"database/schema/011_finish_neon.sql","old":"function api.search_student_wallets(uuid,text),api.list_coupons(uuid)","new":"function api.search_student_wallets_v2(uuid,text),api.list_coupons_v2(uuid)"}
+]
