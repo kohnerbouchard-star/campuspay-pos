@@ -79,11 +79,15 @@ jobs:
              "  update private.student_credentials sc\n  set failed_attempts = 0, locked_until = null\n  where sc.student_id = v_student.id;"),
             ("  update private.customer_sessions set revoked_at = v_now\n  where student_id = v_student.id and revoked_at is null;",
              "  update private.customer_sessions cs set revoked_at = v_now\n  where cs.student_id = v_student.id and cs.revoked_at is null;"),
+            ("  v_order_item_id uuid;\n", ""),
+            ("    insert into private.online_order_items(\n      order_id, product_id, product_name_snapshot, quantity, unit_price_won, line_total_won\n    ) values (\n      v_order.id, v_priced.product_id, v_priced.product_name, v_priced.quantity,\n      v_priced.unit_price_won, v_priced.line_total_won\n    ) returning id into v_order_item_id;\n\n", ""),
+            ("    update private.sale_items set cogs_won = v_line_cogs where id = v_sale_item_id;\n    update private.online_order_items set cogs_won = v_line_cogs where id = v_order_item_id;\n    v_all_cogs := v_all_cogs + v_line_cogs;",
+             "    update private.sale_items set cogs_won = v_line_cogs where id = v_sale_item_id;\n    insert into private.online_order_items(\n      order_id, product_id, product_name_snapshot, quantity, unit_price_won, line_total_won, cogs_won\n    ) values (\n      v_order.id, v_priced.product_id, v_priced.product_name, v_priced.quantity,\n      v_priced.unit_price_won, v_priced.line_total_won, v_line_cogs\n    );\n    v_all_cogs := v_all_cogs + v_line_cogs;"),
           ]
           for path in [Path('database/schema/012_online_store.sql'), Path('database/migrations/20260906160000_online_store.sql')]:
             text = path.read_text()
             for old, new in sql_replacements:
-              assert old in text, f'Customer-session SQL patch target changed in {path}: {old[:70]}'
+              assert old in text, f'Online-store SQL patch target changed in {path}: {old[:70]}'
               text = text.replace(old, new, 1)
             old_trigger = "where student_id = coalesce(new.student_id, old.student_id) and revoked_at is null;"
             if old_trigger in text:
