@@ -40,6 +40,36 @@ jobs:
           base64 -d /tmp/store-v090.b64 > /tmp/store-v090.tar.xz
           echo 'bbec749999faf42de94a9f14c4e951484a0cb3e6d6afd3d507a993f85fa028be  /tmp/store-v090.tar.xz' | sha256sum -c -
           tar -xJf /tmp/store-v090.tar.xz -C .
+          python3 - <<'PY'
+          from pathlib import Path
+
+          component = Path('src/features/store/ui/OrderFulfillmentScreen.tsx')
+          text = component.read_text()
+          old = "  useEffect(() => { void load() }, [])"
+          new = """  useEffect(() => {
+            let active = true
+            void fetchStaffOnlineOrders()
+              .then((data) => {
+                if (!active) return
+                setOrders(data)
+                setError(null)
+              })
+              .catch((caught) => {
+                if (!active) return
+                setError(caught instanceof Error ? caught.message : 'Orders could not be loaded')
+              })
+            return () => { active = false }
+          }, [])"""
+          assert old in text, 'Order fulfillment lint patch target changed'
+          component.write_text(text.replace(old, new, 1))
+
+          integration = Path('scripts/integration-test.mjs')
+          text = integration.read_text()
+          old = " const onlineCoupon=await request(inventory,'/api/coupons'"
+          new = " await request(inventory,'/api/coupons'"
+          assert old in text, 'Integration lint patch target changed'
+          integration.write_text(text.replace(old, new, 1))
+          PY
           rm -rf .bootstrap
           rm -f .github/workflows/materialize-v090.yml
       - run: npm ci --no-audit --no-fund
