@@ -25,7 +25,9 @@ export function failure(error: unknown) {
 
 export async function parseJson<T>(request: Request, parser: { parse(value: unknown): T }): Promise<T> {
   const origin = request.headers.get('origin')
-  if ((origin && origin !== (process.env.APP_ORIGIN || new URL(request.url).origin)) || request.headers.get('sec-fetch-site') === 'cross-site') {
+  const requestOrigin = new URL(request.url).origin
+  const allowedOrigins = new Set([requestOrigin, process.env.APP_ORIGIN, process.env.STAFF_ORIGIN, process.env.STORE_ORIGIN].filter(Boolean))
+  if ((origin && !allowedOrigins.has(origin)) || request.headers.get('sec-fetch-site') === 'cross-site') {
     throw new ApiError(403, 'FORBIDDEN', 'Cross-origin requests are not accepted')
   }
   let body: unknown

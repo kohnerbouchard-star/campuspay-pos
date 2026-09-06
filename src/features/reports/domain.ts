@@ -9,6 +9,7 @@ export const SalesReportRowSchema = z.object({
   receipt_number: z.string(),
   sold_at: z.string(),
   cashier_name: z.string(),
+  channel: z.enum(['POS', 'ONLINE_STORE']),
   subtotal_won: z.number().int(),
   discount_won: z.number().int(),
   revenue_won: z.number().int(),

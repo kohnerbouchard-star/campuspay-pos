@@ -9,6 +9,7 @@ export type WorkspaceLink = Readonly<{
 
 export const WORKSPACE_LINKS: readonly WorkspaceLink[] = [
   { label: 'Point of sale', title: 'Point of sale', href: '/pos', permission: 'pos.read' },
+  { label: 'Online orders', title: 'Online orders', href: '/orders', permission: 'orders.fulfill' },
   { label: 'Inventory', title: 'Inventory', href: '/inventory', permission: 'inventory.read' },
   { label: 'Coupons', title: 'Coupons', href: '/coupons', permission: 'coupons.manage' },
   { label: 'Accounting', title: 'Accounting', href: '/accounting', permission: 'wallet.read' },

@@ -73,6 +73,27 @@ try {
  const up=await request(superadmin,'/api/security/step-up',{superAdminEmployeeCode:'9001',superAdminPin:'12345678',purpose:'RESET_STUDENT_PIN',studentId:sid})
  await request(superadmin,`/api/security/students/${sid}/pin-reset`,{authorizationToken:up.authorizationToken,newPin:'445566',confirmationPin:'445566'});studentPin='445566'
  await request(superadmin,`/api/security/students/${sid}/pin-reset`,{authorizationToken:up.authorizationToken,newPin:'445566',confirmationPin:'445566'},403)
+
+ // Customer online store: public catalog, isolated card/PIN session, East-room delivery,
+ // shared inventory/wallet/coupons, and staff fulfillment state transitions.
+ const storeCatalogBefore=await request(jar(),'/api/store/catalog');assert.ok(storeCatalogBefore.length>=5)
+ const locations=await request(jar(),'/api/store/locations')
+ const east201=locations.find(l=>l.building==='East Building'&&l.floor===2&&l.room==='201');assert.ok(east201?.orderable)
+ assert.deepEqual(locations.filter(l=>l.building==='West Building').map(l=>[l.floor,l.orderable]),[[2,false],[3,false],[4,false]])
+ await request(inventory,'/api/coupons',{name:'Online fixed test',code:'ONLINE100',discountType:'FIXED',fixedAmountWon:100,percentageBps:null,minimumSubtotalWon:0,maxDiscountWon:null,totalRedemptionLimit:10,perStudentLimit:1,startsAt:new Date(Date.now()-60000).toISOString(),endsAt:null,idempotencyKey:randomUUID()})
+ const customer=jar();await request(customer,'/api/store/login',{cardNumber:card,pin:studentPin});const customerSession=await request(customer,'/api/store/session');assert.equal(customerSession.student_id,sid)
+ await request(customer,'/api/orders',undefined,401)
+ const staffOnly=await login('1001');await request(staffOnly,'/api/store/orders',undefined,401)
+ const waterBefore=storeCatalogBefore.find(p=>p.id===water.id).stock_on_hand
+ const webOrder=await request(customer,'/api/store/orders',{items:[{productId:water.id,quantity:1}],couponCode:'ONLINE100',deliveryLocationId:east201.location_id,deliveryNote:'Integration room delivery',idempotencyKey:randomUUID()},201)
+ assert.match(webOrder.order_number,/^WEB-/);assert.equal(webOrder.discount_won,100);assert.equal(webOrder.delivery_room,'201')
+ const storeCatalogAfter=await request(jar(),'/api/store/catalog');assert.equal(storeCatalogAfter.find(p=>p.id===water.id).stock_on_hand,waterBefore-1)
+ let customerOrders=await request(customer,'/api/store/orders');assert.equal(customerOrders[0].order_id,webOrder.order_id);assert.equal(customerOrders[0].status,'PLACED')
+ const fulfiller=await login('1001');let staffOrders=await request(fulfiller,'/api/orders');assert.ok(staffOrders.some(o=>o.order_id===webOrder.order_id))
+ for(const status of ['PICKING','READY','OUT_FOR_DELIVERY','DELIVERED'])await request(fulfiller,`/api/orders/${webOrder.order_id}/status`,{status})
+ customerOrders=await request(customer,'/api/store/orders');assert.equal(customerOrders[0].status,'DELIVERED')
+ const reportingAccountant=await login('3001');const salesWithChannel=await request(reportingAccountant,'/api/reports/sales');assert.equal(salesWithChannel.find(r=>r.receipt_number===webOrder.order_number).channel,'ONLINE_STORE')
+
  // Login attempts must commit even though login is rejected.
  for(let i=0;i<5;i++)await request(jar(),'/api/auth/login',{employeeCode:'2001',pin:'00000000'},401)
  const lock=await owner.query("select failed_attempts,locked_until from private.staff_credentials c join public.staff_profiles s on s.auth_user_id=c.staff_user_id where s.employee_code='2001'");assert.equal(lock.rows[0].failed_attempts,5);assert.ok(lock.rows[0].locked_until)
@@ -82,9 +103,10 @@ try {
   const {chromium}=await import('@playwright/test');const browser=await chromium.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message))
   await page.goto(base);await page.screenshot({path:'.validation/login.png',fullPage:true})
   const context=await login('1001');await page.context().addCookies([...context].map(([name,value])=>({name,value,url:base})))
-  await page.goto(base+'/pos');await page.getByText('Bottled Water',{exact:true}).waitFor();await page.screenshot({path:'.validation/pos.png',fullPage:true});assert.deepEqual(errors,[]);await browser.close()
+  await page.goto(base+'/pos');await page.getByText('Bottled Water',{exact:true}).waitFor();await page.screenshot({path:'.validation/pos.png',fullPage:true})
+  await page.goto(base+'/store');await page.getByText('Bottled Water',{exact:true}).waitFor();await page.getByText('Sign in to order',{exact:true}).waitFor();await page.screenshot({path:'.validation/store.png',fullPage:true});assert.deepEqual(errors,[]);await browser.close()
  }
  const idle=await login('1001');await new Promise(r=>setTimeout(r,21000));await request(idle,'/api/pos/catalog',undefined,401)
- fs.writeFileSync('.validation/integration-results.json',JSON.stringify({passed:true,checks:['anonymous denial','four role logins','least-privilege denials','negative-balance sale','duplicate prevention','wallet floor','coupon limits','accountant top-up','four reports','costed receipts','FIFO allocation','sold-out status','fixed coupon','coupon deactivation','PIN reset and one-use approval','persistent login lockout','immutable ledger','cashier idle expiry','browser login and POS']},null,2))
- console.log('PASS: HTTP integration suite, role restrictions, accounting, inventory, coupons, reset authorization and idle expiry')
+ fs.writeFileSync('.validation/integration-results.json',JSON.stringify({passed:true,checks:['anonymous denial','four role logins','least-privilege denials','negative-balance sale','duplicate prevention','wallet floor','coupon limits','accountant top-up','four reports','costed receipts','FIFO allocation','sold-out status','fixed coupon','coupon deactivation','PIN reset and one-use approval','persistent login lockout','immutable ledger','cashier idle expiry','browser login and POS','customer online store','room delivery directory','shared online inventory and wallet','online coupon redemption','staff fulfillment workflow','sales channel attribution']},null,2))
+ console.log('PASS: HTTP integration suite, staff POS, customer online store, fulfillment, accounting, inventory, coupons, reset authorization and idle expiry')
 } finally {server.kill('SIGTERM');await owner.end();fs.closeSync(log)}

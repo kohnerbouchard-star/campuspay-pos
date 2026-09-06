@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ROLE_PERMISSIONS } from '@/features/auth/permissions'
 
 describe('least privilege role matrix', () => {
-  it('gives a cashier only checkout-related permissions', () => {
-    expect(ROLE_PERMISSIONS.cashier).toEqual(['pos.read', 'pos.checkout', 'coupons.redeem'])
+  it('gives a cashier checkout and fulfillment permissions only', () => {
+    expect(ROLE_PERMISSIONS.cashier).toEqual(['pos.read', 'pos.checkout', 'coupons.redeem', 'orders.fulfill'])
   })
 
   it('prevents cashiers from managing coupon definitions', () => {

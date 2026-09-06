@@ -42,3 +42,19 @@ All endpoints are same-origin JSON endpoints. Every mutation requires an `Idempo
 - `POST /api/security/step-up` — verifies a separate super administrator and creates a one-use token.
 - `POST /api/security/students/:studentId/pin-reset` — consumes purpose-bound authorization and stores a new student-entered PIN hash.
 - `POST /api/security/students/:studentId/card-reset` — consumes purpose-bound authorization, deactivates the old card, and stores only a fingerprint of the new scan.
+
+
+## Customer store
+
+- `GET /api/store/catalog` — public active catalog and shared stock status.
+- `GET /api/store/locations` — active East/West delivery directory.
+- `POST /api/store/login` — printed card number + student PIN; creates a customer-only session.
+- `GET /api/store/session` — sanitized customer identity and current wallet balance.
+- `POST /api/store/logout` — revokes the customer session.
+- `GET /api/store/orders` — signed-in student's online order history.
+- `POST /api/store/orders` — atomic online checkout with room delivery.
+
+## Online fulfillment
+
+- `GET /api/orders` — staff fulfillment queue (`orders.fulfill`).
+- `POST /api/orders/:orderId/status` — advances the controlled fulfillment state machine.

@@ -9,3 +9,7 @@ export function fingerprintSessionToken(raw: string): string {
 export function fingerprintTerminalToken(raw: string): string {
   return hmacHex(getServerEnv().TERMINAL_COOKIE_SECRET, raw)
 }
+
+export function fingerprintCustomerSessionToken(raw: string): string {
+  return hmacHex(getServerEnv().SESSION_HMAC_SECRET, `customer-session:${raw}`)
+}

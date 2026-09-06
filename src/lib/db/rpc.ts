@@ -35,6 +35,15 @@ const RPCS = {
   deactivate_coupon: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_coupon_id', cast: 'uuid' }, { name: 'p_reason', cast: 'text' }],
   quote_coupon: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }],
   report_coupons: [{ name: 'p_session_id', cast: 'uuid' }],
+  create_customer_session: [{ name: 'p_card_fingerprint', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_session_token_hash', cast: 'text' }, { name: 'p_ip_fingerprint', cast: 'text' }],
+  authorize_customer_session: [{ name: 'p_session_token_hash', cast: 'text' }],
+  revoke_customer_session: [{ name: 'p_session_token_hash', cast: 'text' }],
+  store_catalog: [],
+  store_delivery_locations: [],
+  create_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }, { name: 'p_delivery_location_id', cast: 'uuid' }, { name: 'p_delivery_note', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  customer_orders: [{ name: 'p_customer_session_id', cast: 'uuid' }],
+  staff_online_orders: [{ name: 'p_session_id', cast: 'uuid' }],
+  update_online_order_status: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_order_id', cast: 'uuid' }, { name: 'p_next_status', cast: 'text' }],
 } as const satisfies Record<string, readonly RpcArgument[]>
 
 export type ApiRpcName = keyof typeof RPCS

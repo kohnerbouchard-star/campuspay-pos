@@ -9,6 +9,7 @@ export const PermissionSchema = z.enum([
   'inventory.read', 'inventory.receive', 'inventory.adjust', 'inventory.product.manage', 'inventory.price.manage',
   'wallet.read', 'wallet.adjust',
   'reports.sales', 'reports.inventory', 'reports.wallets', 'reports.coupons',
+  'orders.fulfill',
   'security.credentials.request', 'security.step_up', 'security.credentials.reset', 'security.staff.manage',
 ])
 export type Permission = z.infer<typeof PermissionSchema>
