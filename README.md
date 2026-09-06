@@ -1,6 +1,6 @@
-# CampusPay — modular school RFID/NFC POS with coupons
+# CampusPay — school RFID/NFC POS, wallet, and online store
 
-CampusPay is a closed-loop school wallet and point-of-sale application built with Next.js and Neon Postgres. The browser talks only to same-origin API routes; all financial, inventory, credential, and coupon mutations execute through narrowly scoped PostgreSQL functions.
+CampusPay is a closed-loop school wallet, point-of-sale, and room-delivery online-store application built with Next.js and Neon Postgres. The browser talks only to same-origin API routes; all financial, inventory, credential, and coupon mutations execute through narrowly scoped PostgreSQL functions.
 
 ## Included capabilities
 
@@ -14,6 +14,11 @@ CampusPay is a closed-loop school wallet and point-of-sale application built wit
 - One-use super-admin authorization for student card and PIN resets.
 - Twenty-second cashier inactivity lock enforced by the UI and database session.
 - Fixed-won and percentage coupons with validity, minimum spend, caps, and redemption limits.
+- Customer online store using printed RFID/card number + student PIN.
+- Shared POS/online inventory, wallet, coupons, FIFO/LIFO costing, COGS, and sales ledger.
+- East Building room delivery (201–206) plus West Building floors ready for room configuration.
+- Staff online-order fulfillment: placed, picking, ready, out for delivery, delivered.
+- Optional production host separation with `STAFF_ORIGIN` and `STORE_ORIGIN`.
 
 ## Architecture
 
@@ -85,3 +90,8 @@ Use the credentials delivered separately to the owner. They are not stored in th
 Use an owner direct `DATABASE_URL_UNPOOLED` for `npm run db:migrate`. The application uses a separate pooled `DATABASE_URL` restricted to the `campuspay_runtime` role. `ALLOW_DEMO_BOOTSTRAP=true npm run db:bootstrap-demo` initializes an empty development database with random demo PINs displayed once in your terminal. It refuses to run after credentials exist. Do not use it on real school data.
 
 Neon supplies the database, not offline checkout. Purchases require a working connection. This is a development/pilot release, not a certification for unattended live financial operation.
+
+
+## Online store
+
+Local development exposes the customer store at `http://localhost:3000/store` and staff fulfillment at `http://localhost:3000/orders`. Production should configure separate HTTPS origins for customers and staff. See `docs/ONLINE_STORE.md`.

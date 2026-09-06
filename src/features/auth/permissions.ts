@@ -1,12 +1,12 @@
 import type { Permission, StaffRole } from '@/features/auth/domain'
 
 export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, readonly Permission[]>> = {
-  cashier: ['pos.read', 'pos.checkout', 'coupons.redeem'],
+  cashier: ['pos.read', 'pos.checkout', 'coupons.redeem', 'orders.fulfill'],
   inventory_admin: [
     'coupons.manage',
     'inventory.read', 'inventory.receive', 'inventory.adjust',
     'inventory.product.manage', 'inventory.price.manage',
-    'reports.inventory', 'security.credentials.request',
+    'reports.inventory', 'security.credentials.request', 'orders.fulfill',
   ],
   accountant: [
     'wallet.read', 'wallet.adjust',
@@ -20,6 +20,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, readonly Permission[]>
     'wallet.read', 'wallet.adjust',
     'reports.sales', 'reports.inventory', 'reports.wallets', 'reports.coupons',
     'security.credentials.request', 'security.step_up', 'security.credentials.reset', 'security.staff.manage',
+    'orders.fulfill',
   ],
 }
 

@@ -10,8 +10,8 @@ const allSql = files.map((name) => fs.readFileSync(path.join(schemaDirectory, na
 const checks = []
 const record = (name, passed, detail = '') => checks.push({ name, passed, detail })
 
-record('Eleven ordered schema modules are present', files.length === 11, files.join(', '))
-record('Runtime hardening precedes the one-time bootstrap module', files.indexOf('009_runtime_hardening.sql') < files.indexOf('010_demo_bootstrap.sql') && files.at(-1) === '011_finish_neon.sql', '010_demo_bootstrap.sql', files.at(-1) ?? '')
+record('Twelve ordered schema modules are present', files.length === 12, files.join(', '))
+record('Runtime hardening precedes the one-time bootstrap module', files.indexOf('009_runtime_hardening.sql') < files.indexOf('010_demo_bootstrap.sql') && files.at(-1) === '012_online_store.sql', '010_demo_bootstrap.sql before 012_online_store.sql', files.at(-1) ?? '')
 record('Dollar-quote delimiters are paired', (allSql.match(/\$\$/g) ?? []).length % 2 === 0)
 record('No Supabase Auth dependency remains', !/auth\.uid\(\)|auth\.users|\banon\b|\bauthenticated\b/i.test(allSql))
 record('Staff PINs use an HMAC proof plus slow database hash', /p_pin_proof[\s\S]*extensions\.crypt/i.test(allSql))
@@ -23,7 +23,10 @@ record('Runtime role receives API execution only', /grant execute on all functio
 record('Every SECURITY DEFINER function pins search_path', !/security definer(?![\s\S]{0,120}set search_path = '')/i.test(allSql))
 record('Coupon fingerprints and redemption limits remain modeled', /code_fingerprint[\s\S]*total_redemption_limit[\s\S]*per_student_limit/i.test(allSql))
 record('Financial and inventory operations retain row locks', (allSql.match(/for update/gi) ?? []).length >= 8)
-record('Idempotency controls remain represented', (allSql.match(/idempotency_key/gi) ?? []).length >= 20)
+record('Idempotency controls remain represented', (allSql.match(/idempotency_key/gi) ?? []).length >= 25)
+record('Online store uses isolated customer sessions', /create table private\.customer_sessions[\s\S]*campuspay_customer_session|create table private\.customer_sessions/i.test(allSql))
+record('Online orders share wallet and inventory transaction locks', /create_online_order[\s\S]*private\.wallets[\s\S]*for update[\s\S]*private\.inventory_lots/i.test(allSql))
+record('Delivery directory contains East and West buildings', /East Building[\s\S]*West Building|West Building[\s\S]*East Building/i.test(allSql))
 
 const failures = checks.filter((check) => !check.passed)
 for (const check of checks) {
