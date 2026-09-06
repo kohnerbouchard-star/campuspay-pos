@@ -1,0 +1,61 @@
+name: Materialize CampusPay v0.9 online store
+on:
+  push:
+    branches: [feat/online-store-v090-final]
+    paths: ['.bootstrap/V090_READY']
+permissions:
+  contents: write
+defaults:
+  run:
+    shell: bash
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify and extract exact v0.9 source
+        run: |
+          cat .bootstrap/store-v090.small* > /tmp/store-v090.b64
+          base64 -d /tmp/store-v090.b64 > /tmp/store-v090.tar.xz
+          echo 'bbec749999faf42de94a9f14c4e951484a0cb3e6d6afd3d507a993f85fa028be  /tmp/store-v090.tar.xz' | sha256sum -c -
+          tar -xJf /tmp/store-v090.tar.xz -C .
+          rm -rf .bootstrap
+          rm -f .github/workflows/materialize-v090.yml
+      - run: npm ci --no-audit --no-fund
+      - run: npm run validate:static
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run db:migrate
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:integration
+      - name: Commit verified source to feature branch
+        run: |
+          rm -rf .validation
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add customer online store and room delivery fulfillment'
+          git push origin HEAD:feat/online-store-v090-final
