@@ -2,7 +2,7 @@ name: Build CampusPay online store
 on:
   push:
     paths:
-      - '.bootstrap/STORE_BUILD_READY'
+      - '.bootstrap/STORE_FINAL_READY'
   workflow_dispatch:
 permissions:
   contents: write
@@ -39,26 +39,17 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import lzma,json,hashlib
-          raw=lzma.decompress(Path('.bootstrap/store.payload.xz').read_bytes())
-          assert hashlib.sha256(raw).hexdigest() == '41bd0e889a3b7144ef06d77c933f7e7652a44c7f08a1b93d1fe8c8238644cd56', 'Payload checksum mismatch'
+          import base64,lzma,json,hashlib
+          encoded=''.join(p.read_text() for p in sorted(Path('.bootstrap').glob('store-final.part*')))
+          raw=lzma.decompress(base64.b64decode(encoded))
+          assert hashlib.sha256(raw).hexdigest() == '8cc34acfc5df44897f56e9ef8aef325848cca3d00a3ab001e5012054f35343b0', 'Payload checksum mismatch'
           plan=json.loads(raw)
-          def safe(name):
+          for name,text in plan['files'].items():
             p=Path(name)
             assert not p.is_absolute() and '..' not in p.parts and '.git' not in p.parts
-            return p
-          for name,text in plan['new_files'].items():
-            p=safe(name);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
-          for patch in plan['patches']:
-            p=safe(patch['path']);p.parent.mkdir(parents=True,exist_ok=True)
-            if 'full' in patch:
-              p.write_text(patch['full']);continue
-            text=p.read_text()
-            for old,new in patch['replacements']:
-              assert old in text, 'Patch target changed: '+patch['path']+' :: '+old[:80]
-              text=text.replace(old,new,1)
+            p.parent.mkdir(parents=True,exist_ok=True)
             p.write_text(text)
-          print('Applied',len(plan['new_files']),'new files and',len(plan['patches']),'patch groups')
+          print('Applied',len(plan['files']),'online-store source files')
           PY
       - name: Install dependencies
         run: npm ci
@@ -80,7 +71,7 @@ jobs:
         run: npm run test:integration
       - name: Commit tested online store
         run: |
-          rm -rf .bootstrap .validation
+          rm -rf .validation
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
