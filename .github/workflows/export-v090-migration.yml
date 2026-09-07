@@ -1,0 +1,18 @@
+name: Export v0.9 migration
+on:
+  push:
+    branches: [feat/online-store-v090-final]
+    paths: ['.bootstrap/EXPORT_V090_MIGRATION']
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: campuspay-v090-migration
+          path: database/migrations/20260906160000_online_store.sql
+          if-no-files-found: error
+          retention-days: 1
