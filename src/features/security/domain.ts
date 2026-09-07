@@ -19,10 +19,19 @@ export const ResetPinSchema = z.object({
 
 export const ResetCardSchema = z.object({
   authorizationToken: z.string().min(32),
-  newCardRead: z.string().min(1).max(128),
+  newCardRead: z.string().min(6).max(128).regex(/^[A-Za-z0-9:-]+$/)
+    .refine((value) => value.replace(/[^a-zA-Z0-9]/g, '').length >= 6 && value.replace(/[^a-zA-Z0-9]/g, '').length <= 64),
 })
 
 export const ResetResultSchema = z.object({
   audit_reference: z.string(),
   completed_at: z.string(),
 })
+
+export const SecurityStudentSchema = z.object({
+  student_id: z.string().uuid(),
+  student_code: z.string(),
+  display_name: z.string(),
+  card_active: z.boolean(),
+})
+export type SecurityStudent = z.infer<typeof SecurityStudentSchema>

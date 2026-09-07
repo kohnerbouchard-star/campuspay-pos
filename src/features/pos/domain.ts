@@ -20,11 +20,23 @@ export const CartLineSchema = z.object({
 })
 export type CartLine = z.infer<typeof CartLineSchema>
 
+export const TenderModeSchema = z.enum(['WALLET', 'CASH', 'SPLIT'])
+export type TenderMode = z.infer<typeof TenderModeSchema>
+export const PaymentPolicySchema = z.object({
+  terminal_label: z.string(), cash_enabled: z.boolean(), event_name: z.string().nullable(), can_manage: z.boolean(),
+})
+export type PaymentPolicy = z.infer<typeof PaymentPolicySchema>
+export const UpdatePaymentPolicySchema = z.object({
+  cashEnabled: z.boolean(), eventName: z.string().trim().max(80).nullable(),
+}).refine(v => !v.cashEnabled || (v.eventName?.length ?? 0) >= 2, { message: 'Enter an event name with at least two characters', path: ['eventName'] })
+
 export const CreatePaymentIntentSchema = z.object({
   items: z.array(CartLineSchema).min(1).max(50),
   couponCode: CouponCodeSchema.nullable().optional(),
   idempotencyKey: z.string().uuid(),
-})
+  tenderMode: TenderModeSchema.default('WALLET'),
+  walletAmountWon: z.number().int().positive().max(1000000000).nullable().optional(),
+}).refine(v => v.tenderMode !== 'SPLIT' || !!v.walletAmountWon, { message: 'Enter a MICA Money amount', path: ['walletAmountWon'] })
 
 export const PaymentIntentSchema = z.object({
   intent_id: z.string().uuid(),
@@ -35,6 +47,9 @@ export const PaymentIntentSchema = z.object({
   coupon_name: z.string().nullable(),
   coupon_code_masked: z.string().nullable(),
   expires_at: z.string(),
+  tender_mode: TenderModeSchema,
+  wallet_tender_won: z.number().int().nonnegative(),
+  cash_tender_won: z.number().int().nonnegative(),
 })
 export type PaymentIntent = z.infer<typeof PaymentIntentSchema>
 
@@ -51,7 +66,8 @@ export const CardScanResultSchema = z.object({
 export type CardScanResult = z.infer<typeof CardScanResultSchema>
 
 export const ConfirmPaymentSchema = z.object({
-  pin: z.string().min(4).max(12).regex(/^\d+$/),
+  pin: z.string().min(4).max(12).regex(/^\d+$/).nullable().optional(),
+  cashReceivedWon: z.number().int().nonnegative().max(1000000000).nullable().optional(),
 })
 
 export const PaymentDecisionSchema = z.object({
@@ -69,6 +85,11 @@ export const PaymentDecisionSchema = z.object({
   debt_after_won: z.number().int().nonnegative().nullable(),
   cogs_won: z.number().int().nonnegative().nullable(),
   created_at: z.string(),
+  tender_mode: TenderModeSchema,
+  wallet_tender_won: z.number().int().nonnegative(),
+  cash_tender_won: z.number().int().nonnegative(),
+  cash_received_won: z.number().int().nonnegative().nullable(),
+  change_given_won: z.number().int().nonnegative().nullable(),
 })
 
 export const PaymentReceiptSchema = z.object({
@@ -79,10 +100,21 @@ export const PaymentReceiptSchema = z.object({
   total_won: z.number().int().nonnegative(),
   coupon_name: z.string().nullable(),
   coupon_code_masked: z.string().nullable(),
-  balance_before_won: z.number().int(),
-  balance_after_won: z.number().int(),
-  debt_after_won: z.number().int().nonnegative(),
+  balance_before_won: z.number().int().nullable(),
+  balance_after_won: z.number().int().nullable(),
+  debt_after_won: z.number().int().nonnegative().nullable(),
   cogs_won: z.number().int().nonnegative(),
   created_at: z.string(),
+  tender_mode: TenderModeSchema,
+  wallet_tender_won: z.number().int().nonnegative(),
+  cash_tender_won: z.number().int().nonnegative(),
+  cash_received_won: z.number().int().nonnegative().nullable(),
+  change_given_won: z.number().int().nonnegative().nullable(),
 })
 export type PaymentReceipt = z.infer<typeof PaymentReceiptSchema>
+
+export const PaymentRecoverySchema = z.object({
+  state: z.enum(['completed', 'cancelled']), receipt: PaymentReceiptSchema.nullable(),
+  items: z.array(z.object({ name: z.string(), quantity: z.number().int().positive(), lineTotalWon: z.number().int().nonnegative() })),
+})
+export type PaymentRecovery = z.infer<typeof PaymentRecoverySchema>

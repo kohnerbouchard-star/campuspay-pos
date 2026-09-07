@@ -1,14 +1,14 @@
 import { apiFetch } from '@/lib/api/client'
-import type { CatalogProduct, CartLine, PaymentIntent, CardScanResult, PaymentReceipt } from '@/features/pos/domain'
+import type { CatalogProduct, CartLine, PaymentIntent, CardScanResult, PaymentReceipt, TenderMode, PaymentPolicy, PaymentRecovery } from '@/features/pos/domain'
 
 export function fetchCatalog() {
   return apiFetch<CatalogProduct[]>('/api/pos/catalog')
 }
 
-export function openPaymentIntent(items: CartLine[], couponCode: string | null = null) {
+export function openPaymentIntent(items: CartLine[], couponCode: string | null = null, tenderMode: TenderMode = 'WALLET', walletAmountWon: number | null = null, idempotencyKey = crypto.randomUUID()) {
   return apiFetch<PaymentIntent>('/api/pos/intents', {
     method: 'POST',
-    body: JSON.stringify({ items, couponCode, idempotencyKey: crypto.randomUUID() }),
+    body: JSON.stringify({ items, couponCode, tenderMode, walletAmountWon, idempotencyKey }),
   })
 }
 
@@ -18,8 +18,14 @@ export function submitCard(intentId: string, cardRead: string) {
   })
 }
 
-export function submitStudentPin(intentId: string, pin: string) {
+export function submitStudentPin(intentId: string, pin: string | null, cashReceivedWon: number | null = null) {
   return apiFetch<PaymentReceipt>(`/api/pos/intents/${intentId}/confirm`, {
-    method: 'POST', body: JSON.stringify({ pin }),
+    method: 'POST', body: JSON.stringify({ pin, cashReceivedWon }),
   })
 }
+
+export const fetchPaymentPolicy = () => apiFetch<PaymentPolicy>('/api/pos/payment-policy')
+export const savePaymentPolicy = (cashEnabled: boolean, eventName: string | null) => apiFetch<PaymentPolicy>('/api/pos/payment-policy', { method: 'POST', body: JSON.stringify({ cashEnabled, eventName }) })
+export const cancelPaymentIntent = (intentId: string) => apiFetch<{ cancelled: boolean }>(`/api/pos/intents/${intentId}/cancel`, { method: 'POST', body: '{}' })
+
+export const recoverPaymentIntent = (intentId: string) => apiFetch<PaymentRecovery>(`/api/pos/intents/${intentId}/recover`, { method: 'POST', body: '{}' })

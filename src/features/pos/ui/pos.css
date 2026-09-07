@@ -1,0 +1,31 @@
+.product-browser { min-width: 0; }
+.category-tabs,.quick-amounts,.segmented-control { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block: .75rem; }
+.category-tabs button,.quick-amounts button,.segmented-control button { min-height: 44px; padding: .5rem .85rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: inherit; }
+.category-tabs button[aria-pressed="true"],.segmented-control button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); font-weight: 650; }
+.product-price { font-variant-numeric: tabular-nums; font-weight: 700; }
+.payment-methods { min-width: 0; border: 0; padding: 0; margin: 1rem 0; }
+.payment-methods legend { font-weight: 650; }
+.payment-methods .segmented-control button { flex: 1; white-space: nowrap; }
+.payment-policy { margin-bottom: 1rem; padding: .8rem 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.payment-policy summary { cursor: pointer; font-weight: 650; }
+.payment-policy form { max-width: 34rem; }
+.payment-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-block: 1rem; }
+.payment-heading .payment-total { margin: 0; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: clamp(1.5rem, 6vw, 2.2rem); }
+.tender-summary { margin: 1rem 0; font-variant-numeric: tabular-nums; }
+.tender-summary > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-block: .45rem; }
+.tender-summary dt { min-width: 0; overflow-wrap: anywhere; }
+.tender-summary dd { margin: 0; white-space: nowrap; text-align: right; font-weight: 650; }
+.tender-summary .total-row { border-top: 1px solid var(--line); margin-top: .5rem; padding-top: .8rem; font-weight: 700; }
+.sale-receipt > strong { overflow-wrap: anywhere; }
+.student-summary > div { display: flex; justify-content: space-between; gap: 1rem; margin-block: .5rem; }
+.student-summary b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.reader-state { display: flex; align-items: center; gap: .6rem; padding: 1rem; margin-block: 1rem; border: 1px solid var(--line); border-radius: var(--radius); }
+.reader-dot { width: .65rem; height: .65rem; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+@media (max-width: 600px) { .payment-methods .segmented-control { gap: .3rem; } .payment-methods .segmented-control button { padding-inline: .5rem; } .payment-heading { flex-wrap: wrap; } }
+
+.coupon-entry .coupon-entry-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-2); }
+.coupon-entry .error-message { margin-bottom: 0; }
+.coupon-applied { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius); background: var(--accent-soft); }
+.coupon-applied > div { display: grid; gap: var(--space-1); min-width: 0; flex: 1; }
+.coupon-applied strong { overflow-wrap: anywhere; }
+.coupon-applied > button { flex-shrink: 0; }

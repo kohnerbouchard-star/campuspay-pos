@@ -1,0 +1,2424 @@
+{
+  "screenshots": [
+    {
+      "name": "staff-login",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/staff-login-1440.png",
+      "url": "http://127.0.0.1:3100/login",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 333,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-login",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/staff-login-1024.png",
+      "url": "http://127.0.0.1:3100/login",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 333,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-login",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/staff-login-768.png",
+      "url": "http://127.0.0.1:3100/login",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 207,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-login",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/staff-login-390.png",
+      "url": "http://127.0.0.1:3100/login",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 207,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-login-1440.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 376,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-login-1024.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 376,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-login-768.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 376,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-login-390.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 376,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-e202-help",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-e202-help-390.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 550,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-login-error-1440.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 730,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-login-error-1024.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 730,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-login-error-768.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 730,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-login-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-login-error-390.png",
+      "url": "http://127.0.0.1:3100/store/login",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 730,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "students",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/students-1440.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 628,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "students",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/students-1024.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 589,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "students",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/students-768.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 589,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "students",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/students-390.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 589,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-reader",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/enrollment-reader-1440.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1034,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-confirmation-required",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/enrollment-confirmation-required-1440.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1044,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-confirmation-required",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/enrollment-confirmation-required-1024.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1005,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-confirmation-required",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/enrollment-confirmation-required-768.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1005,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-confirmation-required",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/enrollment-confirmation-required-390.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1005,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-ready",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/enrollment-ready-1440.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1044,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-ready",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/enrollment-ready-1024.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1005,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-ready",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/enrollment-ready-768.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1005,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-ready",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/enrollment-ready-390.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1005,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-success",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/enrollment-success-1440.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 680,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-success",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/enrollment-success-1024.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 641,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-success",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/enrollment-success-768.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 641,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "enrollment-success",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/enrollment-success-390.png",
+      "url": "http://127.0.0.1:3100/students",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 823,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/security-1440.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 815,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/security-1024.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 776,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/security-768.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 776,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/security-390.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 776,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-pin-reset",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/security-pin-reset-1440.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 944,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-pin-reset",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/security-pin-reset-1024.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 905,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-pin-reset",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/security-pin-reset-768.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 905,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-pin-reset",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/security-pin-reset-390.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 905,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-card-replacement",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/security-card-replacement-1440.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 971,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-card-replacement",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/security-card-replacement-1024.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 932,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-card-replacement",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/security-card-replacement-768.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 932,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "security-card-replacement",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/security-card-replacement-390.png",
+      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 932,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-empty-orders",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-empty-orders-1440.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 339,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-empty-orders",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-empty-orders-1024.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 339,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-empty-orders",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-empty-orders-768.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 339,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-empty-orders",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-empty-orders-390.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 339,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-loading",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-store-loading-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 345,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-loading",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-store-loading-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 345,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-loading",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-store-loading-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 345,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-loading",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-store-loading-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 345,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-service-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-store-service-error-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 564,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-service-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-store-service-error-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 564,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-service-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-store-service-error-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 564,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store-service-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-store-service-error-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 564,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-store-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 723,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-store-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 723,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-store-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 723,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-store",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-store-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 723,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-cart",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-cart-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1183,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-cart",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-cart-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1183,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-cart",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-cart-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1183,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-cart",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-cart-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1183,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-review",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-order-review-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1014,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-review",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-order-review-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1014,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-review",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-order-review-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1014,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-review",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-order-review-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1014,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-receipt",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-order-receipt-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 923,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-receipt",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-order-receipt-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 923,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-receipt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-order-receipt-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 923,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-order-receipt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-order-receipt-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 923,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-orders",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-orders-1440.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 645,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-orders",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-orders-1024.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 645,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-orders",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-orders-768.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 645,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-orders",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-orders-390.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 645,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-account",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-account-1440.png",
+      "url": "http://127.0.0.1:3100/store/account",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 644,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-account",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-account-1024.png",
+      "url": "http://127.0.0.1:3100/store/account",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 644,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-account",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-account-768.png",
+      "url": "http://127.0.0.1:3100/store/account",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 644,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-account",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-account-390.png",
+      "url": "http://127.0.0.1:3100/store/account",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 644,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/staff-orders-1440.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 996,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/staff-orders-1024.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 965,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/staff-orders-768.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 965,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/staff-orders-390.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 956,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders-filtered",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/staff-orders-filtered-1440.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 872,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders-picking",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/staff-orders-picking-1440.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 992,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders-picking",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/staff-orders-picking-1024.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 961,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders-picking",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/staff-orders-picking-768.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 961,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-orders-picking",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/staff-orders-picking-390.png",
+      "url": "http://127.0.0.1:3100/orders",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 957,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-delivered-timeline",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-delivered-timeline-1440.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 662,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-delivered-timeline",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-delivered-timeline-1024.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 662,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-delivered-timeline",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-delivered-timeline-768.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 662,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-delivered-timeline",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-delivered-timeline-390.png",
+      "url": "http://127.0.0.1:3100/store/orders",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 662,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-1440.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 789,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-1024.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 742,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-768.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 742,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-390.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 742,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-receipt",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-receipt-1440.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 716,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-receipt",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-receipt-1024.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 669,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-receipt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-receipt-768.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 669,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-receipt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-receipt-390.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 669,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-lots",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-lots-1440.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 905,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-lots",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-lots-1024.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 858,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-lots",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-lots-768.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 858,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-lots",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-lots-390.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 858,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-product",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-product-1440.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 461,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-product",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-product-1024.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 414,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-product",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-product-768.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 414,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-product",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-product-390.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 414,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-price",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-price-1440.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 537,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-price",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-price-1024.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 490,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-price",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-price-768.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 490,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-price",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-price-390.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 490,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-adjustment",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-adjustment-1440.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 750,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-adjustment",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-adjustment-1024.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 703,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-adjustment",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-adjustment-768.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 703,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-adjustment",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-adjustment-390.png",
+      "url": "http://127.0.0.1:3100/inventory",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 703,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/accounting-1440.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 916,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/accounting-1024.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 879,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/accounting-768.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 879,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/accounting-390.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 879,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-wallet-history",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/accounting-wallet-history-1440.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1645,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-wallet-history",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/accounting-wallet-history-1024.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1608,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-wallet-history",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/accounting-wallet-history-768.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1608,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-wallet-history",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/accounting-wallet-history-390.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1608,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-sales",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/accounting-sales-1440.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1626,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-sales",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/accounting-sales-1024.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1589,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-sales",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/accounting-sales-768.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1589,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "accounting-sales",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/accounting-sales-390.png",
+      "url": "http://127.0.0.1:3100/accounting",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1589,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "coupons",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/coupons-1440.png",
+      "url": "http://127.0.0.1:3100/coupons",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1466,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "coupons",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/coupons-1024.png",
+      "url": "http://127.0.0.1:3100/coupons",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1419,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "coupons",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/coupons-768.png",
+      "url": "http://127.0.0.1:3100/coupons",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1419,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "coupons",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/coupons-390.png",
+      "url": "http://127.0.0.1:3100/coupons",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1419,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "reports",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/reports-1440.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1877,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "reports",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/reports-1024.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1840,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "reports",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/reports-768.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1840,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "reports-register",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/reports-register-390.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "capture": "viewport",
+      "firstReceiptInViewport": true
+    },
+    {
+      "name": "reports",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/reports-390.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1840,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "payment-settings",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/payment-settings-1440.png",
+      "url": "http://127.0.0.1:3100/settings/payments",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 530,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "payment-settings",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/payment-settings-1024.png",
+      "url": "http://127.0.0.1:3100/settings/payments",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 491,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "payment-settings",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/payment-settings-768.png",
+      "url": "http://127.0.0.1:3100/settings/payments",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 491,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "payment-settings",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/payment-settings-390.png",
+      "url": "http://127.0.0.1:3100/settings/payments",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 491,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "cashier-wallet-only-empty-sale",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/cashier-wallet-only-empty-sale-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 617,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "cashier-wallet-only-empty-sale",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/cashier-wallet-only-empty-sale-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 586,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "cashier-wallet-only-empty-sale",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/cashier-wallet-only-empty-sale-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 586,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "cashier-wallet-only-empty-sale",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/cashier-wallet-only-empty-sale-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 586,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 766,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 727,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 727,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 727,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-cart",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-cash-cart-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 779,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-cart",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-cash-cart-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 740,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-cart",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-cash-cart-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 740,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-cart",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-cash-cart-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 740,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-review",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-cash-review-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 983,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-review",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-cash-review-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 944,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-review",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-cash-review-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 944,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-review",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-cash-review-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 944,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-receipt",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-cash-receipt-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 949,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-receipt",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-cash-receipt-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 910,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-receipt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-cash-receipt-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 910,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-cash-receipt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-cash-receipt-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 910,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cart",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-cart-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 834,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cart",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-cart-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 795,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cart",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-cart-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 795,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cart",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-cart-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 795,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-review",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-review-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1184,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-review",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-review-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1145,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-review",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-review-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1145,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-review",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-review-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1145,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-receipt",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-receipt-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 990,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-receipt",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-receipt-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 951,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-receipt",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-receipt-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 951,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-receipt",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-receipt-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 951,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    }
+  ],
+  "findings": [],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "expectedConsoleErrors": [
+    {
+      "url": "http://127.0.0.1:3100/store/login",
+      "resource": "http://127.0.0.1:3100/api/store/login",
+      "message": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "url": "http://127.0.0.1:3100/store",
+      "resource": "http://127.0.0.1:3100/api/store/catalog",
+      "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ]
+}

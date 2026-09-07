@@ -1,6 +1,9 @@
 # API surface
 
-All endpoints are same-origin JSON endpoints. Every mutation requires an `Idempotency-Key` header or an idempotency UUID in the body.
+Endpoints accept JSON and enforce the appropriate staff or customer session.
+Mutations validate their origin against the configured application surface.
+Financial creation requests use each endpoint's `idempotencyKey` UUID in the body;
+authentication and protected credential actions use their own session/token rules.
 
 ## Authentication
 
@@ -46,15 +49,26 @@ All endpoints are same-origin JSON endpoints. Every mutation requires an `Idempo
 
 ## Customer store
 
-- `GET /api/store/catalog` — public active catalog and shared stock status.
-- `GET /api/store/locations` — active East/West delivery directory.
+- `GET /api/store/catalog` — customer-authenticated active catalog, prices, and shared stock status.
+- `GET /api/store/locations` — customer-authenticated East/West delivery directory.
 - `POST /api/store/login` — printed card number + student PIN; creates a customer-only session.
 - `GET /api/store/session` — sanitized customer identity and current wallet balance.
 - `POST /api/store/logout` — revokes the customer session.
-- `GET /api/store/orders` — signed-in student's online order history.
-- `POST /api/store/orders` — atomic online checkout with room delivery.
+- `POST /api/store/quote` — reviews `items` and optional `couponCode`; returns current subtotal, discount, total, and projected wallet balance without settling payment.
+- `GET /api/store/orders` — the signed-in student's order items, room delivery details, and actual append-only status-event timeline.
+- `POST /api/store/orders` — atomic wallet-only checkout with `items`, optional `couponCode`, `deliveryLocationId`, optional `deliveryNote`, and required `idempotencyKey`. The optional nonnegative integer `expectedTotalWon` rejects a changed reviewed total with `CONFLICT`; the storefront always supplies it.
+
+Only login is available without a customer session; logout can safely clear an
+absent session. A staff session does not authorize customer catalog, directory,
+quote, account, or order access. There is no self-registration API.
+
+Retry an uncertain order with the same UUID and unchanged proposal. A completed
+request returns its original receipt for that student. The storefront retains
+the pending proposal/key in student-scoped tab storage across reauthentication;
+it does not store PINs, raw card numbers, or session tokens. See
+[ONLINE_STORE.md](ONLINE_STORE.md) for browser-recovery limits and customer pages.
 
 ## Online fulfillment
 
-- `GET /api/orders` — staff fulfillment queue (`orders.fulfill`).
+- `GET /api/orders` — staff fulfillment queue (`orders.fulfill`), including item details and actual status-event timestamps.
 - `POST /api/orders/:orderId/status` — advances the controlled fulfillment state machine.

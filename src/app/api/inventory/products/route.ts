@@ -2,11 +2,11 @@ import { authorizeRequest } from '@/features/auth/server/session'
 import { CreateProductSchema } from '@/features/inventory/domain'
 import { createProduct } from '@/features/inventory/server'
 import { failure, ok, parseJson } from '@/lib/api/response'
-import { getCatalog } from '@/features/pos/server'
+import { inventoryProducts } from '@/features/inventory/server'
 
 export const dynamic = 'force-dynamic'
 export async function GET() {
-  try { const session = await authorizeRequest('inventory.read'); return ok(await getCatalog(session)) }
+  try { const session = await authorizeRequest('inventory.read'); return ok(await inventoryProducts(session)) }
   catch (error) { return failure(error) }
 }
 export async function POST(request: Request) {

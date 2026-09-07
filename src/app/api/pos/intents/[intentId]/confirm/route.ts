@@ -9,6 +9,6 @@ export async function POST(request: Request, context: { params: Promise<{ intent
     const session = await authorizeRequest('pos.checkout')
     const { intentId } = await context.params
     const input = await parseJson(request, ConfirmPaymentSchema)
-    return ok(await confirmPayment(session, intentId, input.pin))
+    return ok(await confirmPayment(session, intentId, input.pin ?? null, input.cashReceivedWon ?? null))
   } catch (error) { return failure(error) }
 }

@@ -3,6 +3,9 @@ import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
   CatalogSchema,
+  PaymentPolicySchema,
+  PaymentRecoverySchema,
+  type TenderMode,
   PaymentIntentSchema,
   CardScanResultSchema,
   PaymentReceiptSchema,
@@ -24,12 +27,16 @@ export function createPaymentIntent(
   items: CartLine[],
   idempotencyKey: string,
   couponCode: string | null,
+  tenderMode: TenderMode = 'WALLET',
+  walletAmountWon: number | null = null,
 ) {
   return callApiRpc(
     'create_payment_intent',
     {
       p_session_id: session.session_id,
       p_items: items,
+      p_tender_mode: tenderMode,
+      p_wallet_amount_won: walletAmountWon,
       p_idempotency_key: idempotencyKey,
       p_coupon_code_fingerprint: couponCode ? fingerprintCouponCode(couponCode) : null,
     },
@@ -49,13 +56,14 @@ export function scanPaymentCard(session: SessionContext, intentId: string, rawCa
   )
 }
 
-export async function confirmPayment(session: SessionContext, intentId: string, pin: string) {
+export async function confirmPayment(session: SessionContext, intentId: string, pin: string | null, cashReceivedWon: number | null = null) {
   const decision = await callApiRpc(
     'confirm_payment',
     {
       p_session_id: session.session_id,
       p_intent_id: intentId,
-      p_student_pin_proof: studentPinProof(pin),
+      p_student_pin_proof: pin ? studentPinProof(pin) : null,
+      p_cash_received_won: cashReceivedWon,
     },
     z.array(PaymentDecisionSchema).length(1).transform(([row]) => row),
   )
@@ -70,4 +78,19 @@ export async function confirmPayment(session: SessionContext, intentId: string, 
     throw new ApiError(409, 'CONFLICT', 'Payment was not approved')
   }
   return PaymentReceiptSchema.parse(decision)
+}
+
+export function getPaymentPolicy(session: SessionContext) {
+  return callApiRpc('terminal_payment_policy', { p_session_id: session.session_id }, z.array(PaymentPolicySchema).length(1).transform(([row]) => row))
+}
+export function updatePaymentPolicy(session: SessionContext, cashEnabled: boolean, eventName: string | null) {
+  return callApiRpc('set_terminal_payment_policy', { p_session_id: session.session_id, p_cash_enabled: cashEnabled, p_event_name: eventName }, z.array(PaymentPolicySchema).length(1).transform(([row]) => row))
+}
+export async function cancelPayment(session: SessionContext, intentId: string) {
+  await callApiRpc('cancel_payment_intent', { p_session_id: session.session_id, p_intent_id: intentId }, z.unknown())
+  return { cancelled: true }
+}
+
+export function recoverPayment(session: SessionContext, intentId: string) {
+  return callApiRpc('recover_payment_intent', { p_session_id: session.session_id, p_intent_id: intentId }, z.array(PaymentRecoverySchema).length(1).transform(([row]) => row))
 }

@@ -34,7 +34,7 @@ export async function loginCustomerSession(request: Request, cardNumber: string,
     p_ip_fingerprint: fingerprintIp(request),
   }, CustomerSessionRows)
   const context = rows[0]
-  if (!context) throw new ApiError(401, 'UNAUTHENTICATED', 'Card number or PIN is incorrect, or sign-in is temporarily locked')
+  if (!context) throw new ApiError(401, 'UNAUTHENTICATED', 'We couldn’t verify those MICA Money credentials. Check your card information and PIN and try again. Sign-in may be temporarily locked; wait a few minutes or visit E202 for help.')
   await setCustomerSessionCookie(rawToken)
   return context
 }

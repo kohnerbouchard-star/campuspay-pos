@@ -10,10 +10,10 @@ const allSql = files.map((name) => fs.readFileSync(path.join(schemaDirectory, na
 const checks = []
 const record = (name, passed, detail = '') => checks.push({ name, passed, detail })
 
-record('Twelve ordered schema modules are present', files.length === 12, files.join(', '))
-record('Runtime hardening precedes the one-time bootstrap module', files.indexOf('009_runtime_hardening.sql') < files.indexOf('010_demo_bootstrap.sql') && files.at(-1) === '012_online_store.sql', '010_demo_bootstrap.sql before 012_online_store.sql', files.at(-1) ?? '')
+record('Ordered schema modules are present', files.length >= 16 && files.slice(0, 16).every((file, i) => file.startsWith(String(i + 1).padStart(3, '0') + '_')), files.join(', '))
+record('Runtime hardening precedes the one-time bootstrap module', files.indexOf('009_runtime_hardening.sql') < files.indexOf('010_demo_bootstrap.sql') && files.includes('012_online_store.sql'), '010_demo_bootstrap.sql before 012_online_store.sql', files.at(-1) ?? '')
 record('Dollar-quote delimiters are paired', (allSql.match(/\$\$/g) ?? []).length % 2 === 0)
-record('No Supabase Auth dependency remains', !/auth\.uid\(\)|auth\.users|\banon\b|\bauthenticated\b/i.test(allSql))
+record('No Supabase Auth dependency remains', !/auth\.uid\(\)|auth\.users|\b(?:to|from|role)\s+(?:anon|authenticated)\b/i.test(allSql))
 record('Staff PINs use an HMAC proof plus slow database hash', /p_pin_proof[\s\S]*extensions\.crypt/i.test(allSql))
 record('Cashier session timeout remains twenty seconds', /cashier[^;]*interval '20 seconds'/i.test(allSql))
 record('Wallet floor remains negative fifteen thousand won', /negative_wallet_limit_won[\s\S]*-15000/i.test(allSql))
@@ -27,6 +27,10 @@ record('Idempotency controls remain represented', (allSql.match(/idempotency_key
 record('Online store uses isolated customer sessions', /create table private\.customer_sessions[\s\S]*campuspay_customer_session|create table private\.customer_sessions/i.test(allSql))
 record('Online orders share wallet and inventory transaction locks', /create_online_order[\s\S]*private\.wallets[\s\S]*for update[\s\S]*private\.inventory_lots/i.test(allSql))
 record('Delivery directory contains East and West buildings', /East Building[\s\S]*West Building|West Building[\s\S]*East Building/i.test(allSql))
+
+record('Sale tenders reconcile at commit', /constraint trigger sale_tender_reconciliation[\s\S]*deferrable initially deferred/i.test(allSql))
+record('Enrollment is a narrow authorized operation', /api\.enroll_student[\s\S]*students.manage/i.test(allSql))
+record('Store catalog requires customer authorization', /api\.store_catalog\(p_customer_session_id uuid\)[\s\S]*assert_customer_session/i.test(allSql))
 
 const failures = checks.filter((check) => !check.passed)
 for (const check of checks) {

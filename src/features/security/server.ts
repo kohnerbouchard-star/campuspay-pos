@@ -9,7 +9,11 @@ import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { staffPinProof } from '@/lib/crypto/staff-pin'
 import { studentPinProof } from '@/lib/crypto/student-pin'
 import { callApiRpc } from '@/lib/db/rpc'
-import { StepUpResultSchema, ResetResultSchema } from '@/features/security/domain'
+import { StepUpResultSchema, ResetResultSchema, SecurityStudentSchema } from '@/features/security/domain'
+
+export function searchSecurityStudents(session: SessionContext, query: string) {
+  return callApiRpc('search_security_students', { p_session_id: session.session_id, p_query: query }, z.array(SecurityStudentSchema))
+}
 
 function fingerprintElevation(token: string) {
   return hmacHex(getServerEnv().SESSION_HMAC_SECRET, `elevation:${token}`)

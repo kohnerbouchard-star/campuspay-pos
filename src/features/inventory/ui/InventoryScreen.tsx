@@ -1,7 +1,6 @@
 'use client'
-
 import { useEffect, useState } from 'react'
-import type { CatalogProduct } from '@/features/pos/domain'
+import type { InventoryProduct } from '@/features/inventory/domain'
 import type { InventoryLot } from '@/features/inventory/domain'
 import { apiFetch } from '@/lib/api/client'
 import { fetchLots } from '@/features/inventory/client'
@@ -9,40 +8,32 @@ import { ProductForm } from '@/features/inventory/ui/ProductForm'
 import { PriceChangeForm } from '@/features/inventory/ui/PriceChangeForm'
 import { ReceiptForm } from '@/features/inventory/ui/ReceiptForm'
 import { LotTable } from '@/features/inventory/ui/LotTable'
-
+import { StockAdjustmentForm } from '@/features/inventory/ui/StockAdjustmentForm'
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback'
+import { Money } from '@/components/ui/Money'
+const views = { products: 'Products', receive: 'Receive stock', lots: 'Inventory lots', create: 'Add product', price: 'Change price', adjust: 'Remove stock' } as const
 export function InventoryScreen() {
-  const [products, setProducts] = useState<CatalogProduct[]>([])
+  const [products, setProducts] = useState<InventoryProduct[]>([])
   const [lots, setLots] = useState<InventoryLot[]>([])
   const [error, setError] = useState<string | null>(null)
-
-  async function load() {
-    try {
-      const [p, l] = await Promise.all([apiFetch<CatalogProduct[]>('/api/inventory/products'), fetchLots()])
-      setProducts(p); setLots(l); setError(null)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Inventory could not be loaded') }
-  }
-
+  const [loading, setLoading] = useState(true)
+  const [loaded, setLoaded] = useState(false)
+  const [revision, setRevision] = useState(0)
+  const [view, setView] = useState<keyof typeof views>('products')
+  const [query, setQuery] = useState('')
   useEffect(() => {
     let active = true
-    void Promise.all([apiFetch<CatalogProduct[]>('/api/inventory/products'), fetchLots()]).then(([p, l]) => {
-      if (active) { setProducts(p); setLots(l); setError(null) }
-    }).catch((e: unknown) => {
-      if (active) setError(e instanceof Error ? e.message : 'Inventory could not be loaded')
-    })
+    void Promise.all([apiFetch<InventoryProduct[]>('/api/inventory/products'), fetchLots()]).then(([p, l]) => { if (active) { setProducts(p); setLots(l); setError(null); setLoaded(true) } }).catch((e: unknown) => { if (active) setError(e instanceof Error ? e.message : 'Inventory could not be loaded.') }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
-
-  return <main className="workspace">
-    <header className="workspace-header">
-      <div><p className="eyebrow">Inventory administration</p><h1>Products, cost and stock</h1></div>
-      <span className="status-pill">FIFO default</span>
-    </header>
-    {error && <p className="error-message">{error}</p>}
-    <div className="dashboard-grid">
-      <ProductForm onSaved={() => void load()} />
-      <PriceChangeForm products={products} onSaved={() => void load()} />
-      <ReceiptForm products={products} onSaved={() => void load()} />
-      <LotTable lots={lots} />
-    </div>
+  }, [revision])
+  const refresh = () => { setLoading(true); setRevision(value => value + 1) }
+  const filtered = products.filter(product => `${product.name} ${product.sku} ${product.category}`.toLowerCase().includes(query.toLowerCase()))
+  return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Stock operations</p><h1>Inventory</h1><p>One stock pool for the register and online store.</p></div><button className="primary-action" onClick={() => setView('receive')}>Receive stock</button></header>
+    <div className="stat-grid"><div><span>Products</span><strong>{loading ? '—' : products.length}</strong></div><div><span>Out of stock</span><strong>{loading ? '—' : products.filter(row => row.stock_on_hand === 0).length}</strong></div><div><span>Low stock</span><strong>{loading ? '—' : products.filter(row => row.low_stock && row.stock_on_hand > 0).length}</strong></div><div><span>Stock value</span><strong>{loading ? '—' : <Money amount={lots.reduce((sum, lot) => sum + lot.inventory_value_won, 0)} />}</strong></div></div>
+    <div className="segmented" aria-label="Inventory task">{Object.entries(views).map(([key, label]) => <button key={key} aria-pressed={view === key} className={view === key ? 'active' : ''} onClick={() => setView(key as keyof typeof views)}>{label}</button>)}</div>
+    {error && <ErrorState message={error} onRetry={refresh} />}{loading && loaded && <p className="notice" role="status">Refreshing inventory…</p>}{loading && !loaded ? <LoadingState label="Loading inventory…" /> : <>
+      {view === 'products' && <section className="panel"><div className="panel-heading"><h2>Product register</h2><label className="field"><span>Search products, SKU or category</span><input type="search" className="search-input" value={query} onChange={e => setQuery(e.target.value)} /></label></div>{filtered.length === 0 ? <EmptyState title="No products found">Add a product or try a different search.</EmptyState> : <div className="table-scroll" role="region" tabIndex={0} aria-label="Product register"><table><thead><tr><th>Product</th><th>Category</th><th className="numeric">Stock</th><th className="numeric">Reorder at</th><th className="numeric">Selling price</th><th>Status</th></tr></thead><tbody>{filtered.map(row => <tr key={row.id}><td><strong>{row.name}</strong><small>{row.sku}</small></td><td>{row.category}</td><td className="numeric">{row.stock_on_hand}</td><td className="numeric">{row.reorder_level}</td><td className="numeric"><Money amount={row.selling_price_won} /></td><td><span className={`status-pill ${row.stock_on_hand === 0 ? 'stock-empty' : row.low_stock ? 'stock-low' : ''}`}>{row.stock_on_hand === 0 ? 'Out of stock' : row.low_stock ? 'Reorder soon' : 'In stock'}</span></td></tr>)}</tbody></table></div>}</section>}
+      {view === 'lots' && <LotTable lots={lots} />}{view === 'create' && <ProductForm onSaved={refresh} />}{view === 'price' && <PriceChangeForm products={products} onSaved={refresh} />}{view === 'receive' && <ReceiptForm products={products} onSaved={refresh} />}{view === 'adjust' && <StockAdjustmentForm products={products} lots={lots} onSaved={refresh} />}
+    </>}
   </main>
 }

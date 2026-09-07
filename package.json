@@ -25,7 +25,9 @@
     "db:health": "node --env-file-if-exists=.env.local scripts/database-health.mjs",
     "db:bootstrap-demo": "node --env-file-if-exists=.env.local scripts/bootstrap-demo.mjs",
     "test:integration": "node --env-file-if-exists=.env.local scripts/integration-test.mjs",
-    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs"
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
+    "test:integration:isolated": "node scripts/test-isolated.mjs",
+    "test:visual": "CI_BROWSER=1 node scripts/test-isolated.mjs"
   },
   "dependencies": {
     "next": "16.3.4",

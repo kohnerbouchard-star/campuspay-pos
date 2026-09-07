@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { customerLoginPath } from '@/features/store/navigation'
 
 function configuredHost(value: string | undefined): string | null {
   if (!value) return null
@@ -19,16 +20,36 @@ export function proxy(request: NextRequest) {
   const storeHost = configuredHost(process.env.STORE_ORIGIN)
   const staffHost = configuredHost(process.env.STAFF_ORIGIN)
 
-  if (storeHost && host === storeHost && !pathname.startsWith('/api/')) {
-    if (['/pos', '/inventory', '/accounting', '/coupons', '/security'].some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
-      return secureHeaders(NextResponse.redirect(new URL('/', request.url)))
+  const dedicatedStore = Boolean(storeHost && storeHost !== staffHost && host === storeHost)
+  const dedicatedStaff = Boolean(staffHost && staffHost !== storeHost && host === staffHost)
+  const customerPath = dedicatedStore
+    ? (({ '/': '/store', '/orders': '/store/orders', '/account': '/store/account' } as Record<string, string>)[pathname] ?? pathname)
+    : pathname
+
+  if (dedicatedStore) {
+    if (pathname.startsWith('/api/') && !pathname.startsWith('/api/store/')) {
+      return secureHeaders(NextResponse.json({ ok: false, error: { code: 'FORBIDDEN', message: 'Staff access is available on the staff site.' } }, { status: 403 }))
     }
-    if (pathname === '/') return secureHeaders(NextResponse.rewrite(new URL('/store', request.url)))
-    if (pathname === '/orders') return secureHeaders(NextResponse.rewrite(new URL('/store/orders', request.url)))
+    if (['/pos', '/inventory', '/accounting', '/coupons', '/security', '/students', '/reports', '/settings'].some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+      return secureHeaders(NextResponse.redirect(new URL('/store', request.url)))
+    }
+    if (pathname === '/login') return secureHeaders(NextResponse.redirect(new URL('/store/login', request.url)))
   }
 
-  if (staffHost && host === staffHost && pathname.startsWith('/store')) {
+  if (dedicatedStaff && pathname.startsWith('/api/store/')) {
+    return secureHeaders(NextResponse.json({ ok: false, error: { code: 'FORBIDDEN', message: 'MICA Money is available on the student store site.' } }, { status: 403 }))
+  }
+  if (dedicatedStaff && (pathname === '/store' || pathname.startsWith('/store/'))) {
     return secureHeaders(NextResponse.redirect(new URL('/', request.url)))
+  }
+
+  if ((customerPath === '/store' || customerPath.startsWith('/store/')) && customerPath !== '/store/login'
+    && !request.cookies.get('campuspay_customer_session')?.value) {
+    return secureHeaders(NextResponse.redirect(new URL(customerLoginPath(customerPath), request.url)))
+  }
+
+  if (dedicatedStore && customerPath !== pathname) {
+    return secureHeaders(NextResponse.rewrite(new URL(customerPath, request.url)))
   }
 
   return secureHeaders(NextResponse.next({ request }))

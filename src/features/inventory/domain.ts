@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import { CatalogProductSchema } from '@/features/pos/domain'
+
+export const InventoryProductSchema = CatalogProductSchema.extend({ reorder_level: z.number().int(), low_stock: z.boolean() })
+export type InventoryProduct = z.infer<typeof InventoryProductSchema>
 
 export const CostMethodSchema = z.enum(['FIFO', 'LIFO'])
 export type CostMethod = z.infer<typeof CostMethodSchema>

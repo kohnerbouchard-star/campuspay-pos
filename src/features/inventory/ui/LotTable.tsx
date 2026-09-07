@@ -1,4 +1,6 @@
 import type { InventoryLot } from '@/features/inventory/domain'
-import { formatWon } from '@/lib/format/currency'
-
-export function LotTable({lots}:{lots:InventoryLot[]}){return <section className="panel table-panel"><div className="panel-heading"><div><p className="eyebrow">Cost layers</p><h2>Inventory lots</h2></div></div><div className="table-scroll"><table><thead><tr><th>Product</th><th>Receipt</th><th>Remaining</th><th>Unit cost</th><th>Value</th><th>Expires</th></tr></thead><tbody>{lots.map(l=><tr key={l.lot_id}><td>{l.product_name}</td><td>{l.receipt_number}</td><td>{l.quantity_remaining}/{l.quantity_received}</td><td>{formatWon(l.landed_unit_cost_won)}</td><td>{formatWon(l.inventory_value_won)}</td><td>{l.expiration_date??'—'}</td></tr>)}</tbody></table></div></section>}
+import { Money } from '@/components/ui/Money'
+import { EmptyState } from '@/components/ui/Feedback'
+export function LotTable({ lots }: { lots: InventoryLot[] }) {
+  return <section className="panel table-panel"><div className="panel-heading"><div><p className="eyebrow">Receipts & costs</p><h2>Inventory lots</h2></div></div>{lots.length === 0 ? <EmptyState title="No inventory lots">Receive purchased stock to create the first lot.</EmptyState> : <div className="table-scroll" role="region" tabIndex={0} aria-label="Inventory lots"><table><thead><tr><th>Product</th><th>Receipt</th><th className="numeric">Remaining / received</th><th className="numeric">Unit cost</th><th className="numeric">Value</th><th>Expiration</th></tr></thead><tbody>{lots.map(lot => <tr key={lot.lot_id}><td>{lot.product_name}</td><td>{lot.receipt_number}</td><td className="numeric">{lot.quantity_remaining} / {lot.quantity_received}</td><td className="numeric"><Money amount={lot.landed_unit_cost_won} /></td><td className="numeric"><Money amount={lot.inventory_value_won} /></td><td>{lot.expiration_date ?? 'No expiration recorded'}</td></tr>)}</tbody></table></div>}</section>
+}

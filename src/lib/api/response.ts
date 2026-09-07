@@ -26,7 +26,10 @@ export function failure(error: unknown) {
 export async function parseJson<T>(request: Request, parser: { parse(value: unknown): T }): Promise<T> {
   const origin = request.headers.get('origin')
   const requestOrigin = new URL(request.url).origin
-  const allowedOrigins = new Set([requestOrigin, process.env.APP_ORIGIN, process.env.STAFF_ORIGIN, process.env.STORE_ORIGIN].filter(Boolean))
+  const surfaceOrigin = new URL(request.url).pathname.startsWith('/api/store/') ? process.env.STORE_ORIGIN : process.env.STAFF_ORIGIN
+  const allowedOrigins = new Set([requestOrigin, surfaceOrigin || process.env.APP_ORIGIN].filter(Boolean))
+  // A sibling student/staff origin is still cross-origin. Do not allow a store
+  // page to submit mutations using an ambient staff cookie on the staff host.
   if ((origin && !allowedOrigins.has(origin)) || request.headers.get('sec-fetch-site') === 'cross-site') {
     throw new ApiError(403, 'FORBIDDEN', 'Cross-origin requests are not accepted')
   }
