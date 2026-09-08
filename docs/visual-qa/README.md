@@ -1,6 +1,6 @@
 # Visual QA evidence
 
-172 captures cover 45 interface states at 1440, 1024, 768, and 390px, plus a phone viewport check of the transaction register. All data shown is synthetic localhost test data. The browser completed enrollment, credential reset, student ordering, picking through delivery, wallet history, cash/split payments, and keyboard focus checks.
+212 captures cover 56 interface states at 1440, 1024, 768, and 390px, plus a phone viewport check of the transaction register. All data shown is synthetic localhost test data. The browser completed enrollment, credential reset, student ordering, picking through delivery, wallet history, cash/split payments, and keyboard focus checks.
 
 No unexpected browser errors, document overflow, missing visible field labels, or unnamed buttons were found in the final run. Deliberate 401/503 responses tested login errors and service recovery. Main text/action colors pass the measured AA contrast thresholds.
 
@@ -41,3 +41,46 @@ Wide financial tables scroll horizontally on phones. Long dialogs scroll within 
 | Payment settings · 390px | [Open](payment-settings-390.png) |
 
 Visual review corrected table containment on phones, report total typography and date controls, mobile navigation height, student name/ID separation, POS coupon controls, enrollment HTML validation, and dialog Tab/Shift+Tab containment.
+
+## September 8 remediation evidence
+
+The current run includes the five-minute register warning and its actual
+**Stay signed in**, pointer, keyboard, and touch handlers using a controlled
+browser clock. It also verifies real card-first Split (no pre-scan contribution),
+server capacity, a maximum contribution, manual remainder, cash/PIN review, and
+same-intent receipt recovery after deliberately losing a successful response.
+The amber unknown-result warning receives focus and its recovery action is
+visible within the phone dialog viewport.
+
+A real 15-second event deadline removes Cash/Split and resets the new cart to
+MICA Money. A deliberately absent required RPC shows **Database update required**
+with retry; restoring the capability makes retry succeed. The separate
+[actual old-schema result](old-schema-results.json) verifies an application
+connected to a database containing only the four pre-refresh migrations.
+
+[Development verification](dev-browser-results.json) confirms staff/student
+sign-in pages render, `icon.svg` loads, and the legacy `/favicon.ico` probe returns
+200 through the icon redirect. No browser errors or error overlay appeared;
+the normal React DevTools recommendation is allowed. The connected browser was
+unavailable in this session, so the existing isolated Chromium harness was used.
+
+The new states were captured at all four requested widths and representative
+images were inspected directly, including native dialog scrolling, warning
+visibility, text wrapping, local event timestamps, split money values, the
+required-room hint, the estimated-limit warning, login, enrollment, and settings.
+Real reader, E202, cash/change, and school workflow acceptance remain human tasks.
+
+| Remediation state | Selected evidence |
+| --- | --- |
+| Explicit timeout warning · 390px | [Open](pos-timeout-warning-390.png) |
+| Split card step · 1024px | [Open](pos-split-card-1024.png) |
+| Split wallet capacity · 1440px | [Open](pos-split-capacity-1440.png) |
+| Maximum contribution · 390px | [Open](pos-split-maximum-390.png) |
+| Manual cash remainder · 768px | [Open](pos-split-cash-remainder-768.png) |
+| Cash/PIN review · 390px | [Open](pos-split-review-390.png) |
+| Unknown result and recovery · 390px | [Open](pos-payment-result-unknown-390.png) |
+| Event active · 1440px | [Open](pos-event-active-1440.png) |
+| Event expired · 390px | [Open](pos-event-expired-390.png) |
+| Database update required · 768px | [Open](pos-database-update-required-768.png) |
+| Checkout estimate and room hint · 390px | [Open](student-checkout-limit-warning-390.png) |
+| Development login and icon metadata · 1440px | [Open](development-login-icon-1440.png) |

@@ -10,3 +10,7 @@ export function previewTender(totalWon: number, mode: TenderMode, walletInput: s
   const validCash = mode === 'WALLET' || (cashReceivedWon !== null && cashDueWon !== null && cashReceivedWon >= cashDueWon)
   return { walletWon, cashDueWon, cashReceivedWon, changeWon: cashReceivedWon !== null && cashDueWon !== null ? Math.max(0, cashReceivedWon - cashDueWon) : null, validWallet, validCash }
 }
+
+export function validSplitContribution(total: number, serverMaximum: number, input: string) {
+  return previewTender(total, 'SPLIT', input, '').validWallet && Number(input) <= serverMaximum
+}

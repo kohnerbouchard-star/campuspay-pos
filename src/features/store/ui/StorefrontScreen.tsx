@@ -100,14 +100,14 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
         // A later failure cannot prove the earlier request failed. Keep its UUID across reauthentication.
         if (isCustomerSessionError(caught)) handleError(caught)
         else setError('The earlier order still needs confirmation. Check My orders or retry this same order when the connection is restored.')
-      } else { clearPendingOrder(session.student_id); setReview(null); handleError(caught) }
+      } else { clearPendingOrder(session.student_id); setReview(null); if (isCustomerSessionError(caught)) handleError(caught); else setError(`${storeErrorMessage(caught)} Nothing was charged.`) }
     } finally { processing.current = false; setBusy(false) }
   }
 
   return <StoreShell session={session}>
     <div className={styles.welcome}><div><p className={styles.eyebrow}>Welcome, {session.display_name}</p><h1>Your school day, delivered.</h1><p className={styles.muted}>Pick your favourites. We’ll bring them to your room.</p></div><a className={styles.cartLink} href="#cart">Your cart <strong>{itemCount}</strong></a></div>
     <span className={styles.srOnly} role="status" aria-live="polite">{announcement}</span>
-    {error && <div className={styles.error} role="alert">{error}{!busy && !uncertain && <button className={styles.textButton} onClick={() => { setLoading(true); setRefreshCount((count) => count + 1) }}>Refresh store</button>}</div>}
+    {error && <div className={uncertain ? "uncertain-result" : styles.error} role="alert">{error}{!busy && !uncertain && <button className={styles.textButton} onClick={() => { setLoading(true); setRefreshCount((count) => count + 1) }}>Refresh store</button>}</div>}
     {receipt && <section className={styles.receipt} role="status"><div><p className={styles.eyebrow}>Order confirmed</p><h2>{receipt.order_number}</h2><p>{receipt.delivery_building} · Floor {receipt.delivery_floor} · Room {receipt.delivery_room}</p></div><div><strong>{formatWon(receipt.total_won)}</strong><span>MICA Money payment complete</span><Link href="/store/orders">Track your order →</Link></div></section>}
     <div className={styles.shopLayout}>
       <section aria-labelledby="shop-title">

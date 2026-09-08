@@ -2,45 +2,58 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { logout, recordActivity } from '@/features/auth/client'
+import { ClientApiError } from '@/lib/api/client'
+import { ACTIVITY_EVENTS, POS_INACTIVITY_MS, RECEIPT_PROTECTION_MS, SESSION_HEARTBEAT_MS, WorkstationActivity } from './inactivity'
 
-const EVENTS: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'touchstart']
-
-export function useInactivityLock(timeoutMs = 20_000) {
-  const [remainingMs, setRemainingMs] = useState(timeoutMs)
-  const deadline = useRef(0)
-  const lastServerTouch = useRef(0)
+type Protection = { key: string; until?: number } | null
+export function useInactivityLock(protection: Protection = null) {
+  const [status, setStatus] = useState({ remainingMs: POS_INACTIVITY_MS, warning: false })
+  const activity = useRef<WorkstationActivity | null>(null)
   const locking = useRef(false)
-
+  const protectionKey = protection?.key ?? null
+  const protectionUntil = protection?.until
   const lock = useCallback(async () => {
     if (locking.current) return
     locking.current = true
     try { await logout() } catch { /* Server expiry remains authoritative. */ }
-    window.location.replace('/')
+    window.location.replace('/login?next=%2Fpos&expired=1')
   }, [])
-
   const noteActivity = useCallback(() => {
-    deadline.current = Date.now() + timeoutMs
-    setRemainingMs(timeoutMs)
-    const now = Date.now()
-    if (now - lastServerTouch.current >= 4_000) {
-      lastServerTouch.current = now
-      void recordActivity().catch(() => lock())
-    }
-  }, [lock, timeoutMs])
-
+    activity.current?.activity(Date.now())
+    setStatus({ remainingMs: POS_INACTIVITY_MS, warning: false })
+  }, [])
   useEffect(() => {
-    deadline.current = Date.now() + timeoutMs
-    for (const event of EVENTS) window.addEventListener(event, noteActivity, { passive: true })
+    const now = Date.now()
+    activity.current ??= new WorkstationActivity(now)
+    activity.current.protect(protectionKey, protectionUntil ?? now + RECEIPT_PROTECTION_MS, now)
+  }, [protectionKey, protectionUntil])
+  useEffect(() => {
+    activity.current ??= new WorkstationActivity(Date.now())
+    let active = true
+    let touching = false
+    const touch = async () => {
+      if (touching || locking.current || activity.current?.snapshot(Date.now()).locked) return
+      touching = true
+      try { await recordActivity() }
+      catch (error) {
+        // A heartbeat never revives an expired/revoked session. Transient service
+        // failures do not get presented as credential failures; the next RPC checks again.
+        if (active && error instanceof ClientApiError && ['SESSION_EXPIRED', 'UNAUTHENTICATED', 'FORBIDDEN'].includes(error.code)) void lock()
+      } finally { touching = false }
+    }
+    for (const event of ACTIVITY_EVENTS) window.addEventListener(event, noteActivity, { passive: true })
+    void touch()
+    const heartbeat = window.setInterval(() => void touch(), SESSION_HEARTBEAT_MS)
     const timer = window.setInterval(() => {
-      const remaining = Math.max(0, deadline.current - Date.now())
-      setRemainingMs(remaining)
-      if (remaining === 0) void lock()
+      const next = activity.current!.snapshot(Date.now())
+      setStatus(next)
+      if (next.locked) void lock()
     }, 250)
     return () => {
-      for (const event of EVENTS) window.removeEventListener(event, noteActivity)
-      window.clearInterval(timer)
+      active = false
+      for (const event of ACTIVITY_EVENTS) window.removeEventListener(event, noteActivity)
+      window.clearInterval(timer); window.clearInterval(heartbeat)
     }
-  }, [lock, noteActivity, timeoutMs])
-
-  return { remainingMs, noteActivity, warning: remainingMs <= 5_000 }
+  }, [lock, noteActivity])
+  return { ...status, noteActivity }
 }

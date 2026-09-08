@@ -217,3 +217,11 @@ tbody tr:hover { background: #f8fbf8; }
 .workflow-steps { display: flex; flex-wrap: wrap; gap: 12px 24px; padding-left: 20px; color: var(--muted); }
 
 .section-spacer { margin-top: 24px; }
+
+/* An unknown result requires recovery; it is distinct from a confirmed rejection. */
+.uncertain-result { padding: 1rem; border: 2px solid #9c6500; border-radius: 8px; background: #fff8e6; color: #654200; }
+.uncertain-result strong { display: block; }
+.event-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: .9rem 1rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.event-status p { margin: .25rem 0; }
+.event-active { border-left: 5px solid #14634f; background: #edf7f1; color: #124536; }
+.timeout-warning { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }

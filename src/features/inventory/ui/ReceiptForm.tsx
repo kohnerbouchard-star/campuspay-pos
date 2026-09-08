@@ -74,14 +74,14 @@ export function ReceiptForm({ products, onSaved }: { products: CatalogProduct[];
     } catch (caught) {
       if (!(caught instanceof ClientApiError) || caught.status >= 500) setUncertain(true)
       else if (!uncertain) { try { sessionStorage.removeItem(recoveryKey(userId)) } catch {} requestKey.current = null }
-      setError(caught instanceof Error ? caught.message : 'The receipt result could not be confirmed. Retry the same receipt to check its result.')
+      setError(!uncertain && caught instanceof ClientApiError && caught.status < 500 ? `${caught.message}. No stock or purchase costs were posted by this attempt.` : 'The receipt result has not been confirmed.')
     } finally { pending.current = false; setBusy(false) }
   }
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) { requestKey.current = null; setForm(current => ({ ...current, [key]: value })) }
   return <form className="panel form-grid" onSubmit={submit} aria-busy={busy}>
     <div className="panel-heading span-two"><div><p className="eyebrow">Stock receipt</p><h2>Receive purchased stock</h2></div><span className="status-pill">Costed receipt</span></div>
     {message && <p className="success-message span-two" role="status">{message}</p>}
-    {uncertain && <p className="notice span-two" role="status">A receipt needs confirmation. Retry this same receipt to check its result before recording another. Its reference is saved for you if you need to sign in again.</p>}
+    {uncertain && <p className="uncertain-result span-two" role="alert"><strong>Stock receipt result unknown.</strong> Do not record another receipt until this result is recovered. Retry this same receipt to check its result before recording another. Its reference is saved for you if you need to sign in again.</p>}
     <fieldset className="form-grid span-two" disabled={busy || uncertain || !userId}>
       <label className="field"><span>Supplier</span><input required maxLength={160} value={form.supplierName} onChange={e => set('supplierName', e.target.value)} /></label>
       <label className="field"><span>Supplier invoice</span><input required maxLength={120} value={form.supplierInvoice} onChange={e => set('supplierInvoice', e.target.value)} /></label>

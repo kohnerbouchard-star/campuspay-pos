@@ -24,11 +24,13 @@ export const TenderModeSchema = z.enum(['WALLET', 'CASH', 'SPLIT'])
 export type TenderMode = z.infer<typeof TenderModeSchema>
 export const PaymentPolicySchema = z.object({
   terminal_label: z.string(), cash_enabled: z.boolean(), event_name: z.string().nullable(), can_manage: z.boolean(),
+  ends_at: z.string().nullable(), event_status: z.enum(['OFF', 'ACTIVE', 'EXPIRED']),
 })
 export type PaymentPolicy = z.infer<typeof PaymentPolicySchema>
 export const UpdatePaymentPolicySchema = z.object({
   cashEnabled: z.boolean(), eventName: z.string().trim().max(80).nullable(),
-}).refine(v => !v.cashEnabled || (v.eventName?.length ?? 0) >= 2, { message: 'Enter an event name with at least two characters', path: ['eventName'] })
+  endsAt: z.iso.datetime().nullable().optional(),
+}).refine(v => !v.cashEnabled || (v.eventName?.length ?? 0) >= 2, { message: 'Enter an event name with at least two characters', path: ['eventName'] }).refine(v => !v.cashEnabled || (!!v.endsAt && Date.parse(v.endsAt) > Date.now() && Date.parse(v.endsAt) <= Date.now() + 24 * 60 * 60 * 1000), { message: 'Choose an end time within the next 24 hours', path: ['endsAt'] })
 
 export const CreatePaymentIntentSchema = z.object({
   items: z.array(CartLineSchema).min(1).max(50),
@@ -36,7 +38,8 @@ export const CreatePaymentIntentSchema = z.object({
   idempotencyKey: z.string().uuid(),
   tenderMode: TenderModeSchema.default('WALLET'),
   walletAmountWon: z.number().int().positive().max(1000000000).nullable().optional(),
-}).refine(v => v.tenderMode !== 'SPLIT' || !!v.walletAmountWon, { message: 'Enter a MICA Money amount', path: ['walletAmountWon'] })
+})
+export const FinalizeTenderSchema = z.object({ walletAmountWon: z.number().int().positive().max(1000000000) }).strict()
 
 export const PaymentIntentSchema = z.object({
   intent_id: z.string().uuid(),
@@ -48,8 +51,8 @@ export const PaymentIntentSchema = z.object({
   coupon_code_masked: z.string().nullable(),
   expires_at: z.string(),
   tender_mode: TenderModeSchema,
-  wallet_tender_won: z.number().int().nonnegative(),
-  cash_tender_won: z.number().int().nonnegative(),
+  wallet_tender_won: z.number().int().nonnegative().nullable(),
+  cash_tender_won: z.number().int().nonnegative().nullable(),
 })
 export type PaymentIntent = z.infer<typeof PaymentIntentSchema>
 
@@ -59,6 +62,8 @@ export const CardScanResultSchema = z.object({
   state: z.literal('awaiting_pin'),
   student_display_name: z.string(),
   current_balance_won: z.number().int(),
+  minimum_balance_won: z.number().int(),
+  maximum_wallet_won: z.number().int().nonnegative(),
   projected_balance_won: z.number().int(),
   projected_debt_won: z.number().int().nonnegative(),
   expires_at: z.string(),

@@ -11,7 +11,8 @@ import { ProductGrid } from '@/features/pos/ui/ProductGrid'
 import { CartPanel } from '@/features/pos/ui/CartPanel'
 import { PaymentDialog } from '@/features/pos/ui/PaymentDialog'
 import { ReceiptDialog, type ReceiptLine } from '@/features/pos/ui/ReceiptDialog'
-import { PaymentPolicyPanel } from '@/features/pos/ui/PaymentPolicyPanel'
+import { PaymentStatus } from '@/features/pos/ui/PaymentStatus'
+import { PAYMENT_RESULT_GRACE_MS } from '@/features/terminal/inactivity'
 import { useInactivityLock } from '@/features/terminal/use-inactivity-lock'
 import { forgetPendingPayment, readPendingPayment } from '@/features/pos/pending-payment'
 import { ErrorState, LoadingState } from '@/components/ui/Feedback'
@@ -29,10 +30,9 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   const [recoveryBlocked, setRecoveryBlocked] = useState(false)
   const [policy, setPolicy] = useState<PaymentPolicy | null>(null)
   const [tenderMode, setTenderMode] = useState<TenderMode>('WALLET')
-  const [walletAmount, setWalletAmount] = useState('')
   const pending = useRef(false)
   const checkoutKey = useRef<string | null>(null)
-  const { remainingMs, warning } = useInactivityLock(20_000)
+  const { remainingMs, warning, noteActivity } = useInactivityLock(intent ? { key: intent.intent_id, until: Date.parse(intent.expires_at) + PAYMENT_RESULT_GRACE_MS } : receipt ? { key: receipt.sale_id } : busy || loading || recoveryBlocked ? { key: 'payment-recovery' } : null)
   const cartLines = useMemo(() => toCartLines(cart), [cart])
   const subtotal = useMemo(() => cartTotal(cart, products), [cart, products])
   const discount = coupon?.quote.discount_won ?? 0
@@ -75,7 +75,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
     pending.current = true; setBusy(true)
     checkoutKey.current ??= crypto.randomUUID()
     try {
-      setIntent(await openPaymentIntent(cartLines, coupon?.code ?? null, tenderMode, tenderMode === 'SPLIT' ? Number(walletAmount) : null, checkoutKey.current))
+      setIntent(await openPaymentIntent(cartLines, coupon?.code ?? null, tenderMode, null, checkoutKey.current))
       setReceiptItems(products.filter(product => cart[product.id]).map(product => ({ name: product.name, quantity: cart[product.id], lineTotalWon: product.selling_price_won * cart[product.id] })))
       setError(null)
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Checkout could not be opened') }
@@ -83,27 +83,37 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   }
   function completed(nextReceipt: PaymentReceipt, recoveredItems?: ReceiptLine[]) {
     if (recoveredItems) setReceiptItems(recoveredItems)
-    setReceipt(nextReceipt); setIntent(null); setCart({}); setCoupon(null); setTenderMode('WALLET'); setWalletAmount(''); checkoutKey.current = null; void load()
+    setReceipt(nextReceipt); setIntent(null); setCart({}); setCoupon(null); setTenderMode('WALLET'); checkoutKey.current = null; void load()
   }
-  function policyChanged(next: PaymentPolicy) { setPolicy(next); if (!next.cash_enabled) { setTenderMode('WALLET'); setWalletAmount(''); checkoutKey.current = null } }
+  const policyChanged = useCallback((next: PaymentPolicy) => { setPolicy(next); if (!next.cash_enabled) { setTenderMode('WALLET'); checkoutKey.current = null } }, [])
+
+  useEffect(() => {
+    let active = true
+    const refresh = () => void fetchPaymentPolicy().then(next => { if (active) policyChanged(next) }).catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : 'Payment status could not be checked.') })
+    const timer = window.setInterval(refresh, 15_000)
+    const expiry = policy?.cash_enabled && policy.ends_at ? window.setTimeout(() => {
+      policyChanged({ ...policy, cash_enabled: false, event_status: 'EXPIRED' }); refresh()
+    }, Math.max(0, Date.parse(policy.ends_at) - Date.now())) : undefined
+    return () => { active = false; window.clearInterval(timer); window.clearTimeout(expiry) }
+  }, [policy, policyChanged])
 
   return <main className="workspace">
     <header className="workspace-header">
       <div><p className="eyebrow">MICA Money · Staff register</p><h1>Point of sale</h1><p className="muted">Find an item, build the sale, and take payment.</p></div>
       <div className="session-chip"><span>{cashierName}</span><span>{policy?.terminal_label ?? 'Register'}</span>{policy?.cash_enabled && <b>Cash enabled · {policy.event_name}</b>}</div>
     </header>
-    {warning && <div className="timeout-warning" role="status">Session locks in {Math.ceil(remainingMs / 1000)} seconds. Tap to continue.</div>}
+    {warning && <div className="timeout-warning" role="status">Register locks in {Math.ceil(remainingMs / 1000)} seconds. <button className="secondary-action" onClick={noteActivity}>Stay signed in</button></div>}
     {error && <ErrorState message={error} onRetry={() => void load()} />}
     {recoveryBlocked && <p className="error-message"><a href="/login?next=%2Fpos&amp;expired=1">Sign in again to recover the previous payment</a></p>}
-    {policy && <PaymentPolicyPanel policy={policy} onChange={policyChanged} />}
+    {policy && <PaymentStatus policy={policy} />}
     {loading && <LoadingState label="Loading register…" />}
-    <div className="pos-layout" aria-busy={busy} inert={busy || loading || recoveryBlocked || undefined}>
+    <div className="pos-layout" aria-busy={busy} inert={busy || loading || recoveryBlocked || !!error || undefined}>
       <ProductGrid products={products} onSelect={product => mutateCart(current => addProduct(current, product))} />
       <CartPanel cart={cart} products={products} subtotal={subtotal} discount={discount} total={total} coupon={coupon} cartLines={cartLines}
         onCouponApplied={(code, quote) => { checkoutKey.current = null; setCoupon({ code, quote }) }} onCouponRemoved={() => { checkoutKey.current = null; setCoupon(null) }}
         onChange={(id, delta, max) => mutateCart(current => changeQuantity(current, id, delta, max))} onCheckout={() => void checkout()}
-        tenderMode={tenderMode} cashEnabled={policy?.cash_enabled ?? false} walletAmount={walletAmount} busy={busy || loading || recoveryBlocked}
-        onTenderChange={mode => { setTenderMode(mode); checkoutKey.current = null }} onWalletAmountChange={value => { setWalletAmount(value); checkoutKey.current = null }} />
+        tenderMode={tenderMode} cashEnabled={policy?.cash_enabled ?? false} busy={busy || loading || recoveryBlocked}
+        onTenderChange={mode => { setTenderMode(mode); checkoutKey.current = null }} />
     </div>
     {intent && <PaymentDialog intent={intent} onClose={() => { setIntent(null); checkoutKey.current = null }} onComplete={completed} />}
     {receipt && <ReceiptDialog receipt={receipt} items={receiptItems} onClose={() => setReceipt(null)} />}

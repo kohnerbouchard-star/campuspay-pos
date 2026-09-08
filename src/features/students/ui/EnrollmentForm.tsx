@@ -57,10 +57,10 @@ export function EnrollmentForm({ onCancel, onComplete }: {
       onComplete(result)
     } catch (cause) {
       // Keep one key and one unchanged request after transport errors: retry cannot enroll twice.
-      const definitive = cause instanceof ClientApiError && cause.status < 500
+      const definitive = !uncertain && cause instanceof ClientApiError && cause.status < 500
       if (definitive) idempotencyKey.current = null
       setUncertain(!definitive)
-      setError(cause instanceof Error ? cause.message : 'Enrollment could not be completed. Try again.')
+      setError(definitive ? `${cause.message}. No new account was created by this attempt.` : 'The enrollment result has not been confirmed.')
     } finally {
       submitting.current = false
       setBusy(false)
@@ -84,10 +84,10 @@ export function EnrollmentForm({ onCancel, onComplete }: {
         <label className="field"><span>Confirm student PIN</span><input type="password" inputMode="numeric" autoComplete="new-password" required minLength={4} maxLength={12} pattern="[0-9]{4,12}" value={confirmationPin} onChange={(event) => setConfirmationPin(event.target.value.replace(/\D/g, '').slice(0, 12))} /></label>
       </fieldset>
       {reader && <div className="reader-state" role="status"><span className="reader-dot" />Scan one card.<button type="button" className="secondary-action" onClick={() => setReader(false)}>Cancel scan</button></div>}
-      {error && <p role="alert" className="error-message">{error}</p>}
-      {uncertain && <p className="form-message">The result could not be confirmed. Retry this same request, or cancel and search for the student before starting again.</p>}
+      {error && <p role="alert" className={uncertain ? "uncertain-result" : "error-message"}>{error}</p>}
+      {uncertain && <p className="uncertain-result" role="alert"><strong>Enrollment result unknown.</strong> Do not start another enrollment until this result is recovered. Retry this unchanged request to retrieve the account safely.</p>}
       <div className="action-row">
-        <button type="button" className="secondary-action" disabled={busy} onClick={() => { cardRead.current = ''; setPin(''); setConfirmationPin(''); onCancel() }}>Cancel</button>
+        <button type="button" className="secondary-action" disabled={busy || uncertain} onClick={() => { cardRead.current = ''; setPin(''); setConfirmationPin(''); onCancel() }}>Cancel</button>
         <button className="primary-action" disabled={busy || reader || !cardCaptured || pin.length < 4 || pin !== confirmationPin}>{busy ? 'Creating account…' : uncertain ? 'Retry enrollment' : 'Create MICA Money account'}</button>
       </div>
     </form>

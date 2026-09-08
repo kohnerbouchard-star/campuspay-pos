@@ -2,6 +2,8 @@
 
 This branch makes MICA Money the authenticated student storefront and gives staff a consistent operations workspace for checkout, fulfillment, enrollment, inventory, accounting, promotions, and credential security. Cash and split payments use the existing financial engine, inventory lots, coupon rules, and audit history. A completed sale reconciles to its tender journal; an incomplete payment posts no partial settlement.
 
+**September 8 remediation:** See [the focused remediation report](UI_UX_REMEDIATION.md) for five-minute inactivity, card-first split preparation, cash auto-expiry, compatibility UX, current checks, and PR handoff.
+
 **Final verification status:** unit, lint, TypeScript, production-build, static, isolated local HTTP integration, and real-browser checks all passed. All six isolated Neon checks passed with synthetic records rolled back. Screenshot review covered every major workspace and the four requested widths; evidence is linked below.
 
 ## Branch and revision provenance
@@ -72,7 +74,7 @@ The `GET` and `POST` methods above share nine new path patterns.
 | `POST /api/inventory/receipts` | Client now preserves the same request ID and frozen proposal while an outcome is uncertain, including across same-user reauthentication; confirmed success clears the form. |
 | `POST /api/inventory/products/:productId/price` | Updated staff form with pending/success feedback and a required reason. |
 | `POST /api/inventory/adjustments` | Exposed through the reviewed removal workflow; existing authorized stock/costing operation remains authoritative. |
-| `POST /api/pos/intents` | Accepts the proposed wallet/cash/split mode and wallet contribution; cart and coupon pricing remain on the server. |
+| `POST /api/pos/intents` | Accepts the proposed wallet/cash/split mode; split contribution is finalized after card binding; cart and coupon pricing remain on the server. |
 | `POST /api/pos/intents/:intentId/card` | Wallet/split card binding is integrated with the tender plan; cash-only checkout bypasses student authentication. |
 | `POST /api/pos/intents/:intentId/confirm` | Performs one atomic settlement and returns the complete tender/received/change breakdown. |
 | `GET /api/reports/sales` | Returns separate channel and tender information, including split totals and nullable cash-customer identity, without duplicating revenue. |
@@ -161,13 +163,13 @@ Students cannot register online. `/store/login` directs students without a card 
 
 ### Terminal-scoped event cash
 
-Cash is disabled by default. A Super Admin must name the event and enable acceptance for the current register, identified by the existing terminal cookie. This setting applies to that browser/register, survives staff logout, and remains active until disabled. A separate browser/profile has its own default-off policy. The setting is visible at POS and in Payment settings, and every change records the actor, terminal, timestamp, old/new state, and event label.
+Cash is disabled by default. A Super Admin must name the event and enable acceptance for the current register, identified by the existing terminal cookie. This setting applies to that browser/register, survives staff logout, and ends automatically at its configured future timestamp (at most 24 hours). A separate browser/profile has its own default-off policy. The setting is visible at POS and in Payment settings, and every change records the actor, terminal, timestamp, old/new state, event label, and end timestamp.
 
 Cash-only checkout asks for cash received and shows change without requiring a student card, PIN, or wallet. It does not create a synthetic student, wallet debit, or wallet journal. It still prices the same products, validates applicable coupons, consumes the same inventory, allocates FIFO/LIFO cost, records COGS, and posts a normal POS sale.
 
 ### One wallet plus one cash tender
 
-Split checkout accepts one MICA Money contribution and assigns the remainder to cash. The cashier authenticates that wallet with card and PIN, enters cash received, reviews both settled amounts and change, and confirms once. The wallet contribution must be eligible under the shared −₩15,000 floor. Coupon discounts apply to the complete sale before either tender is allocated. Coupons requiring a per-student limit cannot be used anonymously in cash-only checkout.
+Split checkout scans the student card before showing server wallet capacity and choosing one MICA Money contribution; the remainder is assigned to cash. The cashier authenticates that wallet with card and PIN, enters cash received, reviews both settled amounts and change, and confirms once. The wallet contribution must be eligible under the shared −₩15,000 floor. Coupon discounts apply to the complete sale before either tender is allocated. Coupons requiring a per-student limit cannot be used anonymously in cash-only checkout.
 
 The browser builds a proposal. One authoritative database confirmation rechecks session, policy, cart/pricing, coupon, card/PIN, wallet eligibility, tender equality, cash sufficiency, and inventory. Sale/header/items, immutable tenders, the wallet portion, inventory movements, lot cost allocations, COGS, coupon redemption, receipt, and audit commit together. A failing condition rolls the operation back. No permanent wallet charge occurs while cash is still being collected.
 
@@ -213,8 +215,9 @@ The store saves the reviewed proposal and request UUID, bound to the student, be
 | `016_wallet_history.sql` | `20260907140000_wallet_history.sql` | Permission-checked wallet transaction history and an inventory product register with reorder status. |
 | `017_adjustment_recovery.sql` | `20260907150000_adjustment_recovery.sql` | Same-register recovery by staff with wallet-adjustment permission. |
 | `018_stock_receipt_recovery.sql` | `20260907200000_stock_receipt_recovery.sql` | Safe same-actor/register receipt lookup; corrects the ambiguous column in the existing receipt replay query. |
+| `019_register_remediation.sql` | `20260908090000_register_remediation.sql` | Timestamp-enforced cash expiry, card-first split preparation, and versioned policy capability. |
 
-Schema sources live in `database/schema`; deployable versions live in `database/migrations`. All six new source/migration pairs were checked byte-for-byte. `database/bootstrap.sql` is a generated review artifact, not an additional production migration. Existing versioned migrations were retained. The new migrations were applied only in the isolated verification environments. Production rollout is a separate authorized activity and was not performed.
+Schema sources live in `database/schema`; deployable versions live in `database/migrations`. All seven new source/migration pairs were checked byte-for-byte. `database/bootstrap.sql` is a generated review artifact, not an additional production migration. Existing versioned migrations were retained. The new migrations were applied only in the isolated verification environments. Production rollout is a separate authorized activity and was not performed.
 
 ## 16. Visual QA and accessibility evidence
 
@@ -233,7 +236,7 @@ Automated browser assertions check nonblank pages, accidental document overflow,
 
 These token checks exceed AA normal-text contrast requirements for the measured pairings. They do not constitute a full WCAG conformance audit of every rendered state. Controls use clear labels, visible focus, status/error announcements, human-readable status text, and generally 44px or larger action targets. Critical currency amounts are kept intact; wide operational tables use labelled, keyboard-focusable scroll regions.
 
-**Completed visual review:** 172 real Chromium captures cover 45 interface states at 1440/1024/768/390px plus a focused phone-view transaction-register check. Final results: zero document-overflow findings, missing visible field labels, unnamed buttons, unexpected console errors, or page errors. Both Tab and Shift+Tab remained inside dialogs. The deliberate login 401 and catalog 503 were handled and retry restored the store. Review included all major workspaces, enrollment/credentials, checkout/receipts, picking/delivery, wallet history, and inventory tasks. [29 retained screenshots and review notes](visual-qa/README.md) and the [complete capture manifest](visual-qa/browser-results.json) provide the evidence. Fixes from review include mobile table containment, legible report totals, date-filter wrapping, compact navigation, student-ID separation, coupon controls, enrollment validation, and dialog focus. The mobile transaction register was also verified in its visible viewport to exclude a full-page screenshot painting artifact.
+**Completed visual review:** 212 real Chromium captures cover 56 interface states at 1440/1024/768/390px plus a focused phone-view transaction-register check. Final results: zero document-overflow findings, missing visible field labels, unnamed buttons, unexpected console errors, or page errors. Both Tab and Shift+Tab remained inside dialogs. The deliberate login 401 and catalog 503 were handled and retry restored the store. Review included all major workspaces, enrollment/credentials, checkout/receipts, picking/delivery, wallet history, and inventory tasks. [29 retained screenshots and review notes](visual-qa/README.md) and the [complete capture manifest](visual-qa/browser-results.json) provide the evidence. Fixes from review include mobile table containment, legible report totals, date-filter wrapping, compact navigation, student-ID separation, coupon controls, enrollment validation, and dialog focus. The mobile transaction register was also verified in its visible viewport to exclude a full-page screenshot painting artifact.
 
 ## 17–19. Automated and integration verification
 
@@ -242,12 +245,12 @@ These token checks exceed AA normal-text contrast requirements for the measured 
 | Command / check | Result recorded while preparing this report |
 | --- | --- |
 | `npm run typecheck` | Passed. |
-| `npm run test` | Passed: **80 tests in 14 files**. |
+| `npm run test` | Passed: **114 tests in 16 files**. |
 | `npm run lint` | Passed. |
 | `npm run build` | Passed. |
 | `npm run validate:static` | Passed: transpile/import boundaries, coupon policy, SQL structure, and security audit. |
 | Complete original HTTP suite before edits | Passed on a fresh isolated localhost PostgreSQL 17 database. This is baseline evidence, not a substitute for final verification. |
-| Isolated Neon migration execution | Passed for migrations 013–018 on the designated development branch. |
+| Isolated Neon migration execution | Passed for migrations 013–019 on the designated development branch. |
 | `scripts/neon-branch-check.mjs` | Passed all six recorded checks; transaction fixtures were rolled back and verified absent. |
 | Final isolated HTTP integration | Passed as part of `CI_BROWSER=1 node scripts/test-isolated.mjs`, exit 0. |
 | Final `npm run test:visual` / combined browser run | Passed: real Chromium workflows at all four widths, no unexpected errors or layout/control findings. |
@@ -276,7 +279,7 @@ The recorded output in `.validation/neon-branch-results.json` reports:
 
 The migration DDL remains on the isolated development branch; the transaction fixture rollback does not mean production was changed and reverted. Production was not modified.
 
-**Final result:** `npm run validate`, `npm run validate:static`, `npm run build`, and `CI_BROWSER=1 node scripts/test-isolated.mjs` passed. The final browser/local transaction run exited 0 after the last application change; unit result remained 80/80. The pinned Neon rollback run passed 6/6. Tracked evidence: [local integration](visual-qa/integration-results.json), [browser matrix](visual-qa/browser-results.json), and [Neon](visual-qa/neon-results.json). The implementation commit is the ending SHA supplied with the handoff; subsequent edits before that commit were documentation/evidence and restoration of the pre-existing generated type-reference change.
+**Final result:** `npm run validate`, `npm run validate:static`, `npm run build`, and `CI_BROWSER=1 node scripts/test-isolated.mjs` passed. The final browser/local transaction run exited 0 after the last application change; unit result remained 114/114. The pinned Neon rollback run passed 6/6. Tracked evidence: [local integration](visual-qa/integration-results.json), [browser matrix](visual-qa/browser-results.json), and [Neon](visual-qa/neon-results.json). The implementation commit is the ending SHA supplied with the handoff; subsequent edits before that commit were documentation/evidence and restoration of the pre-existing generated type-reference change.
 
 ### Reproducing the isolated local run
 
@@ -291,13 +294,13 @@ npm run build
 npm run test:visual
 ```
 
-If the QA container already exists, use `docker start campuspay-refresh-test` instead of creating it again. Set `TEST_POSTGRES_URL` to use another localhost test server. The harness refuses remote database hosts. The application test server and temporary databases are cleaned up after each run; the dedicated QA container was stopped at handoff. The isolated Neon development branch remains available for review. Test connection credentials are excluded from Git.
+If the QA container already exists, use `docker start campuspay-refresh-test` instead of creating it again. Set `TEST_POSTGRES_URL` to use another localhost test server. The harness refuses remote database hosts. The application test server and temporary databases are cleaned up after each run; the dedicated QA container can be stopped after local validation. The isolated Neon development branch remains available for review. Test connection credentials are excluded from Git.
 
 ## 20. Known limitations
 
 - Physical RFID/NFC reader timing, printed card-number compatibility, and the E202 handover process still require real school hardware and operator verification. Keyboard-reader simulation is not hardware certification.
 - New accounts intentionally start at ₩0. Enrollment cannot set a non-zero opening amount; funding must use the audited Accounting workflow.
-- Cash is terminal/browser scoped and stays enabled until an authorized user disables it. It is not a school-wide toggle, an automatically ending event, or a reconciled cash drawer.
+- Cash is terminal/browser scoped, automatically ends at the configured timestamp, and may be disabled earlier. It is not a school-wide toggle or a reconciled cash drawer.
 - Split payment supports one MICA Money wallet and one cash tender. Multiple student wallets are not supported.
 - Browser recovery records use tab session storage. Closing the tab or clearing storage removes those client records; operators/students must consult authoritative history before starting a replacement operation. No PIN/card/session token is stored for recovery.
 - The customer order quote is a review, not a reservation. Stock/coupon/wallet availability is revalidated on placement, and the storefront always supplies the reviewed total. The total field remains optional for older API clients.
@@ -320,7 +323,7 @@ Before a separately authorized live rollout:
 
 1. Review the completed automated and screenshot evidence with the school operators; perform device-specific acceptance on the actual registers, tablets, and student phones.
 2. At E202, use the real reader and an approved test card to verify enrollment capture, secure PIN entry/confirmation, printed-card sign-in, identity handover, replacement, and old-session revocation.
-3. Confirm school staff understand terminal-scoped cash policy, event naming, explicit disabling, cash received versus applied revenue, change, and the same-request recovery workflow.
+3. Confirm school staff understand terminal-scoped cash policy, event naming, automatic end times, early disabling, cash received versus applied revenue, change, and the same-request recovery workflow.
 4. Review a wallet sale, cash sale, and the exact ₩12,000 split receipt against the ledger, tender rows, inventory/cost allocations, and report totals in an approved test environment. Repeat the ₩4,000 cash failure and inspect the unchanged financial state.
 5. Verify the controlled East/West delivery directory and physical fulfillment route with school staff. Check picking, room/recipient/notes, delivery progression, and customer history refresh.
 6. Review the six migration files, role grants, backfill/reconciliation constraints, application/database release ordering, and normal backup/rollback procedures through the school's separate rollout process.

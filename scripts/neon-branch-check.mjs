@@ -118,7 +118,7 @@ try {
   await runtime()
   const cart = JSON.stringify([{ productId, quantity: 1 }])
   await expectRejection('select * from api.create_payment_intent($1,$2::jsonb,$3,null,$4,$5)', [session.session_id, cart, randomUUID(), 'SPLIT', 7000], /CASH_DISABLED/)
-  await one('select * from api.set_terminal_payment_policy($1,true,$2)', [session.session_id, 'Isolated branch QA event'])
+  await one("select * from api.set_terminal_payment_policy($1,true,$2,now()+interval '1 hour')", [session.session_id, 'Isolated branch QA event'])
   const intent = await one('select * from api.create_payment_intent($1,$2::jsonb,$3,null,$4,$5)', [session.session_id, cart, randomUUID(), 'SPLIT', 7000])
   intentId = intent.intent_id
   await one('select * from api.scan_payment_card($1,$2,$3)', [session.session_id, intentId, cardFingerprint])

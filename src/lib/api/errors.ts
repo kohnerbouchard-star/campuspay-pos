@@ -1,4 +1,7 @@
+export const DATABASE_UPGRADE_MESSAGE = 'CampusPay needs a database update before this version can be used.'
+
 export type ApiErrorCode =
+  | 'DATABASE_UPGRADE_REQUIRED'
   | 'CASH_DISABLED'
   | 'CASH_UNDERPAYMENT'
   | 'TENDER_INVALID'

@@ -32,6 +32,13 @@
     "exact split tender and change",
     "all-or-nothing rollback injection",
     "POS recovery after reauthentication",
-    "KST report boundaries"
+    "KST report boundaries",
+    "card-first split preparation without financial writes",
+    "server wallet capacity and immutable plan replay",
+    "wallet-only switch from split",
+    "audited cash end time and stale-browser expiry rejection",
+    "missing-RPC error mapping",
+    "actual pre-refresh schema compatibility",
+    "expired server session cannot be revived"
   ]
 }

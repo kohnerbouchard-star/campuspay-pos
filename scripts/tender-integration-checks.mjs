@@ -6,14 +6,14 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   const admin = await login('9001'), cashier = await login('1001'), inventory = await login('2001')
   await request(jar(), '/api/pos/payment-policy', undefined, 401)
   assert.equal((await request(cashier, '/api/pos/payment-policy')).cash_enabled, false)
-  await request(cashier, '/api/pos/payment-policy', { cashEnabled: true, eventName: 'Unauthorized' }, 403)
+  await request(cashier, '/api/pos/payment-policy', { cashEnabled: true, endsAt: new Date(Date.now() + 3600000).toISOString(), eventName: 'Unauthorized' }, 403)
   const product = await request(inventory, '/api/inventory/products', { sku: `TENDER-${randomUUID().slice(0, 8)}`, name: 'Tender integration item', category: 'Tests', sellingPriceWon: 12000, reorderLevel: 0 })
   await request(inventory, '/api/inventory/receipts', { supplierName: 'Integration fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Disposable tender test stock', lines: [{ productId: product.reference_id, quantity: 30, purchaseUnitCostWon: 1000 }], idempotencyKey: randomUUID() })
   const items = [{ productId: product.reference_id, quantity: 1 }]
   const proposed = (mode, amount = null, lines = items, couponCode = null) => ({ items: lines, couponCode, tenderMode: mode, walletAmountWon: amount, idempotencyKey: randomUUID() })
   await request(cashier, '/api/pos/intents', proposed('CASH'), 409)
   await request(cashier, '/api/pos/intents', proposed('SPLIT', 7000), 409)
-  await request(admin, '/api/pos/payment-policy', { cashEnabled: true, eventName: 'MICA Integration Festival' })
+  await request(admin, '/api/pos/payment-policy', { cashEnabled: true, endsAt: new Date(Date.now() + 3600000).toISOString(), eventName: 'MICA Integration Festival' })
   assert.equal((await request(cashier, '/api/pos/payment-policy')).cash_enabled, false, 'Policy must be terminal scoped')
   const snapshot = async () => (await owner.query(`select jsonb_build_object(
     'wallets',(select jsonb_agg(jsonb_build_array(student_id,balance_won) order by student_id) from private.wallets),

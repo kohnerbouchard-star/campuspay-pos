@@ -72,3 +72,14 @@ it does not store PINs, raw card numbers, or session tokens. See
 
 - `GET /api/orders` — staff fulfillment queue (`orders.fulfill`), including item details and actual status-event timestamps.
 - `POST /api/orders/:orderId/status` — advances the controlled fulfillment state machine.
+
+## Register remediation capabilities
+
+- `POST /api/pos/payment-policy`: Super Admin accepts `cashEnabled`, `eventName`, and `endsAt` (ISO timestamp). Enabling requires a future end within 24 hours. Disabling allows a null end.
+- `GET /api/pos/payment-policy`: adds `ends_at` and `event_status` (`OFF`, `ACTIVE`, `EXPIRED`); `cash_enabled` is effective server policy. Uses the narrow `terminal_payment_policy_v2` capability to detect an older schema.
+- `POST /api/pos/intents`: Split may omit `walletAmountWon`; its draft returns null wallet/cash allocations until finalized after scanning.
+- `POST /api/pos/intents/:intentId/card`: adds server `minimum_balance_won` and `maximum_wallet_won`, capped by the current sale total.
+- `POST /api/pos/intents/:intentId/tender`: same-session `pos.checkout`, strict `{ walletAmountWon }` body, origin/UUID validation; binds a positive amount after card identification. Equal to total deliberately becomes wallet-only. No PIN/financial mutation; exact-plan replay is safe, changed-plan replay conflicts.
+- A missing known required RPC/schema object returns HTTP 503 and `DATABASE_UPGRADE_REQUIRED` with safe operational copy. Unrelated database failures remain generic HTTP 500; credentials and SQL are never returned. The browser receives no migration history.
+
+See [payment operations](PAYMENTS.md) for expiry, atomicity, and recovery behavior.

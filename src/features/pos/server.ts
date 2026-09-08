@@ -83,8 +83,8 @@ export async function confirmPayment(session: SessionContext, intentId: string, 
 export function getPaymentPolicy(session: SessionContext) {
   return callApiRpc('terminal_payment_policy', { p_session_id: session.session_id }, z.array(PaymentPolicySchema).length(1).transform(([row]) => row))
 }
-export function updatePaymentPolicy(session: SessionContext, cashEnabled: boolean, eventName: string | null) {
-  return callApiRpc('set_terminal_payment_policy', { p_session_id: session.session_id, p_cash_enabled: cashEnabled, p_event_name: eventName }, z.array(PaymentPolicySchema).length(1).transform(([row]) => row))
+export function updatePaymentPolicy(session: SessionContext, cashEnabled: boolean, eventName: string | null, endsAt: string | null) {
+  return callApiRpc('set_terminal_payment_policy', { p_session_id: session.session_id, p_cash_enabled: cashEnabled, p_event_name: eventName, p_ends_at: endsAt }, z.array(PaymentPolicySchema).length(1).transform(([row]) => row))
 }
 export async function cancelPayment(session: SessionContext, intentId: string) {
   await callApiRpc('cancel_payment_intent', { p_session_id: session.session_id, p_intent_id: intentId }, z.unknown())
@@ -93,4 +93,8 @@ export async function cancelPayment(session: SessionContext, intentId: string) {
 
 export function recoverPayment(session: SessionContext, intentId: string) {
   return callApiRpc('recover_payment_intent', { p_session_id: session.session_id, p_intent_id: intentId }, z.array(PaymentRecoverySchema).length(1).transform(([row]) => row))
+}
+
+export function finalizePaymentTender(session: SessionContext, intentId: string, walletAmountWon: number) {
+  return callApiRpc('finalize_payment_tender', { p_session_id: session.session_id, p_intent_id: intentId, p_wallet_amount_won: walletAmountWon }, z.array(PaymentIntentSchema).length(1).transform(([row]) => row))
 }

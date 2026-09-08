@@ -66,11 +66,11 @@ export function AdjustmentPanel({ onPosted }: { onPosted?(): void }) {
     } catch (e) {
       if (!(e instanceof ClientApiError) || e.status >= 500) setUncertain(true)
       else if (!uncertain) clearAdjustment()
-      setError(e instanceof Error ? e.message : 'Confirmation could not be received. Retry this transaction to check its result.')
+      setError(!uncertain && e instanceof ClientApiError && e.status < 500 ? `${e.message}. Nothing was posted to the wallet.` : 'The adjustment result has not been confirmed.')
     }
     finally { setPin(''); pending.current = false; setBusy(false) }
   }
-  if (!recoveryReady) return <section className="panel form-stack" aria-label="Wallet adjustment recovery"><h2>Checking wallet adjustments</h2>{recoveryError ? <><p className="error-message" role="alert">{recoveryError}</p><button className="secondary-action" onClick={() => setRecoveryAttempt(value => value + 1)}>Recover adjustment</button></> : <p role="status">Checking the previous transaction…</p>}</section>
+  if (!recoveryReady) return <section className="panel form-stack" aria-label="Wallet adjustment recovery"><h2>Checking wallet adjustments</h2>{recoveryError ? <><p className="uncertain-result" role="alert">{recoveryError}</p><button className="secondary-action" onClick={() => setRecoveryAttempt(value => value + 1)}>Recover adjustment</button></> : <p role="status">Checking the previous transaction…</p>}</section>
   return <section className="panel form-stack" aria-busy={busy}>
     <CardReaderCapture active={Boolean(intent && !student && !busy)} onRead={card} />
     <div className="panel-heading"><div><p className="eyebrow">Student funds</p><h2>Add or deduct funds</h2></div><span className="status-pill">Card + PIN required</span></div>
@@ -82,8 +82,8 @@ export function AdjustmentPanel({ onPosted }: { onPosted?(): void }) {
     {!intent && <button className="primary-action" disabled={busy || !denominations.length || notes.trim().length < 3} onClick={() => void begin()}>{busy ? 'Preparing…' : 'Scan student card'}</button>}
     {intent && !student && <div className="reader-state" role="status"><span className="reader-dot" />{busy ? 'Checking card…' : 'Reader ready. Scan one MICA Money Card.'}</div>}
     {student && <form className="form-stack" onSubmit={finish}><div className="student-summary"><strong>{student.student_display_name}</strong><div><span>Current balance</span><b>{formatWon(student.current_balance_won)}</b></div><div><span>Balance after this transaction</span><b>{formatWon(student.projected_balance_won)}</b></div></div><label className="field"><span>Student PIN</span><input required autoFocus type="password" inputMode="numeric" autoComplete="off" disabled={busy} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 12))} /></label><button className="primary-action" disabled={busy || pin.length < 4}>{busy ? 'Posting transaction…' : `Confirm ${direction === 'CREDIT' ? 'addition' : 'deduction'} of ${formatWon(total)}`}</button></form>}
-    {uncertain && <div className="notice" role="status"><p>The result has not been confirmed. Recover the transaction before starting another adjustment.</p><button className="secondary-action" disabled={busy} onClick={() => { setRecoveryReady(false); setRecoveryAttempt(value => value + 1) }}>Recover adjustment result</button></div>}
+    {uncertain && <div className="uncertain-result" role="alert"><p><strong>Adjustment result unknown.</strong> Do not start another adjustment until this result is recovered.</p><button className="secondary-action" disabled={busy} onClick={() => { setRecoveryReady(false); setRecoveryAttempt(value => value + 1) }}>Recover adjustment result</button></div>}
     {intent && !busy && !uncertain && <button className="secondary-action" onClick={() => { setIntent(null); setStudent(null); setPin(''); key.current = null; setError(null) }}>Cancel verification</button>}
-    {error && <p className="error-message" role="alert">{error}</p>}{message && <p className="success-message" role="status">{message}</p>}
+    {error && <p className={uncertain ? "uncertain-result" : "error-message"} role="alert">{error}</p>}{message && <p className="success-message" role="status">{message}</p>}
   </section>
 }

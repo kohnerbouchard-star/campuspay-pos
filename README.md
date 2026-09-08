@@ -113,3 +113,21 @@ npm run test:visual
 ```
 
 The isolated runner creates and removes only its own disposable database. Set `TEST_POSTGRES_URL` for your local test server; its default matches the dedicated QA container documented in the delivery report.
+
+### UI/UX refresh local development
+
+Use a database branch with migrations **20260907090000 and later**, including
+**20260908090000_register_remediation**. Do not point this feature branch at
+production before the production migration has been approved.
+
+The current QA target is `dev-ui-ux-refresh-20260907`
+(`br-late-bread-azrpu2xh`); branch names may change. Use its restricted runtime
+connection for the app and an explicitly selected owner connection only for
+approved QA migrations. Keep your application secrets unchanged. A local
+process environment override can select QA without editing `.env.local`.
+Do not copy database URLs into documentation, Git, screenshots, or PRs.
+
+The POS reports **Database update required** when a required capability is
+missing. Retry after selecting the matching database. See the
+[remediation report](docs/UI_UX_REMEDIATION.md) and
+[payment operating guidance](docs/PAYMENTS.md).

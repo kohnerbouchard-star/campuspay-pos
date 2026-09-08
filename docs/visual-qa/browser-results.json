@@ -402,7 +402,7 @@
       "url": "http://127.0.0.1:3100/students",
       "width": 768,
       "scrollWidth": 768,
-      "content": 641,
+      "content": 823,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -427,7 +427,7 @@
         "height": 1000
       },
       "file": ".validation/visual/security-1440.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 1440,
       "scrollWidth": 1440,
       "content": 815,
@@ -441,7 +441,7 @@
         "height": 900
       },
       "file": ".validation/visual/security-1024.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 1024,
       "scrollWidth": 1024,
       "content": 776,
@@ -455,7 +455,7 @@
         "height": 1024
       },
       "file": ".validation/visual/security-768.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 768,
       "scrollWidth": 768,
       "content": 776,
@@ -469,7 +469,7 @@
         "height": 844
       },
       "file": ".validation/visual/security-390.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 390,
       "scrollWidth": 390,
       "content": 776,
@@ -483,7 +483,7 @@
         "height": 1000
       },
       "file": ".validation/visual/security-pin-reset-1440.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 1440,
       "scrollWidth": 1440,
       "content": 944,
@@ -497,7 +497,7 @@
         "height": 900
       },
       "file": ".validation/visual/security-pin-reset-1024.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 1024,
       "scrollWidth": 1024,
       "content": 905,
@@ -511,7 +511,7 @@
         "height": 1024
       },
       "file": ".validation/visual/security-pin-reset-768.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 768,
       "scrollWidth": 768,
       "content": 905,
@@ -525,7 +525,7 @@
         "height": 844
       },
       "file": ".validation/visual/security-pin-reset-390.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 390,
       "scrollWidth": 390,
       "content": 905,
@@ -539,7 +539,7 @@
         "height": 1000
       },
       "file": ".validation/visual/security-card-replacement-1440.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 1440,
       "scrollWidth": 1440,
       "content": 971,
@@ -553,7 +553,7 @@
         "height": 900
       },
       "file": ".validation/visual/security-card-replacement-1024.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 1024,
       "scrollWidth": 1024,
       "content": 932,
@@ -567,7 +567,7 @@
         "height": 1024
       },
       "file": ".validation/visual/security-card-replacement-768.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 768,
       "scrollWidth": 768,
       "content": 932,
@@ -581,7 +581,7 @@
         "height": 844
       },
       "file": ".validation/visual/security-card-replacement-390.png",
-      "url": "http://127.0.0.1:3100/security?studentId=65f9ad72-80cd-4c93-92f5-f0e23bad5aa0",
+      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
       "width": 390,
       "scrollWidth": 390,
       "content": 932,
@@ -809,6 +809,62 @@
       "width": 390,
       "scrollWidth": 390,
       "content": 723,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-checkout-limit-warning",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-checkout-limit-warning-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1325,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-checkout-limit-warning",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-checkout-limit-warning-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1325,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-checkout-limit-warning",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-checkout-limit-warning-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1325,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-checkout-limit-warning",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-checkout-limit-warning-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1325,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1911,7 +1967,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 530,
+      "content": 869,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1925,7 +1981,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 491,
+      "content": 830,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1939,7 +1995,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 768,
       "scrollWidth": 768,
-      "content": 491,
+      "content": 830,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1953,7 +2009,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 390,
       "scrollWidth": 390,
-      "content": 491,
+      "content": 830,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1967,7 +2023,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 617,
+      "content": 660,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1981,7 +2037,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 586,
+      "content": 629,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1995,7 +2051,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 586,
+      "content": 629,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2009,7 +2065,63 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 586,
+      "content": 629,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-timeout-warning",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-timeout-warning-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 705,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-timeout-warning",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-timeout-warning-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 674,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-timeout-warning",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-timeout-warning-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 674,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-timeout-warning",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-timeout-warning-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 674,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2023,7 +2135,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 766,
+      "content": 840,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2037,7 +2149,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 727,
+      "content": 801,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2051,7 +2163,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 727,
+      "content": 801,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2065,7 +2177,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 727,
+      "content": 801,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2079,7 +2191,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 779,
+      "content": 853,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2093,7 +2205,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 740,
+      "content": 814,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2107,7 +2219,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 740,
+      "content": 814,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2121,7 +2233,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 740,
+      "content": 814,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2135,7 +2247,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 983,
+      "content": 1059,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2149,7 +2261,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 944,
+      "content": 1020,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2163,7 +2275,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 944,
+      "content": 1020,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2177,7 +2289,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 944,
+      "content": 1020,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2191,7 +2303,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 949,
+      "content": 1024,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2205,7 +2317,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 910,
+      "content": 985,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2219,7 +2331,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 910,
+      "content": 985,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2233,7 +2345,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 910,
+      "content": 985,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2247,7 +2359,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 834,
+      "content": 929,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2261,7 +2373,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 795,
+      "content": 890,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2275,7 +2387,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 795,
+      "content": 890,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2289,7 +2401,175 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 795,
+      "content": 890,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-card",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-card-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1011,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-card",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-card-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 972,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-card",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-card-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 972,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-card",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-card-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 972,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-capacity",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-capacity-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1323,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-capacity",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-capacity-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1284,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-capacity",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-capacity-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1284,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-capacity",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-capacity-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1284,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cash-remainder",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-cash-remainder-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1369,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cash-remainder",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-cash-remainder-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1330,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cash-remainder",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-cash-remainder-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1330,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-cash-remainder",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-cash-remainder-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1330,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2303,7 +2583,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1184,
+      "content": 1248,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2317,7 +2597,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1145,
+      "content": 1209,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2331,7 +2611,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1145,
+      "content": 1209,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2345,7 +2625,63 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1145,
+      "content": 1209,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-payment-result-unknown",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-payment-result-unknown-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1429,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-payment-result-unknown",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-payment-result-unknown-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1390,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-payment-result-unknown",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-payment-result-unknown-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1390,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-payment-result-unknown",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-payment-result-unknown-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1390,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2359,7 +2695,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 990,
+      "content": 1065,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2373,7 +2709,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 951,
+      "content": 1026,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2387,7 +2723,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 951,
+      "content": 1026,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2401,7 +2737,231 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 951,
+      "content": 1026,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-maximum",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-split-maximum-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 1327,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-maximum",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-split-maximum-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 1288,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-maximum",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-split-maximum-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 1288,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-split-maximum",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-split-maximum-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 1288,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-active",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-event-active-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 929,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-active",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-event-active-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 890,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-active",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-event-active-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 890,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-active",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-event-active-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 890,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-expired",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-event-expired-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 821,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-expired",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-event-expired-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 782,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-expired",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-event-expired-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 782,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-event-expired",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-event-expired-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 782,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-database-update-required",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/pos-database-update-required-1440.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 792,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-database-update-required",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/pos-database-update-required-1024.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 753,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-database-update-required",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/pos-database-update-required-768.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 753,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "pos-database-update-required",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/pos-database-update-required-390.png",
+      "url": "http://127.0.0.1:3100/pos",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 753,
       "unlabeledFields": [],
       "unnamedButtons": 0
     }
@@ -2418,6 +2978,16 @@
     {
       "url": "http://127.0.0.1:3100/store",
       "resource": "http://127.0.0.1:3100/api/store/catalog",
+      "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "url": "http://127.0.0.1:3100/pos",
+      "resource": "http://127.0.0.1:3100/api/pos/intents/efacc937-f942-42f7-b0c4-971273d08c23/confirm",
+      "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "url": "http://127.0.0.1:3100/pos",
+      "resource": "http://127.0.0.1:3100/api/pos/payment-policy",
       "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
     }
   ]

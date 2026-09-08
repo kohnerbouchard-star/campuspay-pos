@@ -18,7 +18,7 @@ export function CartPanel({
   onCouponRemoved,
   onChange,
   onCheckout,
-  tenderMode, cashEnabled, walletAmount, onTenderChange, onWalletAmountChange, busy,
+  tenderMode, cashEnabled, onTenderChange, busy,
 }: {
   cart: CartState
   products: CatalogProduct[]
@@ -31,7 +31,7 @@ export function CartPanel({
   onCouponRemoved(): void
   onChange(productId: string, delta: number, max: number): void
   onCheckout(): void
-  tenderMode: TenderMode; cashEnabled: boolean; walletAmount: string; onTenderChange(mode: TenderMode): void; onWalletAmountChange(value: string): void; busy: boolean
+  tenderMode: TenderMode; cashEnabled: boolean; onTenderChange(mode: TenderMode): void; busy: boolean
 }) {
   const lines = products.filter((product) => cart[product.id])
   return <aside className="cart-panel">
@@ -62,8 +62,8 @@ export function CartPanel({
     </div>
     <fieldset className="payment-methods"><legend>Payment method</legend>
       <div className="segmented-control">{(['WALLET', ...(cashEnabled ? ['CASH', 'SPLIT'] : [])] as TenderMode[]).map(mode => <button type="button" key={mode} aria-pressed={tenderMode === mode} onClick={() => onTenderChange(mode)}>{mode === 'WALLET' ? 'MICA Money' : mode === 'CASH' ? 'Cash' : 'Split'}</button>)}</div>
-      {tenderMode === 'SPLIT' && <><label className="field"><span>MICA Money contribution (₩)</span><input inputMode="numeric" value={walletAmount} onChange={event => onWalletAmountChange(event.target.value.replace(/\D/g, '').slice(0, 10))} aria-describedby="split-remaining" /></label><p className="muted" id="split-remaining">{Number(walletAmount) > 0 && Number(walletAmount) < total ? `Remaining cash due: ${formatWon(total - Number(walletAmount))}` : 'Enter a MICA Money amount greater than zero and below the sale total.'}</p></>}
+      {tenderMode === 'SPLIT' && <p className="muted">Scan the student’s card first, then choose their MICA Money contribution.</p>}
     </fieldset>
-    <button className="primary-action" disabled={!lines.length || busy || (tenderMode === 'SPLIT' && !(Number(walletAmount) > 0 && Number(walletAmount) < total))} onClick={onCheckout}>{busy ? 'Opening payment…' : `Take payment · ${formatWon(total)}`}</button>
+    <button className="primary-action" disabled={!lines.length || busy} onClick={onCheckout}>{busy ? 'Opening payment…' : `Take payment · ${formatWon(total)}`}</button>
   </aside>
 }

@@ -11,6 +11,6 @@ export async function POST(request: Request) {
   try {
     const session = await authorizeRequest('security.staff.manage')
     const input = await parseJson(request, UpdatePaymentPolicySchema)
-    return ok(await updatePaymentPolicy(session, input.cashEnabled, input.eventName))
+    return ok(await updatePaymentPolicy(session, input.cashEnabled, input.eventName, input.endsAt ?? null))
   } catch (error) { return failure(error) }
 }
