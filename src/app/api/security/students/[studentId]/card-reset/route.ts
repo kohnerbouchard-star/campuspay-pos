@@ -1,3 +1,4 @@
+import { withApiRoute } from '@/lib/api/route'
 import { authorizeRequest } from '@/features/auth/server/session'
 import { ResetCardSchema } from '@/features/security/domain'
 import { resetStudentCard } from '@/features/security/server'
@@ -6,7 +7,7 @@ import { ApiError } from '@/lib/api/errors'
 import { z } from 'zod'
 
 export const dynamic = 'force-dynamic'
-export async function POST(request: Request, context: { params: Promise<{ studentId: string }> }) {
+export const POST = withApiRoute('/api/security/students/[studentId]/card-reset', async (request: Request, context: { params: Promise<{ studentId: string }> }) => {
   try {
     const session = await authorizeRequest('security.credentials.request')
     const { studentId } = await context.params
@@ -14,4 +15,4 @@ export async function POST(request: Request, context: { params: Promise<{ studen
     const input = await parseJson(request, ResetCardSchema)
     return ok(await resetStudentCard(session, studentId, input.authorizationToken, input.newCardRead))
   } catch (error) { return failure(error) }
-}
+})

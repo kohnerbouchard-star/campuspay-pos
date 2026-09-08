@@ -11,17 +11,13 @@ import {
 } from '@/lib/http/cookies'
 import { callApiCommand, callApiRpc } from '@/lib/db/rpc'
 import { CustomerSessionSchema, type CustomerSession } from '@/features/store/domain'
+import { trustedClientIp } from '@/lib/http/trusted-ip'
 
 const CustomerSessionRows = z.array(CustomerSessionSchema).max(1)
 
-function requestIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  return forwarded || request.headers.get('x-real-ip') || 'unknown'
-}
-
 function fingerprintIp(request: Request): string {
   return createHmac('sha256', getServerEnv().SESSION_HMAC_SECRET)
-    .update(`customer-ip:${requestIp(request)}`)
+    .update(`customer-ip:${trustedClientIp(request.headers)}`)
     .digest('hex')
 }
 

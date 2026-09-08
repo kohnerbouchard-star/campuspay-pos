@@ -1,3 +1,4 @@
+import { withApiRoute } from '@/lib/api/route'
 import { authorizeRequest } from '@/features/auth/server/session'
 import { QuoteCouponSchema } from '@/features/coupons/domain'
 import { quoteCoupon } from '@/features/coupons/server'
@@ -5,7 +6,7 @@ import { failure, ok, parseJson } from '@/lib/api/response'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export const POST = withApiRoute('/api/pos/coupons/quote', async (request: Request) => {
   try {
     const session = await authorizeRequest('coupons.redeem')
     const input = await parseJson(request, QuoteCouponSchema)
@@ -13,4 +14,4 @@ export async function POST(request: Request) {
   } catch (error) {
     return failure(error)
   }
-}
+})

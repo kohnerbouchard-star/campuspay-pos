@@ -1,3 +1,4 @@
+import { withApiRoute } from '@/lib/api/route'
 import { z } from 'zod'
 import { authorizeRequest } from '@/features/auth/server/session'
 import { DeactivateCouponSchema } from '@/features/coupons/domain'
@@ -6,7 +7,7 @@ import { failure, ok, parseJson } from '@/lib/api/response'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request, context: { params: Promise<{ couponId: string }> }) {
+export const POST = withApiRoute('/api/coupons/[couponId]/deactivate', async (request: Request, context: { params: Promise<{ couponId: string }> }) => {
   try {
     const session = await authorizeRequest('coupons.manage')
     const { couponId } = await context.params
@@ -16,4 +17,4 @@ export async function POST(request: Request, context: { params: Promise<{ coupon
   } catch (error) {
     return failure(error)
   }
-}
+})

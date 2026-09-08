@@ -15,7 +15,7 @@ record('Runtime hardening precedes the one-time bootstrap module', files.indexOf
 record('Dollar-quote delimiters are paired', (allSql.match(/\$\$/g) ?? []).length % 2 === 0)
 record('No Supabase Auth dependency remains', !/auth\.uid\(\)|auth\.users|\b(?:to|from|role)\s+(?:anon|authenticated)\b/i.test(allSql))
 record('Staff PINs use an HMAC proof plus slow database hash', /p_pin_proof[\s\S]*extensions\.crypt/i.test(allSql))
-record('Cashier session timeout remains twenty seconds', /cashier[^;]*interval '20 seconds'/i.test(allSql))
+record('Staff sessions have bounded sliding and absolute expiry', /select interval '15 minutes'/.test(fs.readFileSync(path.join(schemaDirectory, '020_auth_session_hardening.sql'), 'utf8')) && /created_at \+ interval '8 hours'/.test(allSql))
 record('Wallet floor remains negative fifteen thousand won', /negative_wallet_limit_won[\s\S]*-15000/i.test(allSql))
 record('FIFO and LIFO lot allocation remain available', /inventory_cost_method[\s\S]*FIFO[\s\S]*LIFO/i.test(allSql))
 record('Runtime role has no direct private-table access', /revoke all on all tables in schema private from public, campuspay_runtime/i.test(allSql))

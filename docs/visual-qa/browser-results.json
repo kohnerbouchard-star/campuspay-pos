@@ -402,7 +402,7 @@
       "url": "http://127.0.0.1:3100/students",
       "width": 768,
       "scrollWidth": 768,
-      "content": 823,
+      "content": 641,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -427,7 +427,7 @@
         "height": 1000
       },
       "file": ".validation/visual/security-1440.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 1440,
       "scrollWidth": 1440,
       "content": 815,
@@ -441,7 +441,7 @@
         "height": 900
       },
       "file": ".validation/visual/security-1024.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 1024,
       "scrollWidth": 1024,
       "content": 776,
@@ -455,7 +455,7 @@
         "height": 1024
       },
       "file": ".validation/visual/security-768.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 768,
       "scrollWidth": 768,
       "content": 776,
@@ -469,7 +469,7 @@
         "height": 844
       },
       "file": ".validation/visual/security-390.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 390,
       "scrollWidth": 390,
       "content": 776,
@@ -483,7 +483,7 @@
         "height": 1000
       },
       "file": ".validation/visual/security-pin-reset-1440.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 1440,
       "scrollWidth": 1440,
       "content": 944,
@@ -497,7 +497,7 @@
         "height": 900
       },
       "file": ".validation/visual/security-pin-reset-1024.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 1024,
       "scrollWidth": 1024,
       "content": 905,
@@ -511,7 +511,7 @@
         "height": 1024
       },
       "file": ".validation/visual/security-pin-reset-768.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 768,
       "scrollWidth": 768,
       "content": 905,
@@ -525,7 +525,7 @@
         "height": 844
       },
       "file": ".validation/visual/security-pin-reset-390.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 390,
       "scrollWidth": 390,
       "content": 905,
@@ -539,7 +539,7 @@
         "height": 1000
       },
       "file": ".validation/visual/security-card-replacement-1440.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 1440,
       "scrollWidth": 1440,
       "content": 971,
@@ -553,7 +553,7 @@
         "height": 900
       },
       "file": ".validation/visual/security-card-replacement-1024.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 1024,
       "scrollWidth": 1024,
       "content": 932,
@@ -567,7 +567,7 @@
         "height": 1024
       },
       "file": ".validation/visual/security-card-replacement-768.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 768,
       "scrollWidth": 768,
       "content": 932,
@@ -581,7 +581,7 @@
         "height": 844
       },
       "file": ".validation/visual/security-card-replacement-390.png",
-      "url": "http://127.0.0.1:3100/security?studentId=90c0620f-e39b-4ff4-899b-52beb75734c0",
+      "url": "http://127.0.0.1:3100/security?studentId=0e073156-ab10-40de-8c01-f54aa5bfc395",
       "width": 390,
       "scrollWidth": 390,
       "content": 932,
@@ -981,6 +981,62 @@
       "unnamedButtons": 0
     },
     {
+      "name": "student-opaque-order-recovery",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/student-opaque-order-recovery-1440.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 880,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-opaque-order-recovery",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/student-opaque-order-recovery-1024.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 880,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-opaque-order-recovery",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/student-opaque-order-recovery-768.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 880,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "student-opaque-order-recovery",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/student-opaque-order-recovery-390.png",
+      "url": "http://127.0.0.1:3100/store",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 880,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
       "name": "student-order-receipt",
       "viewport": {
         "width": 1440,
@@ -990,7 +1046,7 @@
       "url": "http://127.0.0.1:3100/store",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 923,
+      "content": 943,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1004,7 +1060,7 @@
       "url": "http://127.0.0.1:3100/store",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 923,
+      "content": 943,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1018,7 +1074,7 @@
       "url": "http://127.0.0.1:3100/store",
       "width": 768,
       "scrollWidth": 768,
-      "content": 923,
+      "content": 943,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1032,7 +1088,7 @@
       "url": "http://127.0.0.1:3100/store",
       "width": 390,
       "scrollWidth": 390,
-      "content": 923,
+      "content": 943,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1158,7 +1214,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 996,
+      "content": 1162,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1172,7 +1228,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 965,
+      "content": 1131,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1186,7 +1242,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 768,
       "scrollWidth": 768,
-      "content": 965,
+      "content": 1131,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1200,7 +1256,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 390,
       "scrollWidth": 390,
-      "content": 956,
+      "content": 1122,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1214,7 +1270,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 872,
+      "content": 998,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1228,7 +1284,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 992,
+      "content": 1118,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1242,7 +1298,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 961,
+      "content": 1087,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1256,7 +1312,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 768,
       "scrollWidth": 768,
-      "content": 961,
+      "content": 1087,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1270,7 +1326,7 @@
       "url": "http://127.0.0.1:3100/orders",
       "width": 390,
       "scrollWidth": 390,
-      "content": 957,
+      "content": 1083,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1340,7 +1396,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 789,
+      "content": 797,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1354,7 +1410,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 742,
+      "content": 750,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1368,7 +1424,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 768,
       "scrollWidth": 768,
-      "content": 742,
+      "content": 750,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1382,7 +1438,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 390,
       "scrollWidth": 390,
-      "content": 742,
+      "content": 750,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1396,7 +1452,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 716,
+      "content": 724,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1410,7 +1466,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 669,
+      "content": 677,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1424,7 +1480,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 768,
       "scrollWidth": 768,
-      "content": 669,
+      "content": 677,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1438,7 +1494,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 390,
       "scrollWidth": 390,
-      "content": 669,
+      "content": 677,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1452,7 +1508,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 905,
+      "content": 913,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1466,7 +1522,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 858,
+      "content": 866,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1480,7 +1536,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 768,
       "scrollWidth": 768,
-      "content": 858,
+      "content": 866,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1494,7 +1550,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 390,
       "scrollWidth": 390,
-      "content": 858,
+      "content": 866,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1508,7 +1564,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 461,
+      "content": 469,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1522,7 +1578,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 414,
+      "content": 422,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1536,7 +1592,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 768,
       "scrollWidth": 768,
-      "content": 414,
+      "content": 422,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1550,7 +1606,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 390,
       "scrollWidth": 390,
-      "content": 414,
+      "content": 422,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1564,7 +1620,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 537,
+      "content": 545,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1578,7 +1634,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 490,
+      "content": 498,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1592,7 +1648,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 768,
       "scrollWidth": 768,
-      "content": 490,
+      "content": 498,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1606,7 +1662,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 390,
       "scrollWidth": 390,
-      "content": 490,
+      "content": 498,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1620,7 +1676,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 750,
+      "content": 758,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1634,7 +1690,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 703,
+      "content": 711,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1648,7 +1704,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 768,
       "scrollWidth": 768,
-      "content": 703,
+      "content": 711,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1662,7 +1718,7 @@
       "url": "http://127.0.0.1:3100/inventory",
       "width": 390,
       "scrollWidth": 390,
-      "content": 703,
+      "content": 711,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1844,7 +1900,7 @@
       "url": "http://127.0.0.1:3100/coupons",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1466,
+      "content": 1486,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1858,7 +1914,7 @@
       "url": "http://127.0.0.1:3100/coupons",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1419,
+      "content": 1439,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1872,7 +1928,7 @@
       "url": "http://127.0.0.1:3100/coupons",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1419,
+      "content": 1439,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1886,7 +1942,7 @@
       "url": "http://127.0.0.1:3100/coupons",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1419,
+      "content": 1439,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1900,7 +1956,7 @@
       "url": "http://127.0.0.1:3100/reports",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1877,
+      "content": 2513,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1914,7 +1970,7 @@
       "url": "http://127.0.0.1:3100/reports",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1840,
+      "content": 2476,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1928,7 +1984,7 @@
       "url": "http://127.0.0.1:3100/reports",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1840,
+      "content": 2476,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1953,7 +2009,119 @@
       "url": "http://127.0.0.1:3100/reports",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1840,
+      "content": 2476,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-reports",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/inventory-reports-1440.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 523,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-reports",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/inventory-reports-1024.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 476,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-reports",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/inventory-reports-768.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 476,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "inventory-reports",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/inventory-reports-390.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 476,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-timeout-warning",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "file": ".validation/visual/staff-timeout-warning-1440.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "content": 569,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-timeout-warning",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "file": ".validation/visual/staff-timeout-warning-1024.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "content": 522,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-timeout-warning",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "file": ".validation/visual/staff-timeout-warning-768.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 768,
+      "scrollWidth": 768,
+      "content": 522,
+      "unlabeledFields": [],
+      "unnamedButtons": 0
+    },
+    {
+      "name": "staff-timeout-warning",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "file": ".validation/visual/staff-timeout-warning-390.png",
+      "url": "http://127.0.0.1:3100/reports",
+      "width": 390,
+      "scrollWidth": 390,
+      "content": 522,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1967,7 +2135,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 869,
+      "content": 878,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1981,7 +2149,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 830,
+      "content": 839,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -1995,7 +2163,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 768,
       "scrollWidth": 768,
-      "content": 830,
+      "content": 839,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2009,7 +2177,7 @@
       "url": "http://127.0.0.1:3100/settings/payments",
       "width": 390,
       "scrollWidth": 390,
-      "content": 830,
+      "content": 839,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2135,7 +2303,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 840,
+      "content": 841,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2149,7 +2317,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 801,
+      "content": 802,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2163,7 +2331,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 801,
+      "content": 802,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2177,7 +2345,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 801,
+      "content": 802,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2191,7 +2359,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 853,
+      "content": 854,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2205,7 +2373,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 814,
+      "content": 815,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2219,7 +2387,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 814,
+      "content": 815,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2233,7 +2401,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 814,
+      "content": 815,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2247,7 +2415,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1059,
+      "content": 1060,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2261,7 +2429,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1020,
+      "content": 1021,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2275,7 +2443,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1020,
+      "content": 1021,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2289,7 +2457,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1020,
+      "content": 1021,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2359,7 +2527,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 929,
+      "content": 930,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2373,7 +2541,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 890,
+      "content": 891,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2387,7 +2555,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 890,
+      "content": 891,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2401,7 +2569,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 890,
+      "content": 891,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2415,7 +2583,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1011,
+      "content": 1012,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2429,7 +2597,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 972,
+      "content": 973,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2443,7 +2611,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 972,
+      "content": 973,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2457,7 +2625,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 972,
+      "content": 973,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2471,7 +2639,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1323,
+      "content": 1324,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2485,7 +2653,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1284,
+      "content": 1285,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2499,7 +2667,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1284,
+      "content": 1285,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2513,7 +2681,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1284,
+      "content": 1285,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2527,7 +2695,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1369,
+      "content": 1370,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2541,7 +2709,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1330,
+      "content": 1331,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2555,7 +2723,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1330,
+      "content": 1331,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2569,7 +2737,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1330,
+      "content": 1331,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2583,7 +2751,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1248,
+      "content": 1249,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2597,7 +2765,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1209,
+      "content": 1210,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2611,7 +2779,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1209,
+      "content": 1210,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2625,7 +2793,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1209,
+      "content": 1210,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2639,7 +2807,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1429,
+      "content": 1430,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2653,7 +2821,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1390,
+      "content": 1391,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2667,7 +2835,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1390,
+      "content": 1391,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2681,7 +2849,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1390,
+      "content": 1391,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2751,7 +2919,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 1327,
+      "content": 1328,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2765,7 +2933,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 1288,
+      "content": 1289,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2779,7 +2947,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 1288,
+      "content": 1289,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2793,7 +2961,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 1288,
+      "content": 1289,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2807,7 +2975,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 929,
+      "content": 930,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2821,7 +2989,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 890,
+      "content": 891,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2835,7 +3003,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 890,
+      "content": 891,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2849,7 +3017,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 890,
+      "content": 891,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2863,7 +3031,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1440,
       "scrollWidth": 1440,
-      "content": 821,
+      "content": 822,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2877,7 +3045,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 1024,
       "scrollWidth": 1024,
-      "content": 782,
+      "content": 783,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2891,7 +3059,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 768,
       "scrollWidth": 768,
-      "content": 782,
+      "content": 783,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2905,7 +3073,7 @@
       "url": "http://127.0.0.1:3100/pos",
       "width": 390,
       "scrollWidth": 390,
-      "content": 782,
+      "content": 783,
       "unlabeledFields": [],
       "unnamedButtons": 0
     },
@@ -2981,8 +3149,13 @@
       "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
     },
     {
+      "url": "http://127.0.0.1:3100/store",
+      "resource": "http://127.0.0.1:3100/api/store/orders",
+      "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
       "url": "http://127.0.0.1:3100/pos",
-      "resource": "http://127.0.0.1:3100/api/pos/intents/efacc937-f942-42f7-b0c4-971273d08c23/confirm",
+      "resource": "http://127.0.0.1:3100/api/pos/intents/e518fe88-7761-4e1d-8852-f1479e4aa545/confirm",
       "message": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
     },
     {

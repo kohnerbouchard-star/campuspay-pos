@@ -1,4 +1,5 @@
 'use client'
+import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CatalogProduct } from '@/features/pos/domain'
@@ -10,7 +11,7 @@ import { apiFetch, ClientApiError } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
 
 function emptyForm() {
-  return { supplierName: '', supplierInvoice: '', purchaseDate: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' }), shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: '', productId: '', quantity: 1, purchaseUnitCostWon: 0, expirationDate: '' }
+  return { supplierName: '', supplierInvoice: '', purchaseDate: new Date().toLocaleDateString('en-CA', { timeZone: BUSINESS_TIMEZONE }), shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: '', productId: '', quantity: 1, purchaseUnitCostWon: 0, expirationDate: '' }
 }
 const recoveryKey = (userId: string) => `mica-money:pending-stock-receipt:${userId}`
 

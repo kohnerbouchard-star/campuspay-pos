@@ -1,4 +1,5 @@
 'use client'
+import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 import type { PaymentReceipt } from '@/features/pos/domain'
 import { Dialog } from '@/components/ui/Dialog'
 import { formatWon } from '@/lib/format/currency'
@@ -7,7 +8,7 @@ export function ReceiptDialog({ receipt, items, onClose }: { receipt: PaymentRec
   return <Dialog title="Payment completed" onClose={onClose}>
     <div className="sale-receipt">
       <p className="eyebrow">MICA Money</p><strong>{receipt.receipt_number}</strong>
-      <p className="muted">{new Date(receipt.created_at).toLocaleString(undefined, { timeZone: 'Asia/Seoul' })} KST</p>
+      <p className="muted">{new Date(receipt.created_at).toLocaleString(undefined, { timeZone: BUSINESS_TIMEZONE })} KST</p>
       <dl className="tender-summary">{items.map((item, index) => <div key={`${item.name}-${index}`}><dt>{item.name} × {item.quantity}</dt><dd>{formatWon(item.lineTotalWon)}</dd></div>)}
         {receipt.discount_won > 0 && <><div><dt>Subtotal</dt><dd>{formatWon(receipt.subtotal_won)}</dd></div><div><dt>{receipt.coupon_name ?? 'Coupon'}</dt><dd>−{formatWon(receipt.discount_won)}</dd></div></>}
         <div className="total-row"><dt>Total</dt><dd>{formatWon(receipt.total_won)}</dd></div>

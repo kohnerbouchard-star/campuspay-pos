@@ -1,6 +1,8 @@
 export const POS_INACTIVITY_MS = 5 * 60 * 1000
 export const POS_WARNING_MS = 30 * 1000
-export const SESSION_HEARTBEAT_MS = 5 * 1000
+export const STAFF_INACTIVITY_MS = 15 * 60 * 1000
+export const STAFF_ABSOLUTE_MS = 8 * 60 * 60 * 1000
+export const SESSION_HEARTBEAT_MS = 60 * 1000
 export const PAYMENT_RESULT_GRACE_MS = 30 * 1000
 export const RECEIPT_PROTECTION_MS = 60 * 1000
 export const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart'] as const

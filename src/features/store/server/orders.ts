@@ -53,6 +53,13 @@ export function customerOrders(session: CustomerSession) {
   return callApiRpc('customer_orders', { p_customer_session_id: session.session_id }, CustomerOrdersSchema)
 }
 
+export async function recoverOnlineOrder(session: CustomerSession, idempotencyKey: string) {
+  const rows = await callApiRpc('recover_online_order', {
+    p_customer_session_id: session.session_id, p_idempotency_key: idempotencyKey,
+  }, z.array(OnlineOrderReceiptSchema).max(1))
+  return rows[0] ?? null
+}
+
 export function staffOnlineOrders(session: SessionContext) {
   return callApiRpc('staff_online_orders', { p_session_id: session.session_id }, StaffOnlineOrdersSchema)
 }

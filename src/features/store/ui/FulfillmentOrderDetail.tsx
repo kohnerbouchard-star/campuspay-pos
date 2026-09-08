@@ -15,6 +15,7 @@ export function FulfillmentOrderDetail({ order, busy, onAdvance }: { order: Staf
   return <section className={styles.fulfillmentDetail} aria-labelledby="fulfillment-detail-title">
     <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>Order detail</p><h2 id="fulfillment-detail-title">{order.order_number}</h2></div><span className={styles.status}>{orderStatusLabel(order.status)}</span></div>
     <div className={styles.deliveryReview}><strong>{order.delivery_building} · Floor {order.delivery_floor} · Room {order.delivery_room}</strong><span>Recipient: {order.student_name}</span><small>Placed {orderTime(order.created_at)} · KST</small></div>
+    <p className={styles.muted}>Picking checks stay in this page only. Reloading resets them; other staff see the server’s order status.</p>
     <h3>{picking ? 'Pick every item' : 'Items'}</h3>
     <div className={styles.pickingList}>{order.items.map((item) => <label key={item.product_id} className={styles.pickingItem}>
       {picking && <input type="checkbox" disabled={busy} checked={picked.has(item.product_id)} onChange={(event) => setPicked((current) => { const nextSet = new Set(current); if (event.target.checked) nextSet.add(item.product_id); else nextSet.delete(item.product_id); return nextSet })} />}

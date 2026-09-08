@@ -1,6 +1,6 @@
 # Visual QA evidence
 
-212 captures cover 56 interface states at 1440, 1024, 768, and 390px, plus a phone viewport check of the transaction register. All data shown is synthetic localhost test data. The browser completed enrollment, credential reset, student ordering, picking through delivery, wallet history, cash/split payments, and keyboard focus checks.
+224 captures cover 59 interface states at 1440, 1024, 768, and 390px, plus a phone viewport check of the transaction register. All data shown is synthetic localhost test data. The browser completed enrollment, credential reset, student ordering, picking through delivery, wallet history, cash/split payments, and keyboard focus checks.
 
 No unexpected browser errors, document overflow, missing visible field labels, or unnamed buttons were found in the final run. Deliberate 401/503 responses tested login errors and service recovery. Main text/action colors pass the measured AA contrast thresholds.
 
@@ -84,3 +84,41 @@ Real reader, E202, cash/change, and school workflow acceptance remain human task
 | Database update required · 768px | [Open](pos-database-update-required-768.png) |
 | Checkout estimate and room hint · 390px | [Open](student-checkout-limit-warning-390.png) |
 | Development login and icon metadata · 1440px | [Open](development-login-icon-1440.png) |
+
+## Pre-merge hardening evidence
+
+The hardening matrix adds long enrollment/activity handling, the fifteen-minute
+staff warning and Stay signed in action, the Inventory Admin Reports layout,
+opaque-key store recovery after a lost successful response and page reload, and
+fulfillment polling. The queue test verifies one request per interval, no polling
+while offline, retained checked items, and removal of an obsolete transition
+when another employee advances the order. Existing cash/split, compatibility,
+receipt, enrollment, and keyboard tests also pass under the production nonce CSP.
+
+Virtual clocks are installed before application timers. Simulated enrollment time
+is reset before testing the independent short step-up approval lifetime. The
+browser retains only opaque IDs during uncertain order recovery and clears them
+after receiving the original authoritative receipt. Server correlation IDs are
+verified in response headers; no new request-ID UI is introduced.
+
+This pass updates only five materially changed retained images and adds four.
+Other retained screenshots remain representative evidence from the previous pass;
+the current complete matrix is the linked browser manifest. All four widths were
+checked, and representative changed screenshots were inspected directly.
+
+| Hardening state | Retained evidence |
+| --- | --- |
+| Staff inactivity warning · 390px | [Open](staff-timeout-warning-390.png) |
+| Inventory Admin Reports · 1024px | [Open](inventory-reports-1024.png) |
+| Opaque order recovery · 390px | [Open](student-opaque-order-recovery-390.png) |
+| Opaque order recovery · 768px | [Open](student-opaque-order-recovery-768.png) |
+| Accountant Reports · 1440px / 390px | [Desktop](reports-1440.png), [phone](reports-390.png) |
+| Picking and polling guidance · 1440px | [Open](staff-orders-picking-1440.png) |
+| Korea event-time input · 390px | [Open](payment-settings-390.png) |
+| Korea coupon-time inputs · 390px | [Open](coupons-390.png) |
+
+[Hardening checks](hardening-results.json) record the 18 new database/HTTP coverage
+groups. [Neon checks](neon-results.json) passed on the pinned development branch
+with fixture rollback verified. The [delivery report](../PRE_MERGE_HARDENING.md)
+records the security decisions, release preflight, historical function-contract
+compatibility, storage exception for unresolved opaque keys, and operational limits.

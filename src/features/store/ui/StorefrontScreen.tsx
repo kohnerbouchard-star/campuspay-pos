@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { addProduct, changeQuantity, toCartLines, type CartState } from '@/features/pos/cart'
 import type { CatalogProduct } from '@/features/pos/domain'
-import { fetchCustomerSession, fetchDeliveryLocations, fetchStoreCatalog, placeOnlineOrder, quoteCustomerOrder } from '@/features/store/client'
+import { fetchCustomerSession, fetchDeliveryLocations, fetchStoreCatalog, placeOnlineOrder, quoteCustomerOrder, recoverCustomerOrder } from '@/features/store/client'
 import type { CustomerProfile, DeliveryLocation, OnlineOrderReceipt } from '@/features/store/domain'
 import { customerLoginPath } from '@/features/store/navigation'
 import { customerProfile, isCustomerSessionError, storeErrorMessage } from '@/features/store/presentation'
@@ -33,6 +33,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
   const [refreshCount, setRefreshCount] = useState(0)
   const [review, setReview] = useState<ReviewedOrder | null>(null)
   const [uncertain, setUncertain] = useState(false)
+  const [pendingId, setPendingId] = useState<string | null>(null)
   const lines = toCartLines(cart)
   const itemCount = lines.reduce((total, line) => total + line.quantity, 0)
   const categories = ['All', ...new Set(products.map((product) => product.category))]
@@ -44,8 +45,8 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
       if (!active) return
       const pending = readPendingOrder(initialSession.student_id)
       if (pending) {
-        setReview(pending); setCart(Object.fromEntries(pending.input.items.map((item) => [item.productId, item.quantity])))
-        setUncertain(true); setAnnouncement('An earlier order needs confirmation. Retry the same order safely or check your order history.')
+        setPendingId(pending.idempotencyKey)
+        setUncertain(true); setAnnouncement('An earlier order needs confirmation. Recover its result before placing another order.')
       }
     })
     Promise.all([fetchStoreCatalog(), fetchDeliveryLocations()]).then(([catalog, delivery]) => {
@@ -62,6 +63,21 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
   function handleError(caught: unknown) {
     if (isCustomerSessionError(caught)) { router.replace(customerLoginPath('/store', true)); router.refresh(); return }
     setError(storeErrorMessage(caught))
+  }
+
+  async function recoverOrder() {
+    if (!pendingId || processing.current) return
+    processing.current = true; setBusy(true); setError(null)
+    try {
+      const next = await recoverCustomerOrder(pendingId)
+      clearPendingOrder(session.student_id)
+      setPendingId(null); setUncertain(false); setReview(null); setCart({})
+      if (next) {
+        setReceipt(next)
+        setSession(current => ({ ...current, balance_won: next.balance_after_won, debt_won: next.debt_after_won }))
+      } else setAnnouncement('The earlier order was not placed. That request is now closed; you can start a new order.')
+    } catch (caught) { handleError(caught) }
+    finally { processing.current = false; setBusy(false) }
   }
 
   async function reviewOrder(input: OrderProposal) {
@@ -86,7 +102,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
     try {
       const next = await placeOnlineOrder({ ...review.input, idempotencyKey: review.idempotencyKey, expectedTotalWon: review.quote.total_won })
       clearPendingOrder(session.student_id)
-      setReceipt(next); setCart({}); setReview(null); setUncertain(false)
+      setReceipt(next); setCart({}); setReview(null); setUncertain(false); setPendingId(null)
       setSession((current) => ({ ...current, balance_won: next.balance_after_won, debt_won: next.debt_after_won }))
       setAnnouncement(`Order ${next.order_number} placed. Your wallet was charged ${formatWon(next.total_won)}.`)
       // A refresh failure must not turn an authoritative paid receipt into a failure.
@@ -95,7 +111,8 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
       }).catch(() => undefined)
     } catch (caught) {
       if (!(caught instanceof ClientApiError) || caught.status >= 500) {
-        setUncertain(true); setError('Your order result is not yet confirmed. Use the same retry below to avoid placing a second order.')
+        setPendingId(review.idempotencyKey)
+        setUncertain(true); setError('Your order result is not yet confirmed. Recover the result below before placing another order.')
       } else if (uncertain) {
         // A later failure cannot prove the earlier request failed. Keep its UUID across reauthentication.
         if (isCustomerSessionError(caught)) handleError(caught)
@@ -108,6 +125,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
     <div className={styles.welcome}><div><p className={styles.eyebrow}>Welcome, {session.display_name}</p><h1>Your school day, delivered.</h1><p className={styles.muted}>Pick your favourites. We’ll bring them to your room.</p></div><a className={styles.cartLink} href="#cart">Your cart <strong>{itemCount}</strong></a></div>
     <span className={styles.srOnly} role="status" aria-live="polite">{announcement}</span>
     {error && <div className={uncertain ? "uncertain-result" : styles.error} role="alert">{error}{!busy && !uncertain && <button className={styles.textButton} onClick={() => { setLoading(true); setRefreshCount((count) => count + 1) }}>Refresh store</button>}</div>}
+    {pendingId && <section className="uncertain-result" role="alert"><strong>Order result unknown.</strong><p>Recover the earlier result before placing another order. If it was not placed, recovery safely closes that request.</p><button className={styles.primary} disabled={busy} onClick={() => void recoverOrder()}>{busy ? 'Checking order…' : 'Recover order'}</button><Link href="/store/orders">Check My orders</Link></section>}
     {receipt && <section className={styles.receipt} role="status"><div><p className={styles.eyebrow}>Order confirmed</p><h2>{receipt.order_number}</h2><p>{receipt.delivery_building} · Floor {receipt.delivery_floor} · Room {receipt.delivery_room}</p></div><div><strong>{formatWon(receipt.total_won)}</strong><span>MICA Money payment complete</span><Link href="/store/orders">Track your order →</Link></div></section>}
     <div className={styles.shopLayout}>
       <section aria-labelledby="shop-title">
@@ -115,12 +133,12 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
         <label className={styles.search} htmlFor="store-search"><span className={styles.srOnly}>Search products</span><input id="store-search" type="search" placeholder="Search snacks, drinks and more" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
         <div className={styles.categories} role="group" aria-label="Product categories">{categories.map((name) => <button key={name} aria-pressed={category === name} onClick={() => setCategory(name)}>{name}</button>)}</div>
         {loading ? <div className={styles.empty} role="status">Loading your store…</div> : visible.length === 0 ? <div className={styles.empty}><h3>{products.length === 0 ? 'The store is getting ready' : 'No matching items'}</h3><p>{products.length === 0 ? 'Check back soon for available products.' : 'Try another search or category.'}</p>{products.length > 0 && <button className={styles.secondary} onClick={() => { setSearch(''); setCategory('All') }}>Show all products</button>}</div> : <div className={styles.products}>{visible.map((product) => <article className={styles.product} key={product.id}>
-          <span className={styles.productCategory}>{product.category}</span><h3>{product.name}</h3><span className={styles.availability}>{product.sold_out ? 'Sold out' : product.stock_on_hand <= 5 ? `Only ${product.stock_on_hand} left` : 'Available today'}</span><div className={styles.productBottom}><strong>{formatWon(product.selling_price_won)}</strong><button className={styles.addButton} disabled={product.sold_out || busy || review !== null || (cart[product.id] ?? 0) >= Math.min(product.stock_on_hand, 99)} aria-label={`Add ${product.name} to cart`} onClick={() => {
+          <span className={styles.productCategory}>{product.category}</span><h3>{product.name}</h3><span className={styles.availability}>{product.sold_out ? 'Sold out' : product.stock_on_hand <= 5 ? `Only ${product.stock_on_hand} left` : 'Available today'}</span><div className={styles.productBottom}><strong>{formatWon(product.selling_price_won)}</strong><button className={styles.addButton} disabled={product.sold_out || busy || pendingId !== null || review !== null || (cart[product.id] ?? 0) >= Math.min(product.stock_on_hand, 99)} aria-label={`Add ${product.name} to cart`} onClick={() => {
             setCart((current) => addProduct(current, { ...product, stock_on_hand: Math.min(product.stock_on_hand, 99) })); setAnnouncement(`${product.name} added to your cart.`)
           }}>Add <span aria-hidden="true">+</span></button></div>
         </article>)}</div>}
       </section>
-      {!loading && <StoreCart key={receipt?.order_id ?? 'new-cart'} lines={lines} products={products} locations={locations} session={session} busy={busy} review={review} uncertain={uncertain} onQuantity={(product, delta) => setCart((current) => changeQuantity(current, product.id, delta, Math.min(product.stock_on_hand, 99)))} onReview={reviewOrder} onPlace={submitOrder} onAdjust={() => { setReview(null); setError(null) }} />}
+      {!loading && !pendingId && <StoreCart key={receipt?.order_id ?? 'new-cart'} lines={lines} products={products} locations={locations} session={session} busy={busy} review={review} uncertain={uncertain} onQuantity={(product, delta) => setCart((current) => changeQuantity(current, product.id, delta, Math.min(product.stock_on_hand, 99)))} onReview={reviewOrder} onPlace={submitOrder} onAdjust={() => { clearPendingOrder(session.student_id); setReview(null); setError(null) }} />}
     </div>
   </StoreShell>
 }

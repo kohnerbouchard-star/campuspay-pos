@@ -7,6 +7,8 @@ import fs from 'node:fs'
 import pg from 'pg'
 import { runEnrollmentChecks } from './enrollment-integration.mjs'
 import { runOldSchemaCheck } from './old-schema-check.mjs'
+import { runMigrationPreflightChecks } from './migration-preflight-check.mjs'
+import { runHardeningChecks } from './hardening-integration.mjs'
 import { runRemediationChecks } from './remediation-integration.mjs'
 import { runTenderChecks } from './tender-integration-checks.mjs'
 import { runVisualQa } from './visual-qa.mjs'
@@ -15,7 +17,7 @@ const ownerUrl = process.env.DATABASE_URL_UNPOOLED
 if (!ownerUrl || !['localhost','127.0.0.1'].includes(new URL(ownerUrl).hostname)) throw new Error('Integration tests require an isolated localhost PostgreSQL database')
 const owner = new pg.Client({ connectionString: ownerUrl })
 await owner.connect()
-const env = { ...process.env, COOKIE_SECURE:'false', APP_ORIGIN:'http://127.0.0.1:3100', NODE_ENV:'production', NEXT_TELEMETRY_DISABLED:'1' }
+const env = { ...process.env, DATABASE_URL_UNPOOLED: '', COOKIE_SECURE:'false', APP_ORIGIN:'http://127.0.0.1:3100', NODE_ENV:'production', NEXT_TELEMETRY_DISABLED:'1' }
 for (const key of ['CARD_HMAC_SECRET','COUPON_HMAC_SECRET','STAFF_PIN_PEPPER','STUDENT_PIN_PEPPER','SESSION_HMAC_SECRET','TERMINAL_COOKIE_SECRET']) env[key] = randomBytes(32).toString('hex')
 const h=(key,s)=>createHmac('sha256',env[key]).update(s).digest('hex')
 const staff=[['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin']].map(([employeeCode,role])=>({employeeCode,role,displayName:`Test ${role}`,pinProof:h('STAFF_PIN_PEPPER','staff-pin:12345678')}))
@@ -117,6 +119,8 @@ try {
  if(process.env.CI_BROWSER==='1') await runVisualQa({base,login,request,jar,card,studentPin,owner})
  await runTenderChecks({owner,request,login,jar,card,studentPin})
  await runRemediationChecks({owner,request,login,jar,card,studentPin})
+ await runHardeningChecks({owner,request,login,jar,base,card,studentPin})
+ await runMigrationPreflightChecks(owner)
  await runOldSchemaCheck({owner,ownerUrl,env,staff,h})
 
  // Login attempts must commit even though login is rejected.
@@ -124,7 +128,7 @@ try {
  const lock=await owner.query("select failed_attempts,locked_until from private.staff_credentials c join public.staff_profiles s on s.auth_user_id=c.staff_user_id where s.employee_code='2001'");assert.equal(lock.rows[0].failed_attempts,5);assert.ok(lock.rows[0].locked_until)
  await request(jar(),'/api/auth/login',{employeeCode:'2001',pin:'12345678'},401)
  await assert.rejects(owner.query('update private.wallet_ledger set amount_won=amount_won'),/Journal entries cannot be changed/)
- const idle=await login('1001');await new Promise(r=>setTimeout(r,21000));await request(idle,'/api/pos/catalog',undefined,401)
+ const idle=await login('1001');const idleSession=await request(idle,'/api/auth/session');await owner.query("update private.staff_sessions set expires_at=clock_timestamp()-interval '1 second' where id=$1",[idleSession.session_id]);await request(idle,'/api/pos/catalog',undefined,401)
  fs.writeFileSync('.validation/integration-results.json',JSON.stringify({passed:true,checks:['anonymous denial','four role logins','least-privilege denials','negative-balance sale','duplicate prevention','wallet floor','coupon limits','accountant top-up','four reports','costed receipts','FIFO allocation','sold-out status','fixed coupon','coupon deactivation','PIN reset and one-use approval','persistent login lockout','immutable ledger','cashier idle expiry','browser login and POS','customer online store','room delivery directory','shared online inventory and wallet','online coupon redemption','staff fulfillment workflow','sales channel attribution','atomic enrollment and duplicate protection','restricted student permissions','terminal cash policy','exact split tender and change','all-or-nothing rollback injection','POS recovery after reauthentication','KST report boundaries','card-first split preparation without financial writes','server wallet capacity and immutable plan replay','wallet-only switch from split','audited cash end time and stale-browser expiry rejection','missing-RPC error mapping','actual pre-refresh schema compatibility','expired server session cannot be revived']},null,2))
  console.log('PASS: HTTP integration suite, staff POS, customer online store, fulfillment, accounting, inventory, coupons, reset authorization and idle expiry')
 } finally {server.kill('SIGTERM');await owner.end();fs.closeSync(log)}

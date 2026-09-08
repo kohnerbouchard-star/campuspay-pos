@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, type ReactNode } from 'react'
-import { logoutCustomer } from '@/features/store/client'
+import { useEffect, useState, type ReactNode } from 'react'
+import { logoutCustomer, recoverCustomerOrder } from '@/features/store/client'
 import type { CustomerProfile } from '@/features/store/domain'
 import { formatWon } from '@/lib/format/currency'
+import { clearPendingOrder, readPendingOrder, scrubPendingOrderStorage } from '@/features/store/order-recovery'
 import styles from './store.module.css'
 
 export function StoreBrand() {
@@ -19,9 +20,15 @@ export function StoreShell({ session, children }: { session: CustomerProfile; ch
   const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  useEffect(() => { scrubPendingOrderStorage() }, [session.student_id])
   async function signOut() {
     if (busy) return
     setBusy(true); setError(null)
+    const pending = readPendingOrder(session.student_id)
+    if (pending) {
+      try { await recoverCustomerOrder(pending.idempotencyKey); clearPendingOrder(session.student_id) }
+      catch { /* Preserve only the opaque recovery key across reauthentication. */ }
+    }
     try { await logoutCustomer(); router.replace('/store/login'); router.refresh() }
     catch { setError('We couldn’t sign you out. Check your connection and try again.'); setBusy(false) }
   }

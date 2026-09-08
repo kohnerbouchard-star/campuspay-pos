@@ -22,7 +22,7 @@ export async function runOldSchemaCheck({ owner, ownerUrl, env, staff, h }) {
     const runtime = new URL(env.DATABASE_URL); runtime.pathname = `/${name}`
     const base = 'http://127.0.0.1:3101'
     log = fs.openSync('.validation/old-schema-server.log', 'w')
-    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3101', '-H', '127.0.0.1'], { env: { ...env, DATABASE_URL: runtime.toString(), DATABASE_URL_UNPOOLED: url.toString(), APP_ORIGIN: base }, stdio: ['ignore', log, log] })
+    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3101', '-H', '127.0.0.1'], { env: { ...env, DATABASE_URL: runtime.toString(), DATABASE_URL_UNPOOLED: '', APP_ORIGIN: base }, stdio: ['ignore', log, log] })
     for (let i = 0; i < 60; i++) {
       try { if ((await fetch(base)).ok) break } catch {}
       if (i === 59) throw new Error('Older-schema test app did not start')

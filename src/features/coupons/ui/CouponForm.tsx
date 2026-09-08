@@ -1,5 +1,6 @@
 'use client'
 
+import { businessDateTimeInput, businessDateTimeToIso } from '@/lib/format/business-time'
 import { useRef, useState } from 'react'
 import { addCoupon } from '@/features/coupons/client'
 import { formatWon } from '@/lib/format/currency'
@@ -31,7 +32,7 @@ export function CouponForm({ onSaved }: { onSaved(): void }) {
     maxDiscountWon: '',
     totalRedemptionLimit: '',
     perStudentLimit: '1',
-    startsAt: new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16),
+    startsAt: businessDateTimeInput(now),
     endsAt: '',
   })
   const [busy, setBusy] = useState(false)
@@ -66,8 +67,8 @@ export function CouponForm({ onSaved }: { onSaved(): void }) {
         maxDiscountWon: toNumberOrNull(form.maxDiscountWon),
         totalRedemptionLimit: toNumberOrNull(form.totalRedemptionLimit),
         perStudentLimit: toNumberOrNull(form.perStudentLimit),
-        startsAt: new Date(form.startsAt).toISOString(),
-        endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : null,
+        startsAt: businessDateTimeToIso(form.startsAt),
+        endsAt: form.endsAt ? businessDateTimeToIso(form.endsAt) : null,
       }, requestKey.current)
       setCreated({ name: result.name, code: form.code })
       setMessage(null); setUncertain(false); requestKey.current = null
@@ -101,8 +102,8 @@ export function CouponForm({ onSaved }: { onSaved(): void }) {
     <label className="field"><span>Maximum discount (₩, optional)</span><input type="number" min="1" value={form.maxDiscountWon} onChange={(event) => set('maxDiscountWon', event.target.value)} /></label>
     <label className="field"><span>Total use limit (optional)</span><input type="number" min="1" value={form.totalRedemptionLimit} onChange={(event) => set('totalRedemptionLimit', event.target.value)} /></label>
     <label className="field"><span>Uses per student (optional)</span><input type="number" min="1" value={form.perStudentLimit} onChange={(event) => set('perStudentLimit', event.target.value)} /></label>
-    <label className="field"><span>Starts</span><input type="datetime-local" required value={form.startsAt} onChange={(event) => set('startsAt', event.target.value)} /></label>
-    <label className="field"><span>Ends (optional)</span><input type="datetime-local" value={form.endsAt} onChange={(event) => set('endsAt', event.target.value)} /></label>
+    <label className="field"><span>Starts · KST</span><input type="datetime-local" required value={form.startsAt} onChange={(event) => set('startsAt', event.target.value)} /></label>
+    <label className="field"><span>Ends · KST (optional)</span><input type="datetime-local" value={form.endsAt} onChange={(event) => set('endsAt', event.target.value)} /></label>
     <div className="coupon-preview span-two">
       <span>Preview</span>
       <strong>{form.discountType === 'FIXED' ? formatWon(toNumberOrNull(form.fixedAmountWon) ?? 0) : `${form.percentage || '0'}%`} off</strong>

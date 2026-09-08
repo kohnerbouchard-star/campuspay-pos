@@ -28,6 +28,9 @@ export function quoteCustomerOrder(items: { productId: string; quantity: number 
   return apiFetch<OnlineOrderQuote>('/api/store/quote', { method: 'POST', body: JSON.stringify({ items, couponCode }) })
 }
 export function fetchCustomerOrders() { return apiFetch<CustomerOrder[]>('/api/store/orders') }
+export function recoverCustomerOrder(idempotencyKey: string) {
+  return apiFetch<OnlineOrderReceipt | null>('/api/store/orders/recover', { method: 'POST', body: JSON.stringify({ idempotencyKey }) })
+}
 export function fetchStaffOnlineOrders() { return apiFetch<StaffOnlineOrder[]>('/api/orders') }
 export function advanceOnlineOrder(orderId: string, status: 'PICKING'|'READY'|'OUT_FOR_DELIVERY'|'DELIVERED') {
   return apiFetch(`/api/orders/${orderId}/status`, { method: 'POST', body: JSON.stringify({ status }) })

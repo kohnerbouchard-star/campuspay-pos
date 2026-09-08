@@ -1,3 +1,4 @@
+import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 import { ClientApiError } from '@/lib/api/client'
 import type { CustomerProfile, CustomerSession } from '@/features/store/domain'
 
@@ -36,5 +37,5 @@ export function storeErrorMessage(error: unknown, fallback = 'We couldn’t comp
 }
 
 export function orderTime(value: string): string {
-  return new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(value))
+  return new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: BUSINESS_TIMEZONE }).format(new Date(value))
 }

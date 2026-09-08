@@ -39,6 +39,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     contexts.push(context)
     await context.addCookies([...cookies].filter(([, value]) => value).map(([name, value]) => ({ name, value, url: base })))
     const page = await context.newPage()
+    await page.clock.install()
     lastPage = page
     page.setDefaultTimeout(12000)
     page.on('pageerror', (error) => pageErrors.push({ url: page.url(), message: error.message }))
@@ -62,7 +63,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await page.setViewportSize(viewport)
     await page.evaluate(() => window.scrollTo(0, 0))
     // Trusted activity preserves the real short cashier timeout while reviewing responsive states.
-    if (name !== 'pos-timeout-warning') await page.keyboard.press('Shift')
+    if (!['pos-timeout-warning', 'staff-timeout-warning'].includes(name)) await page.keyboard.press('Shift')
     if (waitForNetwork) await settled(page)
     if (name === 'reports' && viewport.width === 390) {
       const register = page.getByRole('region', { name: 'Transaction register', exact: true })
@@ -161,6 +162,8 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     assert.equal(await adminPage.getByLabel('Confirm student PIN', { exact: true }).evaluate((input) => input.checkValidity()), false, 'Browser requires PIN confirmation')
     await captureAll(adminPage, 'enrollment-confirmation-required')
     await adminPage.getByLabel('Confirm student PIN', { exact: true }).fill(visualPin)
+    await adminPage.clock.fastForward(180000)
+    assert.ok(adminPage.url().includes('/students'), 'Enrollment remains usable after three minutes')
     await captureAll(adminPage, 'enrollment-ready')
     const enrollmentResponse = adminPage.waitForResponse((response) => response.url().endsWith('/api/students') && response.request().method() === 'POST')
     await adminPage.getByRole('button', { name: 'Create MICA Money account', exact: true }).click()
@@ -170,6 +173,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await adminPage.getByRole('heading', { name: 'MICA Money account created', exact: true }).waitFor()
     await captureAll(adminPage, 'enrollment-success')
 
+    await adminPage.clock.setSystemTime(new Date())
     await adminPage.goto(`${base}/security?studentId=${visualStudentId}`)
     await adminPage.getByRole('heading', { name: 'Security', exact: true }).waitFor()
     await captureAll(adminPage, 'security')
@@ -258,12 +262,27 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await customerPage.getByRole('button', { name: 'Review order', exact: true }).click()
     await customerPage.getByRole('heading', { name: 'Review your order', exact: true }).waitFor()
     await captureAll(customerPage, 'student-order-review')
-    const orderResponse = customerPage.waitForResponse((response) => response.url().endsWith('/api/store/orders') && response.request().method() === 'POST')
+    await customerPage.route('**/api/store/orders', async route => {
+      const committed = await route.fetch()
+      assert.equal(committed.status(), 201)
+      expectedHttpErrors.set(customerPage, [{ url: route.request().url(), status: 503 }])
+      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Order response interrupted' } }) })
+    }, { times: 1 })
     await customerPage.getByRole('button', { name: /^Place order/ }).click()
+    await customerPage.getByRole('button', { name: 'Recover order', exact: true }).waitFor()
+    const retained = await customerPage.evaluate(() => Object.entries(sessionStorage).filter(([key]) => key.startsWith('mica-money:pending-order:')).map(([,value]) => JSON.parse(value)))
+    assert.equal(retained.length, 1)
+    assert.deepEqual(Object.keys(retained[0]).sort(), ['idempotencyKey','studentId','version'])
+    await customerPage.reload()
+    await customerPage.getByRole('button', { name: 'Recover order', exact: true }).waitFor()
+    await captureAll(customerPage, 'student-opaque-order-recovery')
+    const orderResponse = customerPage.waitForResponse(response => response.url().endsWith('/api/store/orders/recover'))
+    await customerPage.getByRole('button', { name: 'Recover order', exact: true }).click()
     const placedOrder = await (await orderResponse).json()
     assert.equal(placedOrder.ok, true)
     visualOrderId = placedOrder.data.order_id
     visualOrderNumber = placedOrder.data.order_number
+    assert.equal(await customerPage.evaluate(() => Object.keys(sessionStorage).filter(key => key.startsWith('mica-money:pending-order:')).length), 0)
     await customerPage.getByText('Order confirmed', { exact: true }).waitFor()
     await captureAll(customerPage, 'student-order-receipt')
     await customerPage.getByRole('link', { name: 'Track your order', exact: false }).click()
@@ -280,12 +299,23 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
       ['/accounting', '3001', 'Accounting', 'accounting'],
       ['/coupons', '2001', 'Coupons', 'coupons'],
       ['/reports', '3001', 'Reports', 'reports'],
+      ['/reports', '2001', 'Reports', 'inventory-reports'],
       ['/settings/payments', '9001', 'Payment settings', 'payment-settings'],
     ]) {
-      const page = await pageFor(await login(code))
+      const staffCookies = await login(code)
+      const page = await pageFor(staffCookies)
       await page.goto(base + route)
       await page.getByRole('heading', { name: heading, exact: true }).waitFor()
       await captureAll(page, name)
+      if (name === 'inventory-reports') {
+        assert.equal(await page.getByRole('heading', { name: 'Inventory value', exact: true }).count(), 1)
+        assert.equal(await page.getByRole('region', { name: 'Transaction register', exact: true }).count(), 0)
+        await page.clock.fastForward(870000)
+        await page.getByRole('button', { name: 'Stay signed in', exact: true }).waitFor()
+        await captureAll(page, 'staff-timeout-warning')
+        await page.getByRole('button', { name: 'Stay signed in', exact: true }).click()
+        await page.getByRole('button', { name: 'Stay signed in', exact: true }).waitFor({ state: 'hidden' })
+      }
       if (route === '/orders') {
         await page.getByLabel('Search orders, students, or rooms', { exact: true }).fill(studentName)
         const detail = page.locator('section[aria-labelledby="fulfillment-detail-title"]')
@@ -298,7 +328,23 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
         await captureAll(page, 'staff-orders-picking')
         for (const checkbox of await detail.getByRole('checkbox').all()) await checkbox.check()
         assert.equal(await ready.isEnabled(), true, 'Checking all full quantities enables readiness')
-        await ready.click()
+        let polls = 0
+        page.on('request', req => { if (req.url() === `${base}/api/orders` && req.method() === 'GET') polls++ })
+        const polled = page.waitForResponse(response => response.url() === `${base}/api/orders`)
+        await page.clock.fastForward(20000); await polled
+        await page.getByRole('button', { name: 'Refresh queue', exact: true }).waitFor()
+        assert.equal(polls, 1, 'One request per polling interval')
+        for (const checkbox of await detail.getByRole('checkbox').all()) assert.equal(await checkbox.isChecked(), true)
+        await page.context().setOffline(true)
+        await page.clock.fastForward(60000)
+        assert.equal(polls, 1, 'No polling while offline')
+        await page.context().setOffline(false)
+        await settled(page)
+        await request(staffCookies, `/api/orders/${visualOrderId}/status`, { status: 'READY' })
+        const remote = page.waitForResponse(response => response.url() === `${base}/api/orders`)
+        await page.clock.fastForward(20000); await remote
+        await detail.getByRole('button', { name: 'Start delivery', exact: true }).waitFor()
+        assert.equal(await ready.count(), 0, 'Remote state removes the obsolete readiness action')
         await detail.getByRole('button', { name: 'Start delivery', exact: true }).click()
         const deliveredResponse = page.waitForResponse((response) => response.url().endsWith(`/api/orders/${visualOrderId}/status`) && response.request().method() === 'POST' && response.request().postDataJSON()?.status === 'DELIVERED')
         await detail.getByRole('button', { name: 'Confirm delivered', exact: true }).click()
@@ -319,12 +365,16 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
         await captureAll(customerPage, 'student-delivered-timeline')
       }
       if (route === '/inventory') {
+        await page.clock.fastForward(180000)
+        assert.ok(page.url().includes('/inventory'), 'Receiving remains available beyond two minutes')
         for (const [button, screenshot] of [['Receive stock', 'inventory-receipt'], ['Inventory lots', 'inventory-lots'], ['Add product', 'inventory-product'], ['Change price', 'inventory-price'], ['Remove stock', 'inventory-adjustment']]) {
           await page.getByRole('button', { name: button, exact: true }).first().click()
           await captureAll(page, screenshot)
         }
       }
       if (route === '/accounting') {
+        await page.clock.fastForward(180000)
+        assert.ok(page.url().includes('/accounting'), 'Accounting remains available beyond two minutes')
         const demoWallet = page.getByRole('row').filter({ has: page.getByText('Demo Student', { exact: true }) })
         await demoWallet.getByRole('button', { name: 'View history', exact: true }).click()
         await page.getByRole('dialog', { name: 'Demo Student · Wallet history', exact: true }).waitFor()
@@ -346,7 +396,6 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     assert.equal(await cashierPage.getByText('Event payment settings', { exact: true }).count(), 0, 'Cashiers cannot change event acceptance')
     assert.equal(await cashierPage.getByRole('button', { name: /^Take payment/ }).isDisabled(), true, 'An empty sale cannot enter checkout')
     await captureAll(cashierPage, 'cashier-wallet-only-empty-sale')
-    await cashierPage.clock.install()
     await cashierPage.clock.fastForward(270000)
     await cashierPage.getByRole('button', { name: 'Stay signed in', exact: true }).waitFor()
     await captureAll(cashierPage, 'pos-timeout-warning')

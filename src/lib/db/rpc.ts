@@ -56,6 +56,7 @@ const RPCS = {
   quote_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }],
   create_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }, { name: 'p_delivery_location_id', cast: 'uuid' }, { name: 'p_delivery_note', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_expected_total_won', cast: 'bigint' }],
   customer_orders: [{ name: 'p_customer_session_id', cast: 'uuid' }],
+  recover_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   staff_online_orders: [{ name: 'p_session_id', cast: 'uuid' }],
   update_online_order_status: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_order_id', cast: 'uuid' }, { name: 'p_next_status', cast: 'text' }],
 } as const satisfies Record<string, readonly RpcArgument[]>

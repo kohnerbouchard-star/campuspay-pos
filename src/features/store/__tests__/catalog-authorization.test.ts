@@ -10,7 +10,7 @@ beforeEach(() => vi.resetAllMocks())
 describe('private catalog and delivery APIs', () => {
   it.each([['catalog', catalog], ['delivery locations', locations]] as const)('does not load %s before customer authorization', async (_, handler) => {
     mocks.authorize.mockRejectedValue(new ApiError(401, 'UNAUTHENTICATED', 'Authentication required'))
-    const response = await handler()
+    const response = await handler(new Request('http://localhost/api/store/catalog'))
     expect(response.status).toBe(401)
     expect(mocks.catalog).not.toHaveBeenCalled()
     expect(mocks.locations).not.toHaveBeenCalled()
@@ -18,7 +18,7 @@ describe('private catalog and delivery APIs', () => {
   it('passes the authorized customer session to the protected catalog operation', async () => {
     const session = { session_id: 'customer-session' }
     mocks.authorize.mockResolvedValue(session); mocks.catalog.mockResolvedValue([])
-    expect((await catalog()).status).toBe(200)
+    expect((await catalog(new Request('http://localhost/api/store/catalog'))).status).toBe(200)
     expect(mocks.catalog).toHaveBeenCalledWith(session)
   })
 })
