@@ -1,4 +1,5 @@
 import 'server-only'
+import { WalletTransactionSchema } from '@/features/wallets/domain'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
@@ -48,4 +49,13 @@ export async function confirmAdjustment(session: SessionContext, intentId: strin
     throw new ApiError(409, 'CONFLICT', 'Adjustment was not approved')
   }
   return AdjustmentReceiptSchema.parse(decision)
+}
+
+export function walletHistory(session: SessionContext, studentId: string) {
+  return callApiRpc('student_wallet_history', { p_session_id: session.session_id, p_student_id: studentId }, z.array(WalletTransactionSchema))
+}
+
+export function recoverAdjustment(session: SessionContext, intentId: string) {
+  return callApiRpc('recover_wallet_adjustment', { p_session_id: session.session_id, p_intent_id: intentId },
+    z.array(z.object({ state: z.enum(['completed', 'cancelled']), receipt: AdjustmentReceiptSchema.nullable() })).length(1).transform(([row]) => row))
 }

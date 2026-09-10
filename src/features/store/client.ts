@@ -1,7 +1,7 @@
 import { apiFetch } from '@/lib/api/client'
 import type { CatalogProduct } from '@/features/pos/domain'
 import type {
-  CustomerOrder, CustomerSession, DeliveryLocation, OnlineOrderReceipt, StaffOnlineOrder,
+  CustomerOrder, CustomerSession, DeliveryLocation, OnlineOrderReceipt, OnlineOrderQuote, StaffOnlineOrder,
 } from '@/features/store/domain'
 
 export function fetchStoreCatalog() { return apiFetch<CatalogProduct[]>('/api/store/catalog') }
@@ -16,14 +16,21 @@ export function placeOnlineOrder(input: {
   couponCode: string | null
   deliveryLocationId: string
   deliveryNote: string | null
+  idempotencyKey: string
+  expectedTotalWon?: number
 }) {
-  const idempotencyKey = crypto.randomUUID()
   return apiFetch<OnlineOrderReceipt>('/api/store/orders', {
     method: 'POST',
-    body: JSON.stringify({ ...input, idempotencyKey }),
+    body: JSON.stringify(input),
   })
 }
+export function quoteCustomerOrder(items: { productId: string; quantity: number }[], couponCode: string | null) {
+  return apiFetch<OnlineOrderQuote>('/api/store/quote', { method: 'POST', body: JSON.stringify({ items, couponCode }) })
+}
 export function fetchCustomerOrders() { return apiFetch<CustomerOrder[]>('/api/store/orders') }
+export function recoverCustomerOrder(idempotencyKey: string) {
+  return apiFetch<OnlineOrderReceipt | null>('/api/store/orders/recover', { method: 'POST', body: JSON.stringify({ idempotencyKey }) })
+}
 export function fetchStaffOnlineOrders() { return apiFetch<StaffOnlineOrder[]>('/api/orders') }
 export function advanceOnlineOrder(orderId: string, status: 'PICKING'|'READY'|'OUT_FOR_DELIVERY'|'DELIVERED') {
   return apiFetch(`/api/orders/${orderId}/status`, { method: 'POST', body: JSON.stringify({ status }) })

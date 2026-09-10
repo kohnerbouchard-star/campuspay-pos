@@ -17,8 +17,13 @@ export const SalesReportRowSchema = z.object({
   gross_profit_won: z.number().int(),
   coupon_name: z.string().nullable(),
   coupon_code_masked: z.string().nullable(),
-  student_name: z.string(),
-  balance_after_won: z.number().int(),
+  student_name: z.string().nullable(),
+  balance_after_won: z.number().int().nullable(),
+  tender_mode: z.enum(['WALLET', 'CASH', 'SPLIT']),
+  wallet_tender_won: z.number().int().nonnegative(),
+  cash_tender_won: z.number().int().nonnegative(),
+  cash_received_won: z.number().int().nonnegative().nullable(),
+  change_given_won: z.number().int().nonnegative().nullable(),
 })
 export const SalesReportSchema = z.array(SalesReportRowSchema)
 

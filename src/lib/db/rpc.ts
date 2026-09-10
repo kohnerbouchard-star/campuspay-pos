@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm'
 import { database } from '@/lib/db/client'
 import { normalizeDatabaseValue } from '@/lib/db/normalize'
 import { toApiError } from '@/lib/api/errors'
+import { compatibilityError } from '@/lib/db/compatibility'
 
 type RpcArgument = { readonly name: string; readonly cast: string }
 
@@ -12,14 +13,26 @@ const RPCS = {
   authorize_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }, { name: 'p_permission', cast: 'text' }],
   revoke_staff_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }],
   catalog: [{ name: 'p_session_id', cast: 'uuid' }],
-  create_payment_intent: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }],
+  create_payment_intent: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }, { name: 'p_tender_mode', cast: 'text' }, { name: 'p_wallet_amount_won', cast: 'bigint' }],
+  finalize_payment_tender: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }, { name: 'p_wallet_amount_won', cast: 'bigint' }],
   scan_payment_card: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }, { name: 'p_card_fingerprint', cast: 'text' }],
-  confirm_payment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }, { name: 'p_student_pin_proof', cast: 'text' }],
+  confirm_payment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }, { name: 'p_student_pin_proof', cast: 'text' }, { name: 'p_cash_received_won', cast: 'bigint' }],
+  cancel_payment_intent: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }],
+  terminal_payment_policy: [{ name: 'p_session_id', cast: 'uuid' }],
+  set_terminal_payment_policy: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_cash_enabled', cast: 'boolean' }, { name: 'p_event_name', cast: 'text' }, { name: 'p_ends_at', cast: 'timestamptz' }],
   create_product: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sku', cast: 'text' }, { name: 'p_name', cast: 'text' }, { name: 'p_category', cast: 'text' }, { name: 'p_selling_price_won', cast: 'bigint' }, { name: 'p_reorder_level', cast: 'integer' }],
   change_product_price: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_product_id', cast: 'uuid' }, { name: 'p_new_price_won', cast: 'bigint' }, { name: 'p_reason', cast: 'text' }],
   inventory_lots: [{ name: 'p_session_id', cast: 'uuid' }],
   receive_stock: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_supplier_name', cast: 'text' }, { name: 'p_supplier_invoice', cast: 'text' }, { name: 'p_purchase_date', cast: 'date' }, { name: 'p_shipping_won', cast: 'bigint' }, { name: 'p_other_costs_won', cast: 'bigint' }, { name: 'p_discount_won', cast: 'bigint' }, { name: 'p_notes', cast: 'text' }, { name: 'p_lines', cast: 'jsonb' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   remove_stock: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_product_id', cast: 'uuid' }, { name: 'p_lot_id', cast: 'uuid' }, { name: 'p_quantity', cast: 'integer' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  recover_wallet_adjustment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }],
+  recover_stock_receipt: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  inventory_product_register: [{ name: 'p_session_id', cast: 'uuid' }],
+  recover_payment_intent: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }],
+  student_wallet_history: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }],
+  search_students: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_query', cast: 'text' }],
+  search_security_students: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_query', cast: 'text' }],
+  enroll_student: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_code', cast: 'text' }, { name: 'p_display_name', cast: 'text' }, { name: 'p_card_fingerprint', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   search_student_wallets: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_query', cast: 'text' }],
   create_wallet_adjustment_intent: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_direction', cast: 'text' }, { name: 'p_denominations', cast: 'integer[]' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   scan_wallet_adjustment_card: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_intent_id', cast: 'uuid' }, { name: 'p_card_fingerprint', cast: 'text' }],
@@ -38,15 +51,21 @@ const RPCS = {
   create_customer_session: [{ name: 'p_card_fingerprint', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_session_token_hash', cast: 'text' }, { name: 'p_ip_fingerprint', cast: 'text' }],
   authorize_customer_session: [{ name: 'p_session_token_hash', cast: 'text' }],
   revoke_customer_session: [{ name: 'p_session_token_hash', cast: 'text' }],
-  store_catalog: [],
-  store_delivery_locations: [],
-  create_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }, { name: 'p_delivery_location_id', cast: 'uuid' }, { name: 'p_delivery_note', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  store_catalog: [{ name: 'p_customer_session_id', cast: 'uuid' }],
+  store_delivery_locations: [{ name: 'p_customer_session_id', cast: 'uuid' }],
+  quote_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }],
+  create_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_coupon_code_fingerprint', cast: 'text' }, { name: 'p_delivery_location_id', cast: 'uuid' }, { name: 'p_delivery_note', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_expected_total_won', cast: 'bigint' }],
   customer_orders: [{ name: 'p_customer_session_id', cast: 'uuid' }],
+  recover_online_order: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   staff_online_orders: [{ name: 'p_session_id', cast: 'uuid' }],
   update_online_order_status: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_order_id', cast: 'uuid' }, { name: 'p_next_status', cast: 'text' }],
 } as const satisfies Record<string, readonly RpcArgument[]>
 
 export type ApiRpcName = keyof typeof RPCS
+
+function databaseFunction(name: ApiRpcName) {
+  return name === 'terminal_payment_policy' ? 'terminal_payment_policy_v2' : name === 'search_student_wallets' ? 'search_student_wallets_v2' : name === 'list_coupons' ? 'list_coupons_v2' : name
+}
 
 function encodeValue(value: unknown, cast: string): unknown {
   if (cast === 'jsonb' && value !== null) return JSON.stringify(value)
@@ -61,7 +80,7 @@ function statementFor(name: ApiRpcName, args: Record<string, unknown>) {
   }
   const parameters = spec.map((argument) => sql`${sql.raw(argument.name)} => ${sql.param(encodeValue(args[argument.name] ?? null, argument.cast))}::${sql.raw(argument.cast)}`)
   // Identifiers come only from RPCS, never from a request. Values are parameters.
-  const functionName = name === 'search_student_wallets' ? 'search_student_wallets_v2' : name === 'list_coupons' ? 'list_coupons_v2' : name
+  const functionName = databaseFunction(name)
   return sql`select * from api.${sql.raw(functionName)}(${sql.join(parameters, sql`, `)})`
 }
 
@@ -79,7 +98,7 @@ export async function callApiRpc<T>(
     const rows = result.rows
     return schema.parse(normalizeDatabaseValue(rows))
   } catch (error) {
-    throw toApiError(error)
+    throw compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
   }
 }
 
@@ -87,6 +106,6 @@ export async function callApiCommand(name: ApiRpcName, args: Record<string, unkn
   try {
     await database().execute(statementFor(name, args))
   } catch (error) {
-    throw toApiError(error)
+    throw compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
   }
 }

@@ -1,69 +1,43 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { advanceOnlineOrder, fetchStaffOnlineOrders } from '@/features/store/client'
+import { useState } from 'react'
+import { advanceOnlineOrder } from '@/features/store/client'
+import { useFulfillmentQueue } from '@/features/store/use-fulfillment-queue'
 import type { StaffOnlineOrder } from '@/features/store/domain'
+import { NEXT_ORDER_STATUS } from '@/features/store/fulfillment'
+import { ORDER_STEPS, orderStatusLabel, orderTime } from '@/features/store/presentation'
 import { formatWon } from '@/lib/format/currency'
-
-const nextStatus: Record<string, { status: 'PICKING'|'READY'|'OUT_FOR_DELIVERY'|'DELIVERED'; label: string } | undefined> = {
-  PLACED: { status: 'PICKING', label: 'Start picking' },
-  PICKING: { status: 'READY', label: 'Mark ready' },
-  READY: { status: 'OUT_FOR_DELIVERY', label: 'Out for delivery' },
-  OUT_FOR_DELIVERY: { status: 'DELIVERED', label: 'Mark delivered' },
-}
+import { FulfillmentOrderDetail } from './FulfillmentOrderDetail'
+import styles from './store.module.css'
 
 export function OrderFulfillmentScreen() {
-  const [orders, setOrders] = useState<StaffOnlineOrder[]>([])
-  const [error, setError] = useState<string | null>(null)
-  const [busyId, setBusyId] = useState<string | null>(null)
-
-  async function load() {
-    try { setOrders(await fetchStaffOnlineOrders()); setError(null) }
-    catch (caught) { setError(caught instanceof Error ? caught.message : 'Orders could not be loaded') }
-  }
-  useEffect(() => {
-  let active = true
-  void fetchStaffOnlineOrders()
-    .then((data) => {
-      if (!active) return
-      setOrders(data)
-      setError(null)
-    })
-    .catch((caught) => {
-      if (!active) return
-      setError(caught instanceof Error ? caught.message : 'Orders could not be loaded')
-    })
-  return () => { active = false }
-}, [])
-
+  const { orders, error, setError, loading, refreshing, needsRefresh, selectedId, setSelectedId, refresh, fetchingRef, updatingRef } = useFulfillmentQueue()
+  const [announcement, setAnnouncement] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [filter, setFilter] = useState('OPEN')
+  const [search, setSearch] = useState('')
   async function advance(order: StaffOnlineOrder) {
-    const next = nextStatus[order.status]
-    if (!next) return
-    setBusyId(order.order_id); setError(null)
-    try { await advanceOnlineOrder(order.order_id, next.status); await load() }
-    catch (caught) { setError(caught instanceof Error ? caught.message : 'Order could not be updated') }
-    finally { setBusyId(null) }
+    const next = NEXT_ORDER_STATUS[order.status]
+    if (!next || updatingRef.current || fetchingRef.current || needsRefresh) return
+    updatingRef.current = true; setBusy(true); setError(null)
+    try {
+      await advanceOnlineOrder(order.order_id, next.status)
+      setAnnouncement(`${order.order_number}: ${orderStatusLabel(next.status)}`)
+    } catch {
+      setError('We couldn’t confirm the order update. Refresh the queue to check its current status before trying again.')
+    } finally { await refresh(true); updatingRef.current = false; setBusy(false) }
   }
-
   const open = orders.filter((order) => order.status !== 'DELIVERED')
-  const delivered = orders.filter((order) => order.status === 'DELIVERED').slice(0, 20)
-
+  const visible = orders.filter((order) => (filter === 'OPEN' ? order.status !== 'DELIVERED' : order.status === filter) && `${order.order_number} ${order.student_name} ${order.delivery_building} ${order.delivery_room}`.toLowerCase().includes(search.trim().toLowerCase()))
+  const selected = visible.find((order) => order.order_id === selectedId) ?? visible[0]
   return <main className="workspace">
-    <header className="workspace-header"><div><p className="eyebrow">Student Store fulfillment</p><h1>Online orders</h1></div><span className="status-pill">{open.length} open</span></header>
-    {error && <p className="error-message">{error}</p>}
-    <div className="fulfillment-grid">
-      {open.length === 0 && <section className="panel"><h2>No open orders</h2><p className="muted">New customer orders will appear here.</p></section>}
-      {open.map((order) => {
-        const next = nextStatus[order.status]
-        return <article className="fulfillment-card" key={order.order_id}>
-          <div className="fulfillment-heading"><div><p className="eyebrow">{order.order_number}</p><h2>{order.student_name}</h2></div><span className={`order-status status-${order.status.toLowerCase()}`}>{order.status.replaceAll('_', ' ')}</span></div>
-          <div className="delivery-destination"><strong>{order.delivery_building}</strong><span>Floor {order.delivery_floor} · Room {order.delivery_room}</span></div>
-          <div className="fulfillment-items">{order.items.map((item) => <div key={item.product_id}><span>{item.quantity} × {item.name}</span><strong>{formatWon(item.line_total_won)}</strong></div>)}</div>
-          {order.delivery_note && <p className="delivery-note">{order.delivery_note}</p>}
-          <div className="fulfillment-footer"><strong>{formatWon(order.total_won)}</strong>{next && <button className="primary-action" disabled={busyId === order.order_id} onClick={() => void advance(order)}>{busyId === order.order_id ? 'Updating…' : next.label}</button>}</div>
-        </article>
-      })}
-    </div>
-    {delivered.length > 0 && <section className="panel delivered-panel"><h2>Recently delivered</h2><div className="table-scroll"><table><thead><tr><th>Order</th><th>Customer</th><th>Destination</th><th>Total</th></tr></thead><tbody>{delivered.map((order) => <tr key={order.order_id}><td>{order.order_number}</td><td>{order.student_name}</td><td>{order.delivery_building} · {order.delivery_room}</td><td>{formatWon(order.total_won)}</td></tr>)}</tbody></table></div></section>}
+    <header className="workspace-header"><div><p className="eyebrow">MICA Money fulfillment</p><h1>Online orders</h1><p className="muted">Oldest orders first · Checks for new orders every 20 seconds.</p></div><button className="secondary-action" disabled={busy || refreshing} onClick={() => void refresh()}>{refreshing ? 'Refreshing…' : 'Refresh queue'}</button></header>
+    <span className={styles.srOnly} role="status">{announcement}</span>
+    {error && <p className="error-message" role="alert">{error}</p>}
+    <div className={styles.queueToolbar}><label className={styles.search} htmlFor="order-search"><span className={styles.srOnly}>Search orders, students, or rooms</span><input id="order-search" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search order, student, or room" /></label><span className={styles.status}>{open.length} open orders</span></div>
+    <div className={styles.categories} role="group" aria-label="Filter orders by status">{['OPEN', ...ORDER_STEPS].map((status) => <button key={status} aria-pressed={filter === status} onClick={() => { setFilter(status); setSelectedId(null) }}>{status === 'OPEN' ? 'All open' : orderStatusLabel(status)} <span>{status === 'OPEN' ? open.length : orders.filter((order) => order.status === status).length}</span></button>)}</div>
+    {loading && <p className={styles.notice} role="status">Loading the fulfillment queue…</p>}
+    {!loading && visible.length === 0 && <section className={styles.empty}><h2>{search ? 'No matching orders' : 'All caught up'}</h2><p>{search ? 'Try a different order number, student, or room.' : 'Orders in this stage will appear here. Refresh to check for new orders.'}</p></section>}
+    {visible.length > 0 && <div className={styles.queueLayout}><div className={styles.queueTable}><table><thead><tr><th scope="col">Order &amp; student</th><th scope="col">Destination</th><th scope="col">Status / total</th></tr></thead><tbody>{visible.map((order) => <tr key={order.order_id} data-selected={order.order_id === selected?.order_id}><td><button className={styles.orderSelect} aria-pressed={order.order_id === selected?.order_id} onClick={() => setSelectedId(order.order_id)}><strong>{order.order_number}</strong><span>{order.student_name}</span></button><small>{orderTime(order.created_at)} · {order.items.reduce((total, item) => total + item.quantity, 0)} items</small></td><td>{order.delivery_building}<small>Floor {order.delivery_floor} · Room {order.delivery_room}</small></td><td><span className={styles.queueStatus}>{orderStatusLabel(order.status)}</span><strong className={styles.queueAmount}>{formatWon(order.total_won)}</strong></td></tr>)}</tbody></table></div>{selected && <FulfillmentOrderDetail key={selected.order_id} order={selected} busy={busy || refreshing || needsRefresh} onAdvance={() => void advance(selected)} />}</div>}
   </main>
 }

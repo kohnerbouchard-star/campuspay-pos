@@ -11,17 +11,13 @@ import {
 } from '@/lib/http/cookies'
 import { callApiCommand, callApiRpc } from '@/lib/db/rpc'
 import { CustomerSessionSchema, type CustomerSession } from '@/features/store/domain'
+import { trustedClientIp } from '@/lib/http/trusted-ip'
 
 const CustomerSessionRows = z.array(CustomerSessionSchema).max(1)
 
-function requestIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  return forwarded || request.headers.get('x-real-ip') || 'unknown'
-}
-
 function fingerprintIp(request: Request): string {
   return createHmac('sha256', getServerEnv().SESSION_HMAC_SECRET)
-    .update(`customer-ip:${requestIp(request)}`)
+    .update(`customer-ip:${trustedClientIp(request.headers)}`)
     .digest('hex')
 }
 
@@ -34,7 +30,7 @@ export async function loginCustomerSession(request: Request, cardNumber: string,
     p_ip_fingerprint: fingerprintIp(request),
   }, CustomerSessionRows)
   const context = rows[0]
-  if (!context) throw new ApiError(401, 'UNAUTHENTICATED', 'Card number or PIN is incorrect, or sign-in is temporarily locked')
+  if (!context) throw new ApiError(401, 'UNAUTHENTICATED', 'We couldn’t verify those MICA Money credentials. Check your card information and PIN and try again. Sign-in may be temporarily locked; wait a few minutes or visit E202 for help.')
   await setCustomerSessionCookie(rawToken)
   return context
 }

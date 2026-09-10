@@ -7,14 +7,26 @@ import type { CustomerSession } from '@/features/store/domain'
 import {
   CustomerOrdersSchema, DeliveryLocationsSchema, OnlineOrderReceiptSchema,
   StaffOnlineOrdersSchema, StoreCatalogSchema, UpdatedOrderSchema,
+  OnlineOrderQuoteSchema,
 } from '@/features/store/domain'
 
-export function storeCatalog() {
-  return callApiRpc('store_catalog', {}, StoreCatalogSchema)
+export function storeCatalog(session: CustomerSession) {
+  return callApiRpc('store_catalog', { p_customer_session_id: session.session_id }, StoreCatalogSchema)
 }
 
-export function deliveryLocations() {
-  return callApiRpc('store_delivery_locations', {}, DeliveryLocationsSchema)
+export function deliveryLocations(session: CustomerSession) {
+  return callApiRpc('store_delivery_locations', { p_customer_session_id: session.session_id }, DeliveryLocationsSchema)
+}
+
+export async function quoteOnlineOrder(session: CustomerSession, input: {
+  items: { productId: string; quantity: number }[]; couponCode?: string | null
+}) {
+  const rows = await callApiRpc('quote_online_order', {
+    p_customer_session_id: session.session_id,
+    p_items: input.items,
+    p_coupon_code_fingerprint: input.couponCode ? fingerprintCouponCode(input.couponCode) : null,
+  }, z.array(OnlineOrderQuoteSchema).length(1))
+  return rows[0]
 }
 
 export async function createOnlineOrder(session: CustomerSession, input: {
@@ -23,6 +35,7 @@ export async function createOnlineOrder(session: CustomerSession, input: {
   deliveryLocationId: string
   deliveryNote?: string | null
   idempotencyKey: string
+  expectedTotalWon?: number
 }) {
   const rows = await callApiRpc('create_online_order', {
     p_customer_session_id: session.session_id,
@@ -31,12 +44,20 @@ export async function createOnlineOrder(session: CustomerSession, input: {
     p_delivery_location_id: input.deliveryLocationId,
     p_delivery_note: input.deliveryNote ?? null,
     p_idempotency_key: input.idempotencyKey,
+    p_expected_total_won: input.expectedTotalWon ?? null,
   }, z.array(OnlineOrderReceiptSchema).max(1))
   return rows[0]
 }
 
 export function customerOrders(session: CustomerSession) {
   return callApiRpc('customer_orders', { p_customer_session_id: session.session_id }, CustomerOrdersSchema)
+}
+
+export async function recoverOnlineOrder(session: CustomerSession, idempotencyKey: string) {
+  const rows = await callApiRpc('recover_online_order', {
+    p_customer_session_id: session.session_id, p_idempotency_key: idempotencyKey,
+  }, z.array(OnlineOrderReceiptSchema).max(1))
+  return rows[0] ?? null
 }
 
 export function staffOnlineOrders(session: SessionContext) {

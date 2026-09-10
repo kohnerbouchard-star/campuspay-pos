@@ -1,4 +1,5 @@
 'use client'
+import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 
 import { useEffect, useMemo, useState } from 'react'
 import type { CouponReportRow } from '@/features/reports/domain'
@@ -41,7 +42,7 @@ export function CouponReportPanel() {
             <td>{row.redemption_count}</td>
             <td>{formatWon(row.discount_given_won)}</td>
             <td>{formatWon(row.sales_revenue_won)}</td>
-            <td>{row.last_redeemed_at ? new Date(row.last_redeemed_at).toLocaleString('en-GB', { timeZone: 'Asia/Seoul' }) : 'Not used'}</td>
+            <td>{row.last_redeemed_at ? new Date(row.last_redeemed_at).toLocaleString('en-GB', { timeZone: BUSINESS_TIMEZONE }) : 'Not used'}</td>
           </tr>)}
         </tbody>
       </table>

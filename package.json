@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate": "npm run typecheck && npm run test && npm run lint",
-    "validate:static": "node scripts/transpile-check.mjs && npm run validate:imports && npm run test:coupon-policy && npm run validate:sql-structure && npm run security:audit",
+    "validate:static": "node scripts/transpile-check.mjs && npm run validate:imports && npm run test:coupon-policy && npm run validate:sql-structure && npm run security:audit && node scripts/schema-drift-check.mjs",
     "validate:imports": "node scripts/import-check.mjs",
     "test:coupon-policy": "node --experimental-strip-types --no-warnings scripts/coupon-policy-check.mjs",
     "validate:sql-structure": "node scripts/sql-structure-check.mjs",
@@ -25,26 +25,30 @@
     "db:health": "node --env-file-if-exists=.env.local scripts/database-health.mjs",
     "db:bootstrap-demo": "node --env-file-if-exists=.env.local scripts/bootstrap-demo.mjs",
     "test:integration": "node --env-file-if-exists=.env.local scripts/integration-test.mjs",
-    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs"
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
+    "test:integration:isolated": "node scripts/test-isolated.mjs",
+    "test:visual": "CI_BROWSER=1 node scripts/test-isolated.mjs",
+    "security:dependencies": "npm audit --omit=dev --audit-level=high",
+    "db:preflight": "node --env-file-if-exists=.env.local scripts/migrate.mjs --preflight --check-runtime"
   },
   "dependencies": {
+    "drizzle-orm": "0.45.2",
     "next": "16.3.4",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "server-only": "0.0.1",
-    "zod": "4.1.12",
     "pg": "8.16.3",
-    "drizzle-orm": "0.44.5"
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.1.12"
   },
   "devDependencies": {
+    "@playwright/test": "1.55.1",
     "@types/node": "24.10.0",
+    "@types/pg": "8.15.5",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
     "eslint": "9.39.0",
     "eslint-config-next": "16.3.4",
     "typescript": "5.9.3",
-    "vitest": "4.0.6",
-    "@types/pg": "8.15.5",
-    "@playwright/test": "1.55.0"
+    "vitest": "4.1.11"
   }
 }

@@ -14,6 +14,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<StaffRole, readonly Permission[]>
     'security.credentials.request',
   ],
   super_admin: [
+    'students.manage',
     'pos.read', 'pos.checkout', 'coupons.redeem', 'coupons.manage',
     'inventory.read', 'inventory.receive', 'inventory.adjust',
     'inventory.product.manage', 'inventory.price.manage',
@@ -29,6 +30,6 @@ export function defaultWorkspace(role: StaffRole): string {
     case 'cashier': return '/pos'
     case 'inventory_admin': return '/inventory'
     case 'accountant': return '/accounting'
-    case 'super_admin': return '/security'
+    case 'super_admin': return '/pos'
   }
 }

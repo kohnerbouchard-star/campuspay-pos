@@ -11,10 +11,10 @@ export function fetchCoupons() {
   return apiFetch<CouponSummary[]>('/api/coupons')
 }
 
-export function addCoupon(input: Omit<CreateCouponInput, 'idempotencyKey'>) {
+export function addCoupon(input: Omit<CreateCouponInput, 'idempotencyKey'>, idempotencyKey = crypto.randomUUID()) {
   return apiFetch<CouponMutationResult>('/api/coupons', {
     method: 'POST',
-    body: JSON.stringify({ ...input, idempotencyKey: crypto.randomUUID() }),
+    body: JSON.stringify({ ...input, idempotencyKey }),
   })
 }
 

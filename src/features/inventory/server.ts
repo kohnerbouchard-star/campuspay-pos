@@ -1,4 +1,5 @@
 import 'server-only'
+import { InventoryProductSchema } from '@/features/inventory/domain'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
@@ -58,4 +59,13 @@ export function removeStock(session: SessionContext, input: z.infer<typeof Stock
     p_notes: input.notes,
     p_idempotency_key: input.idempotencyKey,
   }, z.array(MutationResultSchema).length(1).transform(([row]) => row))
+}
+
+export function inventoryProducts(session: SessionContext) {
+  return callApiRpc('inventory_product_register', { p_session_id: session.session_id }, z.array(InventoryProductSchema))
+}
+
+export async function recoverStockReceipt(session: SessionContext, idempotencyKey: string) {
+  const rows = await callApiRpc('recover_stock_receipt', { p_session_id: session.session_id, p_idempotency_key: idempotencyKey }, z.array(ReceiptResultSchema).max(1))
+  return { receipt: rows[0] ?? null }
 }

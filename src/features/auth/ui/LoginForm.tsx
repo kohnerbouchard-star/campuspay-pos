@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { login } from '@/features/auth/client'
+import { safeStaffReturn } from '@/features/auth/return-path'
 
-export function LoginForm() {
+export function LoginForm({ destination, expired = false }: { destination?: string; expired?: boolean }) {
   const router = useRouter()
   const [employeeCode, setEmployeeCode] = useState('')
   const [pin, setPin] = useState('')
@@ -16,7 +17,7 @@ export function LoginForm() {
     try {
       const session = await login(employeeCode, pin)
       setPin('')
-      router.replace(session.workspace)
+      router.replace(safeStaffReturn(destination, session.permissions, session.workspace))
       router.refresh()
     } catch (e) {
       setPin('')
@@ -24,13 +25,13 @@ export function LoginForm() {
     } finally { setBusy(false) }
   }
 
-  return <form className="login-card" onSubmit={submit}>
-    <div className="brand-mark">CP</div>
-    <div><p className="eyebrow">School wallet system</p><h1>Employee sign in</h1></div>
-    <label className="field"><span>Employee ID</span><input autoFocus autoComplete="username" value={employeeCode} onChange={(e) => setEmployeeCode(e.target.value)} /></label>
-    <label className="field"><span>Employee PIN</span><input type="password" inputMode="numeric" autoComplete="current-password" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0,16))} /></label>
-    {error && <p className="error-message" role="alert">{error}</p>}
+  return <form className="login-card" onSubmit={submit} aria-busy={busy}>
+    <div><p className="eyebrow">Staff operations</p><h1>Staff sign in</h1><p className="muted">Use your employee ID and personal PIN.</p></div>
+    {expired && <p role="status" className="notice">Your session ended. Sign in to continue.</p>}
+    <label className="field"><span>Employee ID</span><input required autoFocus autoComplete="username" maxLength={32} aria-describedby={error ? 'staff-login-error' : undefined} disabled={busy} value={employeeCode} onChange={(e) => setEmployeeCode(e.target.value)} /></label>
+    <label className="field"><span>Employee PIN</span><input required type="password" inputMode="numeric" autoComplete="current-password" aria-describedby={error ? 'staff-login-error' : undefined} disabled={busy} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0,16))} /></label>
+    {error && <p id="staff-login-error" className="error-message" role="alert">{error}</p>}
     <button className="primary-action" disabled={busy || employeeCode.length < 2 || pin.length < 4}>{busy ? 'Signing in…' : 'Sign in'}</button>
-    <small className="muted">The system opens only the workspace assigned to this employee.</small>
+    <small className="muted">Need help with access? Contact your school administrator.</small>
   </form>
 }

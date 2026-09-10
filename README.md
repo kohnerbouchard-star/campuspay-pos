@@ -1,4 +1,4 @@
-# CampusPay — school RFID/NFC POS, wallet, and online store
+# MICA Money · CampusPay staff operations and student store
 
 CampusPay is a closed-loop school wallet, point-of-sale, and room-delivery online-store application built with Next.js and Neon Postgres. The browser talks only to same-origin API routes; all financial, inventory, credential, and coupon mutations execute through narrowly scoped PostgreSQL functions.
 
@@ -69,7 +69,7 @@ npm run db:health
 - `src/features` — domain modules and role-specific UI.
 - `src/lib/db` — Neon connection and whitelisted RPC adapter.
 - `database/schema` — ordered PostgreSQL source modules.
-- `database/migrations` — deployable combined migration.
+- `database/migrations` — ordered, versioned migrations.
 - `docs` — architecture, security, API, and operating documentation.
 
 ## Existing CampusPay Neon installation
@@ -94,4 +94,40 @@ Neon supplies the database, not offline checkout. Purchases require a working co
 
 ## Online store
 
+The student store requires MICA Money card + PIN authentication before catalog or delivery information is returned. Students without a card are directed to E202; online self-registration is not supported.
+
 Local development exposes the customer store at `http://localhost:3000/store` and staff fulfillment at `http://localhost:3000/orders`. Production should configure separate HTTPS origins for customers and staff. See `docs/ONLINE_STORE.md`.
+
+## UI and operational refresh
+
+Staff sign in at `/login`; students sign in at `/store/login`. Super Admin enrollment is under `/students`, financial reporting under `/reports`, and terminal event cash policy under `/settings/payments`. See [enrollment](docs/STUDENT_ENROLLMENT.md), [payments](docs/PAYMENTS.md), and [modernization delivery](docs/UI_UX_DELIVERY.md).
+
+Isolated validation (PostgreSQL 17, localhost only):
+
+```bash
+npm run validate
+npm run validate:static
+npm run build
+npm run test:integration:isolated
+npm run test:visual
+```
+
+The isolated runner creates and removes only its own disposable database. Set `TEST_POSTGRES_URL` for your local test server; its default matches the dedicated QA container documented in the delivery report.
+
+### UI/UX refresh local development
+
+Use a database branch with migrations **20260907090000 and later**, including
+**20260908090000_register_remediation**. Do not point this feature branch at
+production before the production migration has been approved.
+
+The current QA target is `dev-ui-ux-refresh-20260907`
+(`br-late-bread-azrpu2xh`); branch names may change. Use its restricted runtime
+connection for the app and an explicitly selected owner connection only for
+approved QA migrations. Keep your application secrets unchanged. A local
+process environment override can select QA without editing `.env.local`.
+Do not copy database URLs into documentation, Git, screenshots, or PRs.
+
+The POS reports **Database update required** when a required capability is
+missing. Retry after selecting the matching database. See the
+[remediation report](docs/UI_UX_REMEDIATION.md) and
+[payment operating guidance](docs/PAYMENTS.md).

@@ -3,7 +3,10 @@ import { CouponCodeSchema } from '@/features/coupons/domain'
 import { CartLineSchema, CatalogProductSchema } from '@/features/pos/domain'
 
 export const CustomerLoginSchema = z.object({
-  cardNumber: z.string().trim().min(6).max(128),
+  cardNumber: z.string().trim().min(6).max(128).refine((value) => {
+    const length = value.replace(/[^a-zA-Z0-9]/g, '').length
+    return length >= 6 && length <= 64
+  }),
   pin: z.string().min(4).max(12).regex(/^\d+$/),
 })
 
@@ -16,6 +19,7 @@ export const CustomerSessionSchema = z.object({
   expires_at: z.string(),
 })
 export type CustomerSession = z.infer<typeof CustomerSessionSchema>
+export type CustomerProfile = Pick<CustomerSession, 'student_id' | 'display_name' | 'balance_won' | 'debt_won' | 'expires_at'>
 
 export const StoreCatalogSchema = z.array(CatalogProductSchema)
 
@@ -35,7 +39,22 @@ export const PlaceOnlineOrderSchema = z.object({
   deliveryLocationId: z.string().uuid(),
   deliveryNote: z.string().trim().max(240).nullable().optional(),
   idempotencyKey: z.string().uuid(),
+  expectedTotalWon: z.number().int().nonnegative().optional(),
 })
+
+export const QuoteOnlineOrderSchema = PlaceOnlineOrderSchema.pick({ items: true, couponCode: true })
+export const OnlineOrderQuoteSchema = z.object({
+  subtotal_won: z.number().int().positive(),
+  discount_won: z.number().int().nonnegative(),
+  total_won: z.number().int().nonnegative(),
+  balance_before_won: z.number().int(),
+  balance_after_won: z.number().int(),
+  coupon_name: z.string().nullable(),
+  coupon_code_masked: z.string().nullable(),
+})
+export type OnlineOrderQuote = z.infer<typeof OnlineOrderQuoteSchema>
+export const OrderTimelineEventSchema = z.object({ status: z.string(), created_at: z.string() })
+export type OrderTimelineEvent = z.infer<typeof OrderTimelineEventSchema>
 
 export const OnlineOrderReceiptSchema = z.object({
   order_id: z.string().uuid(),
@@ -79,6 +98,7 @@ export const CustomerOrderSchema = z.object({
   items: z.array(OnlineOrderItemSchema),
   created_at: z.string(),
   delivered_at: z.string().nullable(),
+  timeline: z.array(OrderTimelineEventSchema),
 })
 export type CustomerOrder = z.infer<typeof CustomerOrderSchema>
 export const CustomerOrdersSchema = z.array(CustomerOrderSchema)
@@ -95,6 +115,7 @@ export const StaffOnlineOrderSchema = z.object({
   delivery_note: z.string().nullable(),
   items: z.array(OnlineOrderItemSchema),
   created_at: z.string(),
+  timeline: z.array(OrderTimelineEventSchema),
 })
 export type StaffOnlineOrder = z.infer<typeof StaffOnlineOrderSchema>
 export const StaffOnlineOrdersSchema = z.array(StaffOnlineOrderSchema)

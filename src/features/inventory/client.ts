@@ -12,8 +12,14 @@ export function fetchLots() { return apiFetch<InventoryLot[]>('/api/inventory/lo
 export function addProduct(input: ProductInput) {
   return apiFetch('/api/inventory/products', { method: 'POST', body: JSON.stringify(input) })
 }
-export function postReceipt(input: ReceiptInput) {
+export function postReceipt(input: ReceiptInput, idempotencyKey = crypto.randomUUID()) {
   return apiFetch('/api/inventory/receipts', {
-    method: 'POST', body: JSON.stringify({ ...input, idempotencyKey: crypto.randomUUID() }),
+    method: 'POST', body: JSON.stringify({ ...input, idempotencyKey }),
+  })
+}
+
+export function recoverReceipt(idempotencyKey: string) {
+  return apiFetch<{ receipt: { receipt_number: string } | null }>('/api/inventory/receipts/recover', {
+    method: 'POST', body: JSON.stringify({ idempotencyKey }),
   })
 }

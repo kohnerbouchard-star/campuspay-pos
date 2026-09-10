@@ -62,3 +62,9 @@ export const AdjustmentReceiptSchema = z.object({
   created_at: z.string(),
 })
 export type AdjustmentReceipt = z.infer<typeof AdjustmentReceiptSchema>
+
+export const WalletTransactionSchema = z.object({
+  reference_number: z.string(), amount_won: z.number().int(), balance_before_won: z.number().int(), balance_after_won: z.number().int(),
+  entry_type: z.string(), reason_code: z.string(), notes: z.string().nullable(), created_at: z.string(), actor_name: z.string(),
+})
+export type WalletTransaction = z.infer<typeof WalletTransactionSchema>
