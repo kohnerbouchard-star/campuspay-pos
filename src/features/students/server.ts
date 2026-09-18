@@ -1,7 +1,7 @@
 import 'server-only'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
-import { EnrollmentDecisionSchema, EnrollmentResultSchema, ManagedStudentSchema, type EnrollmentInput } from '@/features/students/domain'
+import { EnrollmentDecisionSchema, EnrollmentResultSchema, ManagedStudentSchema, RosterQuerySchema, RosterStudentSchema, type EnrollmentInput } from '@/features/students/domain'
 import { ApiError } from '@/lib/api/errors'
 import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { studentPinProof } from '@/lib/crypto/student-pin'
@@ -16,6 +16,15 @@ function requireSuperAdmin(session: SessionContext) {
 export function searchStudents(session: SessionContext, query: string) {
   requireSuperAdmin(session)
   return callApiRpc('search_students', { p_session_id: session.session_id, p_query: query }, z.array(ManagedStudentSchema))
+}
+
+export function searchRosterStudents(session: SessionContext, input: z.infer<typeof RosterQuerySchema>) {
+  requireSuperAdmin(session)
+  const parsed = RosterQuerySchema.parse(input)
+  return callApiRpc('search_students_v2', {
+    p_session_id: session.session_id, p_query: parsed.query,
+    p_year_group: parsed.yearGroup, p_offset: parsed.offset,
+  }, z.array(RosterStudentSchema))
 }
 
 export async function enrollStudent(session: SessionContext, input: EnrollmentInput) {
