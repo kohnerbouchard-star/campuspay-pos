@@ -24,3 +24,4 @@ export function StudentDetail({ student }: { student: ManagedStudent }) {
     </div>
     <p className="muted">{student.pin_set === false ? 'This student is registered without a PIN. Card and PIN issuance is a separate, authorized enrollment step; do not create a duplicate student account.' : 'PIN resets and replacement cards require a fresh Super Admin authorization.'}</p>
   </section>
+}
