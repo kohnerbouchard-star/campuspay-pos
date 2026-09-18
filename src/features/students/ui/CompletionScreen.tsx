@@ -23,9 +23,12 @@ export function CompletionScreen({ student, enabled }: { student: ManagedStudent
   const inFlight = useRef(false)
   const pinInput = useRef<HTMLInputElement>(null)
   useEffect(() => {
-    try { setPending(readPendingCompletion(sessionStorage, student.student_id)); setReady(true) }
-    catch { setError('Recovery storage is unavailable. No enrollment can be submitted from this browser.') }
-    return () => { card.current = '' }
+    // Defer browser-storage hydration until after mount; submission stays disabled until it finishes.
+    const timer = window.setTimeout(() => {
+      try { setPending(readPendingCompletion(sessionStorage, student.student_id)); setReady(true) }
+      catch { setError('Recovery storage is unavailable. No enrollment can be submitted from this browser.') }
+    }, 0)
+    return () => { window.clearTimeout(timer); card.current = '' }
   }, [student.student_id])
   const captureCard = useCallback((value: string) => { card.current = value; setCardCaptured(true); setReader(false) }, [])
   useEffect(() => { if (cardCaptured && !reader) pinInput.current?.focus() }, [cardCaptured, reader])
@@ -34,7 +37,8 @@ export function CompletionScreen({ student, enabled }: { student: ManagedStudent
     if (value.outcome === 'COMPLETED' && value.student_id !== student.student_id) throw new Error('Unexpected student result')
     setResult(value)
     if (value.outcome !== 'IDEMPOTENCY_CONFLICT') {
-      clearPendingCompletion(sessionStorage, student.student_id)
+      try { clearPendingCompletion(sessionStorage, student.student_id) }
+      catch { setError('The server result is confirmed, but this browser could not clear its recovery reference. It may ask to recover the same result on your next visit.') }
       setPending(null)
       setIdentityVerified(false)
     }
@@ -80,12 +84,12 @@ export function CompletionScreen({ student, enabled }: { student: ManagedStudent
       {!pending && !eligible && result?.outcome !== 'COMPLETED' && <p role="status">This account is not eligible for initial issuance. Review its status in the directory; existing credentials require the replacement/reset workflow.</p>}
       {!pending && enabled && eligible && !blockedResult && <form className="form-stack" onSubmit={submit} aria-busy={busy}>
         <fieldset className="form-fields" disabled={busy || !ready || reader}>
-          <label className="field"><span><input type="checkbox" checked={identityVerified} onChange={event => { setIdentityVerified(event.target.checked); if (!event.target.checked) clearCredentials() }} required /> I verified the student's name, Year, and student ID in person.</span></label>
-          <button type="button" className="secondary-action" disabled={!identityVerified} onClick={() => { setReader(true); setError(null) }}>Scan unused card</button>
+          <label className="field"><span><input type="checkbox" checked={identityVerified} onChange={event => { setIdentityVerified(event.target.checked); if (!event.target.checked) clearCredentials() }} required /> I verified the student’s name, Year, and student ID in person.</span></label>
+          <button type="button" className="secondary-action" disabled={!identityVerified} onClick={() => { clearCredentials(); setReader(true); setError(null) }}>Scan unused card</button>
           {cardCaptured && <p role="status">Unused card captured for review. Not issued yet.</p>}
           <label className="field"><span>Student PIN</span><input ref={pinInput} type="password" inputMode="numeric" autoComplete="new-password" required minLength={4} maxLength={12} pattern="[0-9]{4,12}" disabled={!cardCaptured} value={pin} onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0,12))} /></label>
           <label className="field"><span>Confirm student PIN</span><input type="password" inputMode="numeric" autoComplete="new-password" required minLength={4} maxLength={12} pattern="[0-9]{4,12}" disabled={!cardCaptured} value={confirmation} onChange={event => setConfirmation(event.target.value.replace(/\D/g, '').slice(0,12))} /></label>
-          <p className="muted">The student enters the PIN privately. The PIN and card input are cleared immediately upon submission.</p>
+          <p className="muted">The student enters the PIN privately. The PIN and card input are cleared immediately upon submission. The server checks whether the scanned card is unused before issuing it.</p>
           <button className="primary-action" disabled={!identityVerified || !cardCaptured || pin.length < 4 || pin !== confirmation}>Confirm initial card and PIN</button>
         </fieldset>
         {reader && <div role="status" className="reader-state">Scan one unused card.<button type="button" className="secondary-action" onClick={() => setReader(false)}>Cancel scan</button></div>}
