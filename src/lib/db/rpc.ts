@@ -9,6 +9,11 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  refund_sale_detail: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_reference', cast: 'text' }],
+  post_sale_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_verified', cast: 'boolean' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  recover_sale_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  record_refund_cash_payout: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_refund_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_amount_won', cast: 'bigint' }, { name: 'p_handover_reference', cast: 'text' }, { name: 'p_confirmed', cast: 'boolean' }],
+  refund_day_summary: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_from', cast: 'date' }, { name: 'p_to', cast: 'date' }],
   complete_student_enrollment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }, { name: 'p_expected_code', cast: 'text' }, { name: 'p_expected_name', cast: 'text' }, { name: 'p_expected_year', cast: 'integer' }, { name: 'p_expected_academic_year', cast: 'text' }, { name: 'p_identity_verified', cast: 'boolean' }, { name: 'p_card_fingerprint', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   recover_student_completion: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   search_students_v2: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_query', cast: 'text' }, { name: 'p_year_group', cast: 'integer' }, { name: 'p_offset', cast: 'integer' }],

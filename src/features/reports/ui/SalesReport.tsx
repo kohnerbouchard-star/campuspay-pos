@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '@/lib/api/client'
@@ -28,6 +29,7 @@ export function SalesReport({ compact = false }: { compact?: boolean }) {
       <div><p className="eyebrow">Revenue & settlement</p><h2>{compact ? 'Sales overview' : 'Sales report'}</h2><small>Dates and times in Korea Standard Time</small></div>
       <div className="action-row"><label className="field"><span>From</span><input required type="date" max={range.to} value={range.from} onChange={e => setRange({ ...range, from: e.target.value })} /></label><label className="field"><span>To</span><input required type="date" min={range.from} value={range.to} onChange={e => setRange({ ...range, to: e.target.value })} /></label><button className="secondary-action" disabled={loading}>Apply dates</button></div>
     </form>
+    <p className="muted">These are original sale totals before refunds. <Link href="/refunds">Refunds and net reconciliation</Link> records reversals on the date posted, and cash payouts on the date handed over.</p>
     {error ? <ErrorState message={error} onRetry={() => { setLoading(true); setRevision(value => value + 1) }} /> : loading ? <LoadingState label="Loading sales and payments…" /> : <>
       <div className="stat-grid"><div><span>Total revenue</span><strong><Money amount={totals.revenue} /></strong></div><div><span>Cost of goods sold</span><strong><Money amount={totals.cogs} /></strong></div><div><span>Gross profit</span><strong><Money amount={totals.profit} /></strong></div><div><span>Completed sales</span><strong>{rows.length}</strong><small>{totals.splits} split payments</small></div></div>
       <div className="report-breakdown"><section className="panel"><h2>By sales channel</h2><dl className="definition-list"><div><dt>Point of sale</dt><dd><Money amount={totals.pos} /></dd></div><div><dt>Online store</dt><dd><Money amount={totals.online} /></dd></div></dl></section><section className="panel"><h2>By payment tender</h2><dl className="definition-list"><div><dt>MICA Money</dt><dd><Money amount={totals.wallet} /></dd></div><div><dt>Cash applied to sales</dt><dd><Money amount={totals.cash} /></dd></div></dl><p className="muted">Cash totals exclude change returned.</p></section></div>
