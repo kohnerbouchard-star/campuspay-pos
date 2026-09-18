@@ -39,6 +39,6 @@ describe('student roster metadata', () => {
   })
   it('rejects oversized search and unexpected parameters', () => {
     expect(RosterQuerySchema.safeParse({ query: 'x'.repeat(121), yearGroup: null, offset: 0 }).success).toBe(false)
-    expect(RosterQuerySchema.safeParse({ query: '', yearGroup: null, offset: 0, studentPin: '1234' }).success).toBe(false)
+    expect(RosterQuerySchema.safeParse({ query: '', yearGroup: null, offset: 0, unexpected: true }).success).toBe(false)
   })
 })
