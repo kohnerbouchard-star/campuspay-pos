@@ -55,7 +55,7 @@ export async function runCompletionBrowser({base,login,makeRoster,state,newCard,
   await page.getByRole('heading',{name:'Enrollment completed',exact:true}).waitFor()
   assert.equal((await state(student)).cards,1)
   assert.equal((await state(untouched)).cards,0)
-  assert.equal((await state(student)).wallet.balance_won,'0')
+  assert.equal((await state(student)).wallet.balance_won,0)
   assert.equal(await page.evaluate(id=>sessionStorage.getItem(`campuspay:roster-completion:v1:${id}`),student.id),null)
   const replay=await request(cookies,`/api/students/${student.id}/recover-completion`,{idempotencyKey:savedRequest.idempotencyKey})
   assert.equal(replay.outcome,'COMPLETED')
