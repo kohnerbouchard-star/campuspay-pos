@@ -21,8 +21,24 @@ export const ManagedStudentSchema = z.object({
   pin_locked_until: z.string().nullable(),
   created_at: z.string(),
   audit_reference: z.string().nullable(),
+  year_group: z.number().int().min(1).max(13).nullable().optional(),
+  academic_year: z.string().nullable().optional(),
+  pin_set: z.boolean().optional(),
+  total_count: z.number().int().nonnegative().optional(),
 })
 export type ManagedStudent = z.infer<typeof ManagedStudentSchema>
+
+export const RosterStudentSchema = ManagedStudentSchema.extend({
+  year_group: z.number().int().min(1).max(13).nullable(),
+  academic_year: z.string().nullable(),
+  pin_set: z.boolean(),
+  total_count: z.number().int().nonnegative(),
+})
+export const RosterQuerySchema = z.object({
+  query: z.string().trim().max(120),
+  yearGroup: z.number().int().min(1).max(13).nullable(),
+  offset: z.number().int().min(0).max(1000000),
+}).strict()
 
 export const EnrollmentResultSchema = z.object({
   student_id: z.string().uuid(),
