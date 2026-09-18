@@ -26,10 +26,10 @@ export async function refundTestContext() {
     if (owner) await owner.end()
     if (control) { try { if (created) await control.query(`DROP DATABASE "${name}" WITH (FORCE)`); if (roleCreated) await control.query(`DROP ROLE "${role}"`) } finally { await control.end() } }
   }
-  async function start(enabled, { returns = false, cash = false } = {}) {
+  async function start(enabled, { returns = false, cash = false, administration = false } = {}) {
     await stop()
     fd = fs.openSync('.validation/refunds/server.log', 'a')
-    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3113', '-H', '127.0.0.1'], { env: { ...env, REFUNDS_ENABLED: enabled ? 'true' : 'false', RETURNS_ENABLED: returns ? 'true' : 'false', CASH_CONTROLS_ENABLED: cash ? 'true' : 'false' }, stdio: ['ignore', fd, fd] })
+    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3113', '-H', '127.0.0.1'], { env: { ...env, REFUNDS_ENABLED: enabled ? 'true' : 'false', RETURNS_ENABLED: returns ? 'true' : 'false', CASH_CONTROLS_ENABLED: cash ? 'true' : 'false', ADMINISTRATION_ENABLED: administration ? 'true' : 'false' }, stdio: ['ignore', fd, fd] })
     for (let i = 0; i < 60; i++) { if (server.exitCode !== null) throw new Error('SERVER_EXITED'); try { if ((await fetch(base + '/login')).ok) return } catch {} await new Promise(r => setTimeout(r, 500)) }
     throw new Error('SERVER_START_TIMEOUT')
   }
@@ -57,6 +57,6 @@ export async function refundTestContext() {
     const staff = [['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin']].map(([employeeCode, staffRole]) => ({ employeeCode, role: staffRole, displayName: `Synthetic ${staffRole}`, pinProof: h('STAFF_PIN_PEPPER', `staff-pin:${staffPin}`) }))
     await owner.query('select * from api.bootstrap_demo($1::jsonb,$2,$3,$4)', [JSON.stringify(staff), h('STUDENT_PIN_PEPPER', `student-pin:${pin}`), h('CARD_HMAC_SECRET', randomBytes(12).toString('hex')), h('COUPON_HMAC_SECRET', 'REFUNDQA')])
     await owner.query("with s as(insert into public.staff_profiles(employee_code,display_name,role) values('9101','Second synthetic refund operator','super_admin') returning auth_user_id) insert into private.staff_credentials(staff_user_id,pin_hash) select auth_user_id,extensions.crypt($1,extensions.gen_salt('bf',12)) from s", [h('STAFF_PIN_PEPPER', `staff-pin:${staffPin}`)])
-    return { owner, runtimeUrl: runtime.href, base, start, close, raw, request, login, pin, randomUUID }
+    return { owner, runtimeUrl: runtime.href, base, start, close, raw, request, login, pin, staffPin, randomUUID }
   } catch (error) { await close(); throw error }
 }

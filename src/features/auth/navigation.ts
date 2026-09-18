@@ -24,5 +24,6 @@ export const WORKSPACE_LINKS: readonly WorkspaceLink[] = [
   { label: 'Refunds', title: 'Refunds', href: '/refunds', permission: 'reports.sales' },
   { label: 'Reports', title: 'Reports', href: '/reports', permission: 'reports.sales', anyPermissions: REPORT_PERMISSIONS },
   { label: 'Security', title: 'Credential security', href: '/security', permission: 'security.credentials.request' },
+  { label: 'Staff and terminals', title: 'Staff and terminals', href: '/administration', permission: 'security.staff.manage' },
   { label: 'Payment settings', title: 'Payment settings', href: '/settings/payments', permission: 'security.staff.manage' },
 ]

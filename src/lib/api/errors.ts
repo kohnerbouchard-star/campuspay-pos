@@ -2,6 +2,9 @@ export const DATABASE_UPGRADE_MESSAGE = 'CampusPay needs a database update befor
 
 export type ApiErrorCode =
   | 'DATABASE_UPGRADE_REQUIRED'
+  | 'ADMINISTRATION_DISABLED'
+  | 'LAST_ADMIN_REQUIRED'
+  | 'OPEN_CASH_SHIFT'
   | 'CASH_CONTROLS_DISABLED'
   | 'CASH_SHIFT_REQUIRED'
   | 'CASH_DISABLED'
@@ -51,6 +54,9 @@ export function toApiError(error: unknown): ApiError {
   if (message.includes('FORBIDDEN')) return new ApiError(403, 'FORBIDDEN', 'Permission denied')
   if (message.includes('INVALID_PIN')) return new ApiError(401, 'INVALID_PIN', 'PIN verification failed')
   if (message.includes('RATE_LIMITED')) return new ApiError(429, 'RATE_LIMITED', 'Too many attempts; try again later')
+  if (message.includes('ADMINISTRATION_DISABLED')) return new ApiError(409, 'ADMINISTRATION_DISABLED', 'Administrative changes are not activated.')
+  if (message.includes('LAST_ADMIN_REQUIRED')) return new ApiError(409, 'LAST_ADMIN_REQUIRED', 'At least one active administrator must remain.')
+  if (message.includes('OPEN_CASH_SHIFT')) return new ApiError(409, 'OPEN_CASH_SHIFT', 'Close the affected cash drawer before changing this access.')
   if (message.includes('CASH_SHIFT_REQUIRED')) return new ApiError(409, 'CASH_SHIFT_REQUIRED', 'Open a cash shift at this terminal before accepting or paying cash. Nothing was settled.')
   if (message.includes('CASH_CONTROLS_DISABLED')) return new ApiError(409, 'CASH_CONTROLS_DISABLED', 'Cash drawer controls are not activated.')
   if (message.includes('CASH_DISABLED')) return new ApiError(409, 'CASH_DISABLED', 'Cash payments are disabled for this terminal.')
