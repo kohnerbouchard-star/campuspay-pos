@@ -1,0 +1,21 @@
+name: Isolated development source
+on:
+  push:
+    branches: [work/refund-source-20260918]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ab9d9b36766d958e1fd3db1739b04efdc539040b
+          persist-credentials: false
+      - run: git archive --format=tar.gz --output=campuspay-source.tar.gz HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinned-campuspay-source
+          path: campuspay-source.tar.gz
+          retention-days: 1
