@@ -13,7 +13,8 @@ export async function runCompletionBrowser({base,login,makeRoster,state,newCard,
   console.log('Completion browser checkpoint: directory search')
   await page.goto(base+'/students')
   await page.getByLabel('Search students',{exact:true}).fill('Browser repeated fixture')
-  await page.getByLabel('Student Year',{exact:true}).selectOption('11')
+  // A wrapped select adds option text to getByLabel's exact text; its accessible name is stable.
+  await page.getByRole('combobox',{name:'Student Year',exact:true}).selectOption('11')
   console.log('Completion browser checkpoint: select student')
   await page.getByRole('button',{name:new RegExp(student.code)}).click()
   console.log('Completion browser checkpoint: open enrollment')
