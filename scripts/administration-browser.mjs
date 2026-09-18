@@ -51,7 +51,8 @@ export async function runAdministrationBrowser(ctx,cookies){
   await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeEnabled()
   await page.evaluate(()=>sessionStorage.setItem('campuspay:administration-operation:v1','corrupt pending operation'))
   await page.reload();await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeDisabled()
-  await expect(page.getByRole('alert')).toContainText('Recovery storage is unreadable or unavailable')
+  const warning=page.getByRole('alert').filter({hasText:'Recovery storage is unreadable or unavailable'})
+  await expect(warning).toBeVisible();await expect(warning).toContainText('Recovery storage is unreadable or unavailable')
   assert.deepEqual(errors,[])
   fs.writeFileSync(dir+'/browser.json',JSON.stringify({widths,screenshots,unexpectedBrowserErrors:errors,layoutFindings:[],opaqueRecovery:true,postCommitRefreshFailure:true,corruptStorageBlocksWrites:true,liveDataUsed:false},null,2))
  }catch(e){await page.screenshot({path:dir+'/last-failure.png',fullPage:true}).catch(()=>{});throw e}
