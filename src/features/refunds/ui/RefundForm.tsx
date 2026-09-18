@@ -1,10 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { formatWon } from '@/lib/format/currency'
 import type { PostRefundInput, RefundSale } from '../domain'
 
 type Draft = Omit<PostRefundInput, 'saleId' | 'idempotencyKey'> & { returnReason?: 'FAILED_DELIVERY' | 'CUSTOMER_RETURN' }
 export function RefundForm({ sale, busy, onSubmit, allowReturns = false }: { sale: RefundSale; busy: boolean; allowReturns?: boolean; onSubmit: (draft: Draft) => void }) {
+  const fieldId = useId()
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
   const [verified, setVerified] = useState(false)
@@ -19,14 +20,14 @@ export function RefundForm({ sale, busy, onSubmit, allowReturns = false }: { sal
     onSubmit({ ...(isReturn ? { returnReason: returnReason as 'FAILED_DELIVERY' | 'CUSTOMER_RETURN' } : {}), reasonCode: reason as Draft['reasonCode'], notes, verified: true, items: sale.items.map(item => ({ sale_item_id: item.sale_item_id, disposition: dispositions[item.sale_item_id] })) })
   }}>
     <fieldset disabled={busy} className="form-fields"><legend>{isReturn ? 'Verified post-dispatch return' : 'Full-sale reversal'}</legend>
-      {isReturn && <><p>Confirm that every item has been returned to staff and inspected. Record damaged returned items as write-offs; do not use this action for unverified missing goods.</p><label className="field"><span>Return type</span><select required value={returnReason} onChange={e => setReturnReason(e.target.value as typeof returnReason)}><option value="">Choose return type</option>{sale.order_status === 'OUT_FOR_DELIVERY' && <option value="FAILED_DELIVERY">Failed delivery — goods returned</option>}<option value="CUSTOMER_RETURN">Customer return — goods inspected</option></select></label></>}
+      {isReturn && <><p>Confirm that every item has been returned to staff and inspected. Record damaged returned items as write-offs; do not use this action for unverified missing goods.</p><label className="field"><span id={`${fieldId}-return-type`}>Return type</span><select aria-labelledby={`${fieldId}-return-type`} required value={returnReason} onChange={e => setReturnReason(e.target.value as typeof returnReason)}><option value="">Choose return type</option>{sale.order_status === 'OUT_FOR_DELIVERY' && <option value="FAILED_DELIVERY">Failed delivery — goods returned</option>}<option value="CUSTOMER_RETURN">Customer return — goods inspected</option></select></label></>}
       <p>Original payment: <strong>{formatWon(sale.total_won)}</strong>. Wallet credit {formatWon(sale.wallet_tender_won)}; cash due {formatWon(sale.cash_tender_won)}. The cash amount excludes change already returned.</p>
       <p className="muted">Every item is reversed in full. Restock only goods physically verified as saleable. Write off records the original cost as a loss without increasing stock.</p>
       {sale.items.map(item => <label className="field" key={item.sale_item_id}><span>{item.product_name} · {item.quantity} units · original cost {formatWon(item.cogs_won)}</span>
         <select required aria-label={`Disposition for ${item.product_name}`} value={dispositions[item.sale_item_id] ?? ''} onChange={event => setDispositions({ ...dispositions, [item.sale_item_id]: event.target.value as 'RESTOCK' | 'WRITE_OFF' })}>
           <option value="">Choose disposition</option><option value="RESTOCK">Return to saleable stock</option><option value="WRITE_OFF">Write off — no saleable stock returned</option>
         </select></label>)}
-      <label className="field"><span>Refund reason</span><select required value={reason} onChange={event => setReason(event.target.value)}><option value="">Choose a reason</option><option value="CUSTOMER_RETURN">Customer return</option><option value="ORDER_CANCELLED">Order cancelled</option><option value="DAMAGED">Damaged goods</option><option value="PRICING_ERROR">Pricing error</option><option value="OTHER">Other approved correction</option></select></label>
+      <label className="field"><span id={`${fieldId}-refund-reason`}>Refund reason</span><select aria-labelledby={`${fieldId}-refund-reason`} required value={reason} onChange={event => setReason(event.target.value)}><option value="">Choose a reason</option><option value="CUSTOMER_RETURN">Customer return</option><option value="ORDER_CANCELLED">Order cancelled</option><option value="DAMAGED">Damaged goods</option><option value="PRICING_ERROR">Pricing error</option><option value="OTHER">Other approved correction</option></select></label>
       <label className="field"><span>Refund notes</span><textarea required minLength={10} maxLength={500} value={notes} onChange={event => setNotes(event.target.value)} /></label>
       <p className="muted">Coupon policy: keep the original redemption. Refund only the amount paid; do not automatically restore the coupon allowance.</p>
       <label><input type="checkbox" required checked={verified} onChange={event => setVerified(event.target.checked)} /> I verified this receipt, customer, and the disposition of every item; for a post-dispatch return, all goods are back with staff.</label>
