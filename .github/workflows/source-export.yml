@@ -1,0 +1,21 @@
+name: Isolated launch source
+on:
+  push:
+    branches: [work/launch-completion-source-20260918]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 73e944f6c0f2efb693437b75ef3d7df82d7c19e5
+          persist-credentials: false
+      - run: git archive --format=tar.gz -o campuspay-source.tar.gz HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinned-launch-source
+          path: campuspay-source.tar.gz
+          retention-days: 1
