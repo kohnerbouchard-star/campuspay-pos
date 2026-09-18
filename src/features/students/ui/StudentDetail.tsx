@@ -19,9 +19,10 @@ export function StudentDetail({ student }: { student: ManagedStudent }) {
     </dl>
     {student.audit_reference && <p className="muted">Enrollment receipt: {student.audit_reference}</p>}
     <div className="action-row">
+      {student.active && student.pin_set === false && !student.card_active && <Link className="secondary-action" href={`/students/${student.student_id}/complete`}>Complete enrollment</Link>}
       {student.active && student.pin_set !== false && <Link className="secondary-action" href={`/security?studentId=${student.student_id}`}>Reset PIN or replace card</Link>}
       <Link className="secondary-action" href="/accounting">Open Accounting</Link>
     </div>
-    <p className="muted">{student.pin_set === false ? 'This student is registered without a PIN. Card and PIN issuance is a separate, authorized enrollment step; do not create a duplicate student account.' : 'PIN resets and replacement cards require a fresh Super Admin authorization.'}</p>
+    <p className="muted">{student.pin_set === false ? 'This student is registered without a PIN. Complete enrollment is a separate, authorized step and is disabled until enabled for this installation. Never create a duplicate student account.' : 'PIN resets and replacement cards require a fresh Super Admin authorization.'}</p>
   </section>
 }

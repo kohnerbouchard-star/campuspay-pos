@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { chromium } from '@playwright/test'
+import { verifyCatalogServiceRecovery } from './catalog-service-recovery.mjs'
 
 const viewports = [
   { width: 1440, height: 1000 }, { width: 1024, height: 900 },
@@ -59,12 +60,13 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await page.waitForFunction(() => !document.querySelector('[data-nextjs-dialog], .vite-error-overlay'))
   }
 
-  async function capture(page, name, viewport, { waitForNetwork = true } = {}) {
+  async function capture(page, name, viewport, { waitForNetwork = true, ready } = {}) {
     await page.setViewportSize(viewport)
     await page.evaluate(() => window.scrollTo(0, 0))
     // Trusted activity preserves the real short cashier timeout while reviewing responsive states.
     if (!['pos-timeout-warning', 'staff-timeout-warning'].includes(name)) await page.keyboard.press('Shift')
-    if (waitForNetwork) await settled(page)
+    if (ready) await ready()
+    else if (waitForNetwork) await settled(page)
     if (name === 'reports' && viewport.width === 390) {
       const register = page.getByRole('region', { name: 'Transaction register', exact: true })
       const firstReceipt = register.locator('tbody tr').first().locator('td').first()
@@ -109,8 +111,8 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     if (metrics.unnamedButtons) findings.push(`${filename}: ${metrics.unnamedButtons} buttons have no accessible name`)
   }
 
-  async function captureAll(page, name) {
-    for (const viewport of viewports) await capture(page, name, viewport)
+  async function captureAll(page, name, options) {
+    for (const viewport of viewports) await capture(page, name, viewport, options)
     await page.setViewportSize(viewports[0])
   }
 
@@ -233,19 +235,8 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     if (catalogRouteErrors.length) throw catalogRouteErrors[0]
     await settled(customerPage)
 
-    // Fulfill one local request with a service failure, then verify real Retry behavior.
-    expectedHttpErrors.set(customerPage, [{ url: `${base}/api/store/catalog`, status: 503 }])
-    await customerPage.route(`${base}/api/store/catalog`, (route) => route.fulfill({
-      status: 503, contentType: 'application/json',
-      body: JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Visual QA service interruption' } }),
-    }), { times: 1 })
-    await customerPage.goto(`${base}/store`)
-    const catalogFailure = customerPage.getByRole('alert').filter({ hasText: 'We couldn’t complete that request. Please try again.' })
-    await catalogFailure.waitFor()
-    await captureAll(customerPage, 'student-store-service-error')
-    await customerPage.getByRole('button', { name: 'Refresh store', exact: true }).click()
-    await customerPage.getByRole('button', { name: 'Add Bottled Water to cart', exact: true }).waitFor()
-    await catalogFailure.waitFor({ state: 'hidden' })
+    // Assert the deliberate 503 state and successful retry directly, including repeated navigation.
+    await verifyCatalogServiceRecovery({ page: customerPage, base, expectedHttpErrors, captureAll })
     await customerPage.goto(`${base}/store`)
     const addWater = customerPage.getByRole('button', { name: 'Add Bottled Water to cart', exact: true })
     await addWater.waitFor()

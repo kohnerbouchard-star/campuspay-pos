@@ -9,6 +9,8 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  complete_student_enrollment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }, { name: 'p_expected_code', cast: 'text' }, { name: 'p_expected_name', cast: 'text' }, { name: 'p_expected_year', cast: 'integer' }, { name: 'p_expected_academic_year', cast: 'text' }, { name: 'p_identity_verified', cast: 'boolean' }, { name: 'p_card_fingerprint', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
+  recover_student_completion: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   search_students_v2: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_query', cast: 'text' }, { name: 'p_year_group', cast: 'integer' }, { name: 'p_offset', cast: 'integer' }],
   create_staff_session: [{ name: 'p_employee_code', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }],
   authorize_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }, { name: 'p_permission', cast: 'text' }],
