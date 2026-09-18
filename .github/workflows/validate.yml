@@ -30,6 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: node scripts/verify-local-repair.mjs
       - run: npm ci
       - run: npm run security:dependencies
       - run: npm run validate:static
@@ -38,6 +39,7 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run db:migrate
+      - run: node scripts/verify-runtime-readiness.mjs
       - run: npx playwright install --with-deps chromium
       - run: npm run test:integration
       - uses: actions/upload-artifact@v4

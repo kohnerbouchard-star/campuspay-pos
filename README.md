@@ -1,80 +1,39 @@
 # MICA Money · CampusPay staff operations and student store
 
-CampusPay is a closed-loop school wallet, point-of-sale, and room-delivery online-store application built with Next.js and Neon Postgres. The browser talks only to same-origin API routes; all financial, inventory, credential, and coupon mutations execute through narrowly scoped PostgreSQL functions.
+CampusPay is a closed-loop school wallet, point-of-sale, and room-delivery online store built with Next.js and Neon Postgres. Browsers call same-origin API routes; financial, inventory, credential, and coupon mutations execute through narrowly scoped PostgreSQL functions.
 
-## Included capabilities
+## Existing capabilities
 
-- Employee-code and personal-PIN sign-in with cashier, inventory-admin, accountant, and super-admin roles.
-- Card-first, student-PIN-second checkout.
-- Wallet balances permitted down to **−₩15,000**.
-- Product buttons generated from database records and automatic sold-out state.
-- Costed stock receipts, inventory lots, FIFO/LIFO allocation, COGS, and gross-profit reporting.
-- Accountant-only denomination-based wallet adjustments with an immutable ledger.
-- HMAC-fingerprinted card and coupon identifiers; raw identifiers are not stored.
-- One-use super-admin authorization for student card and PIN resets.
-- Twenty-second cashier inactivity lock enforced by the UI and database session.
-- Fixed-won and percentage coupons with validity, minimum spend, caps, and redemption limits.
-- Customer online store using printed RFID/card number + student PIN.
-- Shared POS/online inventory, wallet, coupons, FIFO/LIFO costing, COGS, and sales ledger.
-- East Building room delivery (201–206) plus West Building floors ready for room configuration.
-- Staff online-order fulfillment: placed, picking, ready, out for delivery, delivered.
-- Optional production host separation with `STAFF_ORIGIN` and `STORE_ORIGIN`.
+- Employee code/PIN authentication with cashier, inventory-admin, accountant and super-admin roles.
+- Card-first, student-PIN-second POS checkout; a −₩15,000 wallet floor; server-authorized wallet/cash/split tenders and expiring cash-event policy.
+- Costed inventory receipts, lot allocation, FIFO/LIFO costing, COGS and reporting; ledger-backed operational wallet adjustments.
+- Fingerprinted card/coupon identifiers; fixed/percentage coupons with validity, spend, cap and redemption limits.
+- E202 student enrollment, elevated card/PIN replacement, student search and wallet history.
+- Student store authentication with printed RFID/card number plus PIN; shared wallets, stock, coupons and sales; room delivery and staff fulfillment.
+- East Building floor 2 rooms 201–206; West floors 2–4 remain non-orderable until actual rooms are configured.
+- Separate staff/customer origins and host-only sessions; five-minute POS workstation lock, fifteen-minute other-workspace lock, thirty-second warning and server-authoritative session deadlines.
 
-## Architecture
+This remains a pilot until the [v1.0 release gates](docs/V1_LAUNCH_PLAN.md) are accepted. Refunds, cash-drawer close, complete historical pagination, real device acceptance and operational cutover must not be inferred from existing checkout tests.
 
-```text
-Role-specific Next.js UI
-        ↓
-Same-origin /api routes
-        ↓
-Feature services
-        ↓
-Whitelisted PostgreSQL RPC adapter
-        ↓
-Neon Postgres api.* functions
-        ↓
-Private tables, ledgers, lots, and audit records
-```
+## Repair the existing Mac installation
 
-## Local setup
+Do not rerun the September 7 secret-bearing installer: it overwrites local configuration with an obsolete database target. Do not regenerate card/PIN peppers on an existing installation.
+
+Use the secret-free repair package or, after this change is merged:
 
 ```bash
-git pull
-npm install
-cp .env.example .env.local
-# Fill DATABASE_URL and application secrets in .env.local
-npm run connection:check
-npm run dev
+cd ~/campuspay-pos
+git pull --ff-only origin main
+node scripts/repair-local.mjs
 ```
 
-Open `http://localhost:3000`.
+The repair requires a clean main checkout and preserves application secrets. It backs up and repairs only the recognized old/current CampusPay connection, verifies the runtime and 15 API capabilities, and starts local development. It does not migrate, bootstrap or change database data. Options: `--check-only`, `--no-start`, `--repo PATH`. See [local recovery](docs/LOCAL_RECOVERY.md).
 
-Never commit `.env.local`. Use the pooled Neon connection string for normal application traffic and the direct connection only for schema migration tooling.
+## New workstation
 
-## Validation
+Use Node.js 22.9 or newer. Clone the private repository and obtain the current private configuration through the owner's secure channel. Never overwrite an existing `.env.local`, store credentials in Git, reuse an old installer ZIP, or use an owner connection for the application. The package version alone does not identify the deployed commit.
 
-```bash
-npm run db:migration:build
-npm run validate:static
-npm run typecheck
-npm run test
-npm run lint
-npm run build
-npm run db:health
-```
-
-## Source layout
-
-- `src/app` — pages and route handlers.
-- `src/features` — domain modules and role-specific UI.
-- `src/lib/db` — Neon connection and whitelisted RPC adapter.
-- `database/schema` — ordered PostgreSQL source modules.
-- `database/migrations` — ordered, versioned migrations.
-- `docs` — architecture, security, API, and operating documentation.
-
-## Existing CampusPay Neon installation
-
-The hosted CampusPay database has already been migrated and initialized. Do not run bootstrap or regenerate the application peppers for that installation. Place the separately supplied `.env.local` beside `package.json`, then run:
+With an approved current `.env.local` in place:
 
 ```bash
 npm ci
@@ -83,51 +42,30 @@ npm run db:health
 npm run dev
 ```
 
-Use the credentials delivered separately to the owner. They are not stored in this repository.
+Local staff login is `/login`, student login `/store/login`, fulfillment `/orders`, enrollment `/students`, reports `/reports`, and event payment settings `/settings/payments` on `http://localhost:3000`. Students without a card go to E202; there is no online self-registration.
 
-## Empty development installation only
+Production uses separately configured HTTPS `STAFF_ORIGIN` and `STORE_ORIGIN`, not localhost. The application must receive only restricted runtime credentials. The separately controlled direct owner connection is for approved migration tooling only. Normal startup never migrates. Preview/QA must not share live production credentials.
 
-Use an owner direct `DATABASE_URL_UNPOOLED` for `npm run db:migrate`. The application uses a separate pooled `DATABASE_URL` restricted to the `campuspay_runtime` role. `ALLOW_DEMO_BOOTSTRAP=true npm run db:bootstrap-demo` initializes an empty development database with random demo PINs displayed once in your terminal. It refuses to run after credentials exist. Do not use it on real school data.
-
-Neon supplies the database, not offline checkout. Purchases require a working connection. This is a development/pilot release, not a certification for unattended live financial operation.
-
-
-## Online store
-
-The student store requires MICA Money card + PIN authentication before catalog or delivery information is returned. Students without a card are directed to E202; online self-registration is not supported.
-
-Local development exposes the customer store at `http://localhost:3000/store` and staff fulfillment at `http://localhost:3000/orders`. Production should configure separate HTTPS origins for customers and staff. See `docs/ONLINE_STORE.md`.
-
-## UI and operational refresh
-
-Staff sign in at `/login`; students sign in at `/store/login`. Super Admin enrollment is under `/students`, financial reporting under `/reports`, and terminal event cash policy under `/settings/payments`. See [enrollment](docs/STUDENT_ENROLLMENT.md), [payments](docs/PAYMENTS.md), and [modernization delivery](docs/UI_UX_DELIVERY.md).
-
-Isolated validation (PostgreSQL 17, localhost only):
+## Validation
 
 ```bash
-npm run validate
+node scripts/verify-local-repair.mjs
 npm run validate:static
+npm run typecheck
+npm test
+npm run lint
 npm run build
-npm run test:integration:isolated
-npm run test:visual
+npm run db:health
 ```
 
-The isolated runner creates and removes only its own disposable database. Set `TEST_POSTGRES_URL` for your local test server; its default matches the dedicated QA container documented in the delivery report.
+CI also migrates disposable local PostgreSQL, tests the actual runtime-role metadata checks with `scripts/verify-runtime-readiness.mjs`, and runs existing integration/browser validation. Local repair regressions include real local Git fixtures and mocked network/dependency/database boundaries. A capability check is not an exact migration-history audit or purchase-flow certification.
 
-### UI/UX refresh local development
+For isolated application testing use `npm run test:integration:isolated` and `npm run test:visual`, with a dedicated local `TEST_POSTGRES_URL`. Do not run demo bootstrap or isolated fixture commands against school data.
 
-Use a database branch with migrations **20260907090000 and later**, including
-**20260908090000_register_remediation**. Do not point this feature branch at
-production before the production migration has been approved.
+## Architecture and operating documentation
 
-The current QA target is `dev-ui-ux-refresh-20260907`
-(`br-late-bread-azrpu2xh`); branch names may change. Use its restricted runtime
-connection for the app and an explicitly selected owner connection only for
-approved QA migrations. Keep your application secrets unchanged. A local
-process environment override can select QA without editing `.env.local`.
-Do not copy database URLs into documentation, Git, screenshots, or PRs.
+Role-specific UI → same-origin API → feature service → whitelisted PostgreSQL RPC adapter → `api.*` functions → private tables and immutable journals.
 
-The POS reports **Database update required** when a required capability is
-missing. Retry after selecting the matching database. See the
-[remediation report](docs/UI_UX_REMEDIATION.md) and
-[payment operating guidance](docs/PAYMENTS.md).
+`src/app` holds pages/routes; `src/features` holds workflows; `src/lib/db` holds the restricted adapter; `database/schema` and `database/migrations` hold reviewed SQL. See [payments](docs/PAYMENTS.md), [enrollment](docs/STUDENT_ENROLLMENT.md), [online store](docs/ONLINE_STORE.md), [hardening evidence and limits](docs/PRE_MERGE_HARDENING.md), and the [launch plan](docs/V1_LAUNCH_PLAN.md).
+
+Neon provides the database, not offline payment approval. Purchases require a working connection and an authoritative server result. Public deployment and unattended live operation require the release gates, not merely a passing build.
