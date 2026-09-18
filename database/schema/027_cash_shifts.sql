@@ -46,7 +46,7 @@ end $$;
 revoke all on private.cash_shifts,private.cash_shift_events,private.cash_shift_closes,private.cash_shift_approvals,private.cash_operation_closures from public,campuspay_runtime;
 
 create function private.cash_denominations_total(p_counts jsonb) returns bigint
-language plpgsql immutable set search_path='' as $$
+language plpgsql immutable set search_path = '' as $$
 declare k text; v jsonb; total bigint:=0;
 begin
  if jsonb_typeof(p_counts) is distinct from 'object' or p_counts='{}'::jsonb then raise exception 'BAD_REQUEST'; end if;
@@ -59,14 +59,14 @@ begin
  return total;
 end $$;
 create function private.cash_session(p_session_id uuid) returns private.staff_sessions
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions;
 begin
  s:=private.assert_session(p_session_id,case when (select role_snapshot from private.staff_sessions where id=p_session_id)='accountant' then 'reports.sales' else 'pos.checkout' end);
  return s;
 end $$;
 create function private.cash_shift_document(p_id uuid) returns jsonb
-language sql stable security definer set search_path='' as $$
+language sql stable security definer set search_path = '' as $$
  select jsonb_build_object('shift_id',s.id,'terminal_id',s.terminal_id,'terminal_label',t.label,'opened_by',s.opened_by,'opened_at',s.opened_at,'closed_at',s.closed_at,
  'opening_float_won',s.opening_float_won,'cash_sales_won',coalesce((select sum(amount_won) from private.cash_shift_events e where e.shift_id=s.id and source_type='SALE_TENDER'),0),
  'cash_payouts_won',-coalesce((select sum(amount_won) from private.cash_shift_events e where e.shift_id=s.id and source_type='REFUND_PAYOUT'),0),
@@ -77,7 +77,7 @@ language sql stable security definer set search_path='' as $$
  left join private.cash_shift_closes c on c.shift_id=s.id left join private.cash_shift_approvals a on a.shift_id=s.id where s.id=p_id;
 $$;
 create function api.cash_register_snapshot(p_session_id uuid,p_offset integer default 0) returns table(result jsonb)
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions;
 begin
  s:=private.cash_session(p_session_id);
@@ -89,7 +89,7 @@ begin
  'total_closed',(select count(*) from private.cash_shifts where closed_at is not null and (s.role_snapshot in ('super_admin','accountant') or terminal_id=s.terminal_id)));
 end $$;
 create function api.open_cash_shift(p_session_id uuid,p_key uuid,p_counts jsonb,p_verified boolean) returns table(result jsonb)
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions; sh private.cash_shifts; total bigint;
 begin
  s:=private.cash_session(p_session_id);
@@ -114,7 +114,7 @@ begin
  return query select private.cash_shift_document(sh.id);
 end $$;
 create function api.close_cash_shift(p_session_id uuid,p_shift_id uuid,p_key uuid,p_counts jsonb,p_notes text,p_verified boolean) returns table(result jsonb)
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions; sh private.cash_shifts; c private.cash_shift_closes; total bigint; expected bigint; finished timestamptz;
 begin
  s:=private.cash_session(p_session_id);
@@ -143,7 +143,7 @@ begin
  return query select private.cash_shift_document(sh.id);
 end $$;
 create function api.recover_cash_operation(p_session_id uuid,p_key uuid,p_operation text,p_shift_id uuid) returns table(result jsonb)
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions; sh private.cash_shifts; c private.cash_shift_closes; fence private.cash_operation_closures;
 begin
  s:=private.cash_session(p_session_id);
@@ -166,7 +166,7 @@ begin
  return query select jsonb_build_object('outcome','CLOSED','shift',null);
 end $$;
 create function api.approve_cash_variance(p_session_id uuid,p_shift_id uuid,p_notes text) returns table(result jsonb)
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions; c private.cash_shift_closes; a private.cash_shift_approvals;
 begin
  s:=private.assert_session(p_session_id,'reports.sales');
@@ -189,7 +189,7 @@ end $$;
 
 -- Cash is attributed in the SAME transaction as settlement/handover. Change is already excluded.
 create function private.capture_cash_shift_event() returns trigger
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare term uuid; sh private.cash_shifts; amount bigint; kind text;
 begin
  if tg_table_name='sale_tenders' then
@@ -208,7 +208,7 @@ create trigger capture_cash before insert on private.sale_tenders for each row e
 create trigger capture_cash before insert on private.cash_refund_payouts for each row execute function private.capture_cash_shift_event();
 -- Each attributed amount must reference the actual committed payment, not an invented cash event.
 create function private.verify_cash_event() returns trigger
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 declare term uuid; value bigint;
 begin
  if new.source_type='SALE_TENDER' then
@@ -222,7 +222,7 @@ end $$;
 create constraint trigger cash_event_reconciles after insert on private.cash_shift_events deferrable initially deferred
 for each row execute function private.verify_cash_event();
 create function private.guard_cash_shift() returns trigger
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 begin
  if tg_op='DELETE' or old.closed_at is not null or new.closed_at is null or (to_jsonb(new)-'closed_at')<>(to_jsonb(old)-'closed_at') then raise exception 'IMMUTABLE_CASH_SHIFT'; end if;
  if not exists(select 1 from private.cash_shift_closes where shift_id=old.id and created_at=new.closed_at) then raise exception 'CASH_CLOSE_REQUIRED'; end if;
@@ -233,7 +233,7 @@ revoke all on function private.verify_cash_event(),private.guard_cash_shift() fr
 
 -- Never disable attribution while a drawer is open; protect expected cash from a mid-shift setting change.
 create function private.guard_cash_control_setting() returns trigger
-language plpgsql security definer set search_path='' as $$
+language plpgsql security definer set search_path = '' as $$
 begin
  if old.cash_controls_enabled is distinct from new.cash_controls_enabled and exists(select 1 from private.cash_shifts where closed_at is null) then raise exception 'CONFLICT'; end if;
  return new;
