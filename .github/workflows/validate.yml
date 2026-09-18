@@ -44,6 +44,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/verify-complete-enrollment.mjs
       - run: node scripts/verify-sale-refunds.mjs
+      - run: node scripts/verify-operations.mjs
       - run: npm run test:integration
       - uses: actions/upload-artifact@v4
         if: always()

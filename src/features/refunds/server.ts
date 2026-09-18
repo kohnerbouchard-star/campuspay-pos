@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import { ApiError } from '@/lib/api/errors'
 import { callApiRpc } from '@/lib/db/rpc'
-import { CashPayoutSchema, PostRefundSchema, RefundDecisionSchema, RefundSaleSchema, RefundSummarySchema, type PostRefundInput } from './domain'
+import { PostReturnSchema, CashPayoutSchema, PostRefundSchema, RefundDecisionSchema, RefundSaleSchema, RefundSummarySchema, type PostRefundInput } from './domain'
 
 export function refundsEnabled() { return process.env.REFUNDS_ENABLED === 'true' }
 function requireIssuer(session: SessionContext) {
@@ -34,4 +34,14 @@ export function recordCashPayout(session: SessionContext, input: z.infer<typeof 
 }
 export async function refundSummary(session: SessionContext, from: string, to: string) {
   return callApiRpc('refund_day_summary', { p_session_id: session.session_id, p_from: from, p_to: to }, z.array(z.object({ result: RefundSummarySchema })).length(1).transform(([row]) => row.result))
+}
+
+export function returnsEnabled() { return refundsEnabled() && process.env.RETURNS_ENABLED === 'true' }
+export function postReturn(session: SessionContext, input: z.infer<typeof PostReturnSchema>) {
+  requireIssuer(session)
+  if (!returnsEnabled()) throw new ApiError(403, 'FORBIDDEN', 'Post-dispatch returns are disabled for this installation')
+  const value = PostReturnSchema.parse(input)
+  return callApiRpc('post_online_return', { p_session_id: session.session_id, p_sale_id: value.saleId, p_reason_code: value.reasonCode,
+    p_notes: value.notes, p_items: value.items, p_verified: value.verified, p_idempotency_key: value.idempotencyKey,
+    p_return_reason: value.returnReason }, decision)
 }
