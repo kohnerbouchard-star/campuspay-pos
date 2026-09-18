@@ -27,6 +27,12 @@ jobs:
       CI_BROWSER: '1'
     steps:
       - uses: actions/checkout@v4
+      - name: Record exact candidate source for reproducible validation
+        run: |
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+          git archive --format=tar.gz --output=.validation/tested-source.tar.gz HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -44,6 +50,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/verify-complete-enrollment.mjs
       - run: node scripts/verify-sale-refunds.mjs
+      - run: node scripts/verify-operations.mjs
       - run: npm run test:integration
       - uses: actions/upload-artifact@v4
         if: always()

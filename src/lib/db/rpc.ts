@@ -9,7 +9,13 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  cash_register_snapshot: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_offset', cast: 'integer' }],
+  open_cash_shift: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_counts', cast: 'jsonb' }, { name: 'p_verified', cast: 'boolean' }],
+  close_cash_shift: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_shift_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_counts', cast: 'jsonb' }, { name: 'p_notes', cast: 'text' }, { name: 'p_verified', cast: 'boolean' }],
+  recover_cash_operation: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_operation', cast: 'text' }, { name: 'p_shift_id', cast: 'uuid' }],
+  approve_cash_variance: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_shift_id', cast: 'uuid' }, { name: 'p_notes', cast: 'text' }],
   refund_sale_detail: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_reference', cast: 'text' }],
+  post_online_return: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_verified', cast: 'boolean' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_return_reason', cast: 'text' }],
   post_sale_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_verified', cast: 'boolean' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   recover_sale_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   record_refund_cash_payout: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_refund_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }, { name: 'p_amount_won', cast: 'bigint' }, { name: 'p_handover_reference', cast: 'text' }, { name: 'p_confirmed', cast: 'boolean' }],

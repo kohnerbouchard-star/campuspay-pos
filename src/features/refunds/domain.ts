@@ -12,7 +12,7 @@ export type PostRefundInput = z.infer<typeof PostRefundSchema>
 export const RecoverRefundSchema = z.object({ saleId: uuid, idempotencyKey: uuid }).strict()
 export const CashPayoutSchema = z.object({ refundId: uuid, idempotencyKey: uuid, amountWon: money.positive(), handoverReference: text(3, 120), confirmed: z.literal(true) }).strict()
 export const RefundRecordSchema = z.object({
-  refund_id: uuid, sale_id: uuid, receipt_number: z.string(), kind: z.enum(['POS_REFUND','ONLINE_CANCELLATION']),
+  refund_id: uuid, sale_id: uuid, receipt_number: z.string(), kind: z.enum(['POS_REFUND','ONLINE_CANCELLATION','ONLINE_RETURN']),
   reason_code: z.string(), notes: z.string(), created_at: z.string(), total_won: money, cogs_reversed_won: money,
   restocked_cost_won: money, write_off_cost_won: money, coupon_policy: z.literal('KEEP_REDEMPTION'),
   wallet_credit_won: money, cash_due_won: money, cash_paid_won: money,
@@ -22,7 +22,7 @@ export const RefundRecordSchema = z.object({
 export type RefundRecord = z.infer<typeof RefundRecordSchema>
 export const RefundDecisionSchema = z.discriminatedUnion('outcome', [
   z.object({ outcome: z.enum(['COMPLETED', 'ALREADY_REFUNDED']), refund: RefundRecordSchema }),
-  z.object({ outcome: z.enum(['CLOSED','IDEMPOTENCY_CONFLICT','DISABLED','NOT_FOUND','ORDER_DISPATCHED','EXPIRED_STOCK']), refund: z.null() }),
+  z.object({ outcome: z.enum(['CLOSED','IDEMPOTENCY_CONFLICT','DISABLED','NOT_FOUND','ORDER_DISPATCHED','EXPIRED_STOCK','RETURN_INELIGIBLE']), refund: z.null() }),
 ])
 export type RefundDecision = z.infer<typeof RefundDecisionSchema>
 export const RefundSaleSchema = z.object({
@@ -49,5 +49,13 @@ export const REFUND_MESSAGES: Record<RefundDecision['outcome'], string> = {
   DISABLED: 'Refund posting is disabled in this database. Nothing was refunded.',
   NOT_FOUND: 'The original sale could not be found.',
   ORDER_DISPATCHED: 'This order is already dispatched, delivered, or otherwise ineligible. Use the separately reviewed return process; no refund was posted.',
+  RETURN_INELIGIBLE: 'The order state no longer permits this return. Reload the original sale; nothing was refunded.',
   EXPIRED_STOCK: 'An original lot is expired. Choose Write off instead of returning it to saleable stock.',
 }
+
+export const PostReturnSchema = z.object({
+  saleId: uuid, idempotencyKey: uuid, reasonCode: z.enum(['CUSTOMER_RETURN','ORDER_CANCELLED','DAMAGED','PRICING_ERROR','OTHER']),
+  notes: text(10,500), verified: z.literal(true), returnReason: z.enum(['FAILED_DELIVERY','CUSTOMER_RETURN']),
+  items: z.array(RefundItemInputSchema).min(1).max(100),
+}).strict().refine(v => new Set(v.items.map(i => i.sale_item_id)).size === v.items.length)
+export type PostReturnInput = z.infer<typeof PostReturnSchema>

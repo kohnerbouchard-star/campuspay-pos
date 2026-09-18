@@ -5,7 +5,7 @@ import type { CustomerProfile, CustomerSession } from '@/features/store/domain'
 export const ORDER_STEPS = ['PLACED', 'PICKING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED'] as const
 
 export function orderStatusLabel(status: string): string {
-  const labels: Record<string, string> = { PLACED: 'Order placed', PICKING: 'Picking items', READY: 'Ready', OUT_FOR_DELIVERY: 'Out for delivery', DELIVERED: 'Delivered', CANCELLED: 'Cancelled' }
+  const labels: Record<string, string> = { PLACED: 'Order placed', PICKING: 'Picking items', READY: 'Ready', OUT_FOR_DELIVERY: 'Out for delivery', DELIVERED: 'Delivered', CANCELLED: 'Cancelled', RETURNED: 'Returned and refunded' }
   return labels[status] ?? 'Updating status'
 }
 
@@ -38,4 +38,9 @@ export function storeErrorMessage(error: unknown, fallback = 'We couldn’t comp
 
 export function orderTime(value: string): string {
   return new Intl.DateTimeFormat('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: BUSINESS_TIMEZONE }).format(new Date(value))
+}
+
+export function visibleOrderSteps(status: string, events: { status: string; created_at: string }[]): string[] {
+  if (status === 'CANCELLED' || status === 'RETURNED') return events.map(e => e.status)
+  return [...ORDER_STEPS]
 }
