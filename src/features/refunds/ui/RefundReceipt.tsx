@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
-import { RefundDecisionSchema, RefundSaleSchema, type RefundRecord } from '../domain'
+import { RefundDecisionSchema, RefundRecordSchema, type RefundRecord } from '../domain'
 
 export function RefundReceipt({ refund, userId, onUpdate }: { refund: RefundRecord; userId: string; onUpdate: (value: RefundRecord) => void }) {
   const [confirmed, setConfirmed] = useState(false)
@@ -25,10 +25,10 @@ export function RefundReceipt({ refund, userId, onUpdate }: { refund: RefundReco
     if (inFlight.current) return
     inFlight.current = true; setBusy(true); setError(null)
     try {
-      const sale = RefundSaleSchema.parse(await apiFetch<unknown>(`/api/refunds/sale?reference=${refund.sale_id}`))
-      if (!sale.refund || sale.refund.refund_id !== refund.refund_id) throw new Error('Missing refund')
-      onUpdate(sale.refund); setUnknown(false); setConfirmed(false)
-      if (sale.refund.cash_paid_won === 0) setError('No cash payout is recorded. Verify whether cash was already handed over; record that handover without paying twice.')
+      const current = RefundRecordSchema.parse(await apiFetch<unknown>(`/api/refunds/record?refundId=${refund.refund_id}`))
+      if (!current || current.refund_id !== refund.refund_id) throw new Error('Missing refund')
+      onUpdate(current); setUnknown(false); setConfirmed(false)
+      if (current.cash_paid_won === 0) setError('No cash payout is recorded. Verify whether cash was already handed over; record that handover without paying twice.')
     } catch { setError('Payout status is still unavailable. Stop and reconcile with the original operator.') }
     finally { inFlight.current = false; setBusy(false) }
   }
@@ -36,6 +36,8 @@ export function RefundReceipt({ refund, userId, onUpdate }: { refund: RefundReco
   return <section className="panel" aria-labelledby="refund-receipt-heading">
     <h2 id="refund-receipt-heading">Refund recorded</h2><p>Original receipt: <strong>{refund.receipt_number}</strong></p><p style={{ overflowWrap: 'anywhere' }}>Refund reference: {refund.refund_id}</p>
     <dl className="detail-list"><div><dt>Refund total</dt><dd>{formatWon(refund.total_won)}</dd></div><div><dt>Wallet credited</dt><dd>{formatWon(refund.wallet_credit_won)}</dd></div><div><dt>Cash still due</dt><dd>{formatWon(outstanding)}</dd></div><div><dt>Cash handover recorded</dt><dd>{formatWon(refund.cash_paid_won)}</dd></div><div><dt>Original cost reversed</dt><dd>{formatWon(refund.cogs_reversed_won)}</dd></div><div><dt>Stock cost restored</dt><dd>{formatWon(refund.restocked_cost_won)}</dd></div><div><dt>Write-off loss</dt><dd>{formatWon(refund.write_off_cost_won)}</dd></div></dl>
+    <p>{refund.scope === 'PARTIAL' ? 'Item-level refund receipt; this is not the cumulative refund total.' : 'Full-sale refund receipt.'}</p>
+    {refund.items.map((item,index) => <p key={index}>{item.quantity} × {item.product_name}: {formatWon(item.refund_won)} ({item.restock_quantity} restocked, {item.write_off_quantity} written off)</p>)}
     <p>Coupon redemption is retained. This receipt does not authorize a second refund or a second cash payout.</p>
     {refund.payout_reference && <p role="status">Cash payout recorded: {refund.payout_reference}. Do not pay again.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}

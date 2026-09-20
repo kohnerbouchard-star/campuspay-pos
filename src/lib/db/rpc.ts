@@ -9,6 +9,11 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  partial_refund_snapshot: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_reference', cast: 'text' }, { name: 'p_offset', cast: 'integer' }],
+  quote_partial_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }],
+  post_partial_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_expected_count', cast: 'integer' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_verified', cast: 'boolean' }, { name: 'p_return_reason', cast: 'text' }],
+  refund_record: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_refund_id', cast: 'uuid' }],
+  customer_order_refunds: [{ name: 'p_customer_session_id', cast: 'uuid' }, { name: 'p_order_id', cast: 'uuid' }, { name: 'p_offset', cast: 'integer' }],
   preview_partial_refund: [{name:'p_session_id',cast:'uuid'},{name:'p_sale_id',cast:'uuid'},{name:'p_items',cast:'jsonb'}],
   administration_snapshot: [{name:'p_session_id',cast:'uuid'},{name:'p_staff_offset',cast:'integer'},{name:'p_terminal_offset',cast:'integer'}],
   change_administration: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_payload',cast:'jsonb'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],

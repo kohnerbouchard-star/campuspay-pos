@@ -36,7 +36,7 @@ export type PartialRefundPreview = z.infer<typeof PartialRefundPreviewSchema>
 export const PREVIEW_MESSAGES = {
   DISABLED: 'Item-level previews are not enabled in this database.',
   NOT_FOUND: 'The original sale could not be found.',
-  ALREADY_REFUNDED: 'This sale already has a refund. Repeated partial posting is not available yet.',
+  ALREADY_REFUNDED: 'This sale already has a refund. Use Item refunds and returns for the current remaining quantities.',
   INELIGIBLE: 'Preview is available for POS sales or dispatched/delivered returns. Pre-dispatch cancellation remains a full-sale operation.',
   INVALID_SELECTION: 'Select only original sale lines and no more than the quantity sold.',
   EXPIRED_STOCK: 'An original selected lot is expired. Saleable restock is not available; inspect and choose write-off as appropriate.',
