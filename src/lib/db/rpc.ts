@@ -9,6 +9,9 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  administration_snapshot: [{name:'p_session_id',cast:'uuid'},{name:'p_staff_offset',cast:'integer'},{name:'p_terminal_offset',cast:'integer'}],
+  change_administration: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_payload',cast:'jsonb'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],
+  recover_administration: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'}],
   cash_register_snapshot: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_offset', cast: 'integer' }],
   open_cash_shift: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_counts', cast: 'jsonb' }, { name: 'p_verified', cast: 'boolean' }],
   close_cash_shift: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_shift_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_counts', cast: 'jsonb' }, { name: 'p_notes', cast: 'text' }, { name: 'p_verified', cast: 'boolean' }],
