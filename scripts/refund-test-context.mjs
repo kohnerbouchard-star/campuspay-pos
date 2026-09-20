@@ -57,6 +57,6 @@ export async function refundTestContext() {
     const staff = [['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin']].map(([employeeCode, staffRole]) => ({ employeeCode, role: staffRole, displayName: `Synthetic ${staffRole}`, pinProof: h('STAFF_PIN_PEPPER', `staff-pin:${staffPin}`) }))
     await owner.query('select * from api.bootstrap_demo($1::jsonb,$2,$3,$4)', [JSON.stringify(staff), h('STUDENT_PIN_PEPPER', `student-pin:${pin}`), h('CARD_HMAC_SECRET', randomBytes(12).toString('hex')), h('COUPON_HMAC_SECRET', 'REFUNDQA')])
     await owner.query("with s as(insert into public.staff_profiles(employee_code,display_name,role) values('9101','Second synthetic refund operator','super_admin') returning auth_user_id) insert into private.staff_credentials(staff_user_id,pin_hash) select auth_user_id,extensions.crypt($1,extensions.gen_salt('bf',12)) from s", [h('STAFF_PIN_PEPPER', `staff-pin:${staffPin}`)])
-    return { owner, runtimeUrl: runtime.href, base, start, close, raw, request, login, pin, staffPin, randomUUID }
+    return { owner, ownerUrl: target.href, staffPinProof: value => h('STAFF_PIN_PEPPER', `staff-pin:${value}`), runtimeUrl: runtime.href, base, start, close, raw, request, login, pin, staffPin, randomUUID }
   } catch (error) { await close(); throw error }
 }

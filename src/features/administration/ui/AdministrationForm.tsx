@@ -1,13 +1,15 @@
 'use client'
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { AdministrationChangeSchema,type AdministrationChange,type StaffRecord,type TerminalRecord } from '../domain'
 export type AdministrationTarget = {kind:'CREATE'}|{kind:'STAFF';record:StaffRecord}|{kind:'TERMINAL';record:TerminalRecord}
 export function AdministrationForm({target,busy,onSubmit,onCancel}:{target:AdministrationTarget;busy:boolean;onSubmit(input:AdministrationChange):Promise<void>;onCancel():void}) {
  const id=useId(),[error,setError]=useState('')
  const [action,setAction]=useState(target.kind==='CREATE'?'CREATE_STAFF':target.kind==='STAFF'?'UPDATE_STAFF':'UPDATE_TERMINAL')
+ const heading=useRef<HTMLHeadingElement>(null)
+ useEffect(()=>{heading.current?.focus();heading.current?.scrollIntoView({block:'start'})},[])
  const pinNeeded=action==='CREATE_STAFF'||action==='RESET_STAFF_PIN'
  const roles=['cashier','inventory_admin','accountant','super_admin'] as const
- return <form className="panel form-stack" onSubmit={async event=>{
+ return <form aria-labelledby={`${id}-heading`} className="panel form-stack" onSubmit={async event=>{
   event.preventDefault();if(busy)return
   const form=event.currentTarget,data=new FormData(form),value=(name:string)=>String(data.get(name)??'')
   const input:Record<string,unknown>={action,requestKey:crypto.randomUUID(),adminPin:value('adminPin'),notes:value('notes'),verified:data.get('verified')==='yes'}
@@ -23,7 +25,7 @@ export function AdministrationForm({target,busy,onSubmit,onCancel}:{target:Admin
   setError('');for(const name of ['adminPin','newPin','confirmationPin']){const element=form.elements.namedItem(name);if(element instanceof HTMLInputElement)element.value=''}
   await onSubmit(parsed.data)
  }}>
-  <h2>{target.kind==='CREATE'?'Create a named staff account':target.kind==='STAFF'?`${target.record.display_name} · ${target.record.employee_code}`:`Terminal · ${target.record.label??target.record.terminal_id}`}</h2>
+  <h2 id={`${id}-heading`} ref={heading} tabIndex={-1}>{target.kind==='CREATE'?'Create a named staff account':target.kind==='STAFF'?`${target.record.display_name} · ${target.record.employee_code}`:`Terminal · ${target.record.label??target.record.terminal_id}`}</h2>
   <p>No student account, card, wallet, or student PIN is changed here. Staff credentials are handed to the verified staff member separately.</p>
   {error&&<p className="error-message" role="alert">{error}</p>}
   <fieldset disabled={busy} className="form-fields"><legend>Deliberate administrative change</legend>
