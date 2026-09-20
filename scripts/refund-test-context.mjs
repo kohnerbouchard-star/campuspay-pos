@@ -26,10 +26,10 @@ export async function refundTestContext() {
     if (owner) await owner.end()
     if (control) { try { if (created) await control.query(`DROP DATABASE "${name}" WITH (FORCE)`); if (roleCreated) await control.query(`DROP ROLE "${role}"`) } finally { await control.end() } }
   }
-  async function start(enabled, { returns = false, cash = false, administration = false, partialPreview = false } = {}) {
+  async function start(enabled, { returns = false, cash = false, administration = false, partialPreview = false, partialRefunds = false } = {}) {
     await stop()
     fd = fs.openSync('.validation/refunds/server.log', 'a')
-    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3113', '-H', '127.0.0.1'], { env: { ...env, REFUNDS_ENABLED: enabled ? 'true' : 'false', RETURNS_ENABLED: returns ? 'true' : 'false', CASH_CONTROLS_ENABLED: cash ? 'true' : 'false', ADMINISTRATION_ENABLED: administration ? 'true' : 'false', PARTIAL_REFUND_PREVIEW_ENABLED: partialPreview ? 'true' : 'false' }, stdio: ['ignore', fd, fd] })
+    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', '3113', '-H', '127.0.0.1'], { env: { ...env, REFUNDS_ENABLED: enabled ? 'true' : 'false', RETURNS_ENABLED: returns ? 'true' : 'false', CASH_CONTROLS_ENABLED: cash ? 'true' : 'false', ADMINISTRATION_ENABLED: administration ? 'true' : 'false', PARTIAL_REFUND_PREVIEW_ENABLED: partialPreview ? 'true' : 'false', PARTIAL_REFUNDS_ENABLED: partialRefunds ? 'true' : 'false' }, stdio: ['ignore', fd, fd] })
     for (let i = 0; i < 60; i++) { if (server.exitCode !== null) throw new Error('SERVER_EXITED'); try { if ((await fetch(base + '/login')).ok) return } catch {} await new Promise(r => setTimeout(r, 500)) }
     throw new Error('SERVER_START_TIMEOUT')
   }

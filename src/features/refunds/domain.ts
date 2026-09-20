@@ -12,17 +12,18 @@ export type PostRefundInput = z.infer<typeof PostRefundSchema>
 export const RecoverRefundSchema = z.object({ saleId: uuid, idempotencyKey: uuid }).strict()
 export const CashPayoutSchema = z.object({ refundId: uuid, idempotencyKey: uuid, amountWon: money.positive(), handoverReference: text(3, 120), confirmed: z.literal(true) }).strict()
 export const RefundRecordSchema = z.object({
-  refund_id: uuid, sale_id: uuid, receipt_number: z.string(), kind: z.enum(['POS_REFUND','ONLINE_CANCELLATION','ONLINE_RETURN']),
+  refund_id: uuid, sale_id: uuid, receipt_number: z.string(), scope: z.enum(['FULL','PARTIAL']).default('FULL'), kind: z.enum(['POS_REFUND','ONLINE_CANCELLATION','ONLINE_RETURN']),
   reason_code: z.string(), notes: z.string(), created_at: z.string(), total_won: money, cogs_reversed_won: money,
   restocked_cost_won: money, write_off_cost_won: money, coupon_policy: z.literal('KEEP_REDEMPTION'),
   wallet_credit_won: money, cash_due_won: money, cash_paid_won: money,
+  items: z.array(z.object({ product_name: z.string(), quantity: money.positive(), restock_quantity: money, write_off_quantity: money, refund_won: money })).default([]),
   payout_reference: z.string().nullable(), payout_recorded_at: z.string().nullable(), operator_id: uuid, terminal_id: uuid,
 }).refine(r => r.wallet_credit_won + r.cash_due_won === r.total_won && r.cash_paid_won <= r.cash_due_won
   && r.restocked_cost_won + r.write_off_cost_won === r.cogs_reversed_won, 'Refund totals must reconcile')
 export type RefundRecord = z.infer<typeof RefundRecordSchema>
 export const RefundDecisionSchema = z.discriminatedUnion('outcome', [
   z.object({ outcome: z.enum(['COMPLETED', 'ALREADY_REFUNDED']), refund: RefundRecordSchema }),
-  z.object({ outcome: z.enum(['CLOSED','IDEMPOTENCY_CONFLICT','DISABLED','NOT_FOUND','ORDER_DISPATCHED','EXPIRED_STOCK','RETURN_INELIGIBLE']), refund: z.null() }),
+  z.object({ outcome: z.enum(['CLOSED','IDEMPOTENCY_CONFLICT','DISABLED','NOT_FOUND','ORDER_DISPATCHED','EXPIRED_STOCK','RETURN_INELIGIBLE','STALE_REFUND','INVALID_SELECTION','PARTIAL_REFUND_EXISTS']), refund: z.null() }),
 ])
 export type RefundDecision = z.infer<typeof RefundDecisionSchema>
 export const RefundSaleSchema = z.object({
@@ -42,6 +43,9 @@ export const RefundSummarySchema = z.object({
 })
 export type RefundSummary = z.infer<typeof RefundSummarySchema>
 export const REFUND_MESSAGES: Record<RefundDecision['outcome'], string> = {
+  STALE_REFUND: 'Another refund changed the remaining quantities. Reload and review a new calculation; nothing was posted.',
+  INVALID_SELECTION: 'Choose remaining original quantities only. Nothing was posted.',
+  PARTIAL_REFUND_EXISTS: 'Item-level refunds already exist. Use Item refunds and returns for the remaining quantities.',
   COMPLETED: 'Refund recorded. Review the wallet credit and any cash still due below.',
   ALREADY_REFUNDED: 'This sale was already refunded. No second refund was posted.',
   CLOSED: 'No refund committed for this request. It is now closed; a delayed request cannot post it.',

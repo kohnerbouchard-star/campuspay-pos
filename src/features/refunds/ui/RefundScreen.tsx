@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
@@ -62,6 +63,7 @@ export function RefundScreen({ enabled, canPost, userId, allowReturns = false, p
     finally { inFlight.current = false; setBusy(false) }
   }
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Append-only financial corrections</p><h1>Refunds</h1><p>Full-sale refunds, pre-dispatch cancellation, and verified post-dispatch returns. Original receipts are preserved.</p></div></header>
+    <p><Link href="/refunds/items">Item refunds and returns — remaining quantities and all refund receipts</Link></p>
     {!enabled && <p role="status">New refund posting is disabled for this installation. Existing records, recovery, and outstanding cash handover recording remain available after the migration is installed.</p>}
     {!canPost && <p>Accountant read-only view. Only Super Admin can authorize a refund or record cash paid.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}

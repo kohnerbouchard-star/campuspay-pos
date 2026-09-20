@@ -15,7 +15,7 @@ export function PartialRefundPreviewPanel({ sale }: { sale: RefundSale }) {
     setPreview(null); setError('')
   }
   return <details className="panel"><summary>Calculate item-level refund — preview only</summary>
-    <p>No money, inventory, order status, or coupon allowance is changed. Partial refund posting is not available in this release.</p>
+    <p>No money, inventory, order status, or coupon allowance is changed. This calculator never posts. Use Item refunds and returns for inspected lot selection and authorized posting.</p>
     <form className="form-stack" onSubmit={async event => {
       event.preventDefault(); if (working.current) return
       const parsed = PartialRefundPreviewInputSchema.safeParse({ saleId: sale.sale_id, items: Object.entries(counts)
