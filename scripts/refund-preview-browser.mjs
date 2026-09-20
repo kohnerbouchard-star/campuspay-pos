@@ -19,9 +19,13 @@ export async function runRefundPreviewBrowser(ctx, cookies, sale) {
     const writeoff = page.getByLabel(`Write-off quantity — ${first.product_name}`, {exact:true})
     for (const width of widths) {
       await page.setViewportSize({width,height:900})
+      for (const control of [restock, writeoff]) assert.ok((await control.boundingBox())?.height >= 44, 'Quantity controls retain 44px touch targets')
       await restock.fill('1'); await writeoff.fill('1'); await button.click()
       const estimate = page.getByRole('region', {name:'Item-level refund estimate'})
       await expect(estimate).toBeVisible(); await expect(estimate).toContainText('No refund has been posted.')
+      // Capture from the top so off-screen fixed skip links are not painted
+      // into the middle of a full-page Chromium screenshot after auto-scroll.
+      await page.evaluate(() => window.scrollTo(0, 0))
       await page.screenshot({path:`${dir}/preview-${width}.png`,fullPage:true}); screenshots++
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1))
       await restock.fill('2'); await expect(estimate).toHaveCount(0)
@@ -34,7 +38,7 @@ export async function runRefundPreviewBrowser(ctx, cookies, sale) {
     await button.click(); await expect(page.getByRole('region',{name:'Item-level refund estimate'})).toBeVisible()
     assert.equal(await page.evaluate(() => sessionStorage.getItem('campuspay:refund:v1')), null)
     assert.deepEqual(errors, [])
-    fs.writeFileSync(dir+'/browser.json',JSON.stringify({widths,screenshots,unexpectedBrowserErrors:errors,editInvalidatesEstimate:true,calculationRetry:true,liveDataUsed:false},null,2))
+    fs.writeFileSync(dir+'/browser.json',JSON.stringify({widths,screenshots,unexpectedBrowserErrors:errors,editInvalidatesEstimate:true,calculationRetry:true,minimumQuantityControlHeight:44,liveDataUsed:false},null,2))
   } catch (e) { await page.screenshot({path:dir+'/last-failure.png',fullPage:true}).catch(()=>{}); throw e }
   finally { await context.close(); await browser.close() }
 }

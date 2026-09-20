@@ -33,12 +33,12 @@ export function PartialRefundPreviewPanel({ sale }: { sale: RefundSale }) {
       <fieldset className="form-fields" disabled={busy}><legend>Select inspected quantities for calculation</legend>
         {sale.items.map(item => <div className="form-stack" key={item.sale_item_id}>
           <strong>{item.product_name} · {item.quantity} units originally sold</strong>
-          <label htmlFor={`${id}-${item.sale_item_id}-restock`}>Saleable restock quantity — {item.product_name}</label>
+          <label className="field" htmlFor={`${id}-${item.sale_item_id}-restock`}><span>Saleable restock quantity — {item.product_name}</span>
           <input id={`${id}-${item.sale_item_id}-restock`} type="number" inputMode="numeric" min={0} max={item.quantity} step={1}
-            value={counts[item.sale_item_id]?.restock_quantity ?? 0} onChange={e => edit(item.sale_item_id, 'restock_quantity', e.target.value)} />
-          <label htmlFor={`${id}-${item.sale_item_id}-writeoff`}>Write-off quantity — {item.product_name}</label>
+            value={counts[item.sale_item_id]?.restock_quantity ?? 0} onChange={e => edit(item.sale_item_id, 'restock_quantity', e.target.value)} /></label>
+          <label className="field" htmlFor={`${id}-${item.sale_item_id}-writeoff`}><span>Write-off quantity — {item.product_name}</span>
           <input id={`${id}-${item.sale_item_id}-writeoff`} type="number" inputMode="numeric" min={0} max={item.quantity} step={1}
-            value={counts[item.sale_item_id]?.write_off_quantity ?? 0} onChange={e => edit(item.sale_item_id, 'write_off_quantity', e.target.value)} />
+            value={counts[item.sale_item_id]?.write_off_quantity ?? 0} onChange={e => edit(item.sale_item_id, 'write_off_quantity', e.target.value)} /></label>
         </div>)}
         <p className="muted">Original discounts and tender shares are apportioned in whole won. Original-cost allocations are estimates pending physical lot verification; cash excludes change already returned.</p>
         <button className="secondary-action">{busy ? 'Calculating…' : 'Calculate refund preview'}</button>
