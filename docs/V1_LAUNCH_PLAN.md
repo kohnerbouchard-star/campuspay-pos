@@ -1,4 +1,4 @@
-# CampusPay / MICA Money: v1.0 completion and release plan
+> **Canonical roadmap update — 20 September 2026:** CampusPay is being completed as a single production release with no planned V2. The authoritative final scope and definition of done are now in [PRODUCTION_COMPLETION_PLAN.md](PRODUCTION_COMPLETION_PLAN.md). This file is retained for historical gate context; where the two documents differ, the production completion plan governs.\n\n# CampusPay / MICA Money: v1.0 completion and release plan
 
 Prepared 18 September 2026. Baseline: GitHub main `73470a2b9b0941a1e2533943e31ef7a03a7f74d2` (September 10). This plan separates implemented functions, fresh observations, proposed work, and release acceptance. It does not certify a public deployment or authorize destructive database cleanup.
 
