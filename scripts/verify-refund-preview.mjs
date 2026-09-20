@@ -15,7 +15,7 @@ try {
   let admin = await login(); const cashier = await login('1001'), accountant = await login('3001'), inventory = await login('2001')
   const products = await request(admin,'/api/pos/catalog'), water = products.find(p=>p.sku==='WATER-001'), cookie = products.find(p=>p.sku==='COOKIE-001')
   const card = 'PREVIEW'+randomBytes(12).toString('hex')
-  const person = await request(admin,'/api/students',{studentCode:'PREVIEW-'+randomUUID().slice(0,8),displayName:'Synthetic calculator customer',cardRead:card,pin,confirmationPin:pin,idempotencyKey:randomUUID()},201)
+  await request(admin,'/api/students',{studentCode:'PREVIEW-'+randomUUID().slice(0,8),displayName:'Synthetic calculator customer',cardRead:card,pin,confirmationPin:pin,idempotencyKey:randomUUID()},201)
   const customer = new Map(); await request(customer,'/api/store/login',{cardNumber:card,pin})
   const preview = (who, input, expected=200) => request(who,'/api/refunds/preview',input,expected)
   const selection = detail => ({saleId:detail.sale_id,items:detail.items.map(i=>({sale_item_id:i.sale_item_id,restock_quantity:i.quantity,write_off_quantity:0}))})
@@ -88,7 +88,7 @@ try {
   checks.push('wallet/cash/split, one-won sale discount, partial quantities, mixed disposition, stable input ordering, replay and full-selection equivalence')
   phase='fractional-lots'
   const product=await request(admin,'/api/inventory/products',{sku:'PREVIEW-FRACTION',name:'Preview fractional cost item',category:'QA',sellingPriceWon:1001,reorderLevel:0},201)
-  const day=(await owner.query("select (now() at time zone 'Asia/Seoul')::date::text day")).rows[0].day
+  const day=(await owner.query("select (now() at time zone 'Asia/Seoul')::date::text as business_date")).rows[0].business_date
   for(const [quantity,purchaseUnitCostWon] of [[2,100],[3,201]])await request(admin,'/api/inventory/receipts',{supplierName:'Synthetic supplier',supplierInvoice:randomUUID(),purchaseDate:day,shippingWon:1,otherCostsWon:0,discountWon:0,notes:'Synthetic preview fixture',idempotencyKey:randomUUID(),lines:[{productId:product.reference_id,quantity,purchaseUnitCostWon}]},201)
   const multi=await sale('CASH',[{productId:product.reference_id,quantity:3}],'PREVIEWONE'),multiInput=selection(multi)
   const original=await assertQuote(multi,multiInput)
