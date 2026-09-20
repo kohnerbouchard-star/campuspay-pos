@@ -9,6 +9,7 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  preview_partial_refund: [{name:'p_session_id',cast:'uuid'},{name:'p_sale_id',cast:'uuid'},{name:'p_items',cast:'jsonb'}],
   administration_snapshot: [{name:'p_session_id',cast:'uuid'},{name:'p_staff_offset',cast:'integer'},{name:'p_terminal_offset',cast:'integer'}],
   change_administration: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_payload',cast:'jsonb'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],
   recover_administration: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'}],

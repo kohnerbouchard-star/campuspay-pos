@@ -7,8 +7,9 @@ import { clearRefundRecovery, readRefundRecovery, saveRefundRecovery } from '../
 import { RefundForm } from './RefundForm'
 import { RefundReceipt } from './RefundReceipt'
 import { RefundSummary } from './RefundSummary'
+import { PartialRefundPreviewPanel } from './PartialRefundPreview'
 
-export function RefundScreen({ enabled, canPost, userId, allowReturns = false }: { enabled: boolean; allowReturns?: boolean; canPost: boolean; userId: string }) {
+export function RefundScreen({ enabled, canPost, userId, allowReturns = false, previewEnabled = false }: { enabled: boolean; previewEnabled?: boolean; allowReturns?: boolean; canPost: boolean; userId: string }) {
   const [reference, setReference] = useState('')
   const [sale, setSale] = useState<RefundSale | null>(null)
   const [refund, setRefund] = useState<RefundRecord | null>(null)
@@ -69,6 +70,7 @@ export function RefundScreen({ enabled, canPost, userId, allowReturns = false }:
       {sale && <><h3>{sale.receipt_number}</h3><p>{sale.student_name ?? 'Cash customer'}{sale.year_group ? ` · Y${sale.year_group}` : ''} · {sale.student_code ?? 'No student wallet'} · {formatWon(sale.total_won)}</p>{sale.order_number && <p>{sale.order_number} · {sale.order_status}</p>}
         {!refund && !pending && ready && enabled && canPost && <RefundForm key={sale.sale_id} sale={sale} busy={busy} allowReturns={allowReturns} onSubmit={draft => void post(draft)} />}</>}
     </section>
+    {sale && !refund && !pending && previewEnabled && <PartialRefundPreviewPanel key={sale.sale_id} sale={sale} />}
     {refund && <RefundReceipt key={refund.refund_id} refund={refund} userId={canPost ? userId : ''} onUpdate={setRefund} />}
     <RefundSummary />
   </main>
