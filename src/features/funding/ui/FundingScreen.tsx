@@ -12,14 +12,14 @@ export function FundingScreen({enabled,role}:{enabled:boolean;role:string}){
  const [ready,setReady]=useState(false),[blocked,setBlocked]=useState(false),[pending,setPending]=useState<string|null>(null),[intent,setIntent]=useState<FundingIntent|null>(null)
  const [receipt,setReceipt]=useState<FundingReceipt|null>(null),[data,setData]=useState<FundingHistory|null>(null),[busy,setBusy]=useState(false),[uncertain,setUncertain]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('')
  const [from,setFrom]=useState(()=>businessDate(new Date())),[to,setTo]=useState(()=>businessDate(new Date())),[offset,setOffset]=useState(0),[revision,setRevision]=useState(0)
- const flight=useRef(false),generation=useRef(0),finance=['accountant','super_admin'].includes(role)
+ const flight=useRef(false),finance=['accountant','super_admin'].includes(role)
  useEffect(()=>{const timer=setTimeout(()=>{
   try{const raw=sessionStorage.getItem(storageKey);if(raw){setPending(FundingKeySchema.parse(JSON.parse(raw)).requestKey);setUncertain(true)}setReady(true)}
   catch{setBlocked(true);setError('Recovery storage is unavailable or corrupt. Do not start another operation; have the existing request checked.')}
  },0);return()=>clearTimeout(timer)},[])
- useEffect(()=>{const current=++generation.current
-  void apiFetch<unknown>(`/api/funding?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&offset=${offset}`).then(v=>{if(current===generation.current)setData(FundingHistorySchema.parse(v))}).catch(e=>{if(current===generation.current){setData(null);setError(e instanceof Error?e.message:'Journal unavailable')}})
-  return()=>{generation.current++}
+ useEffect(()=>{let current=true
+  void apiFetch<unknown>(`/api/funding?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&offset=${offset}`).then(v=>{if(current)setData(FundingHistorySchema.parse(v))}).catch(e=>{if(current){setData(null);setError(e instanceof Error?e.message:'Journal unavailable')}})
+  return()=>{current=false}
  },[from,to,offset,revision])
  function clear(){
   setIntent(null);setUncertain(false)
@@ -65,7 +65,7 @@ export function FundingScreen({enabled,role}:{enabled:boolean;role:string}){
  {error&&<p className="error-message" role="alert">{error}</p>}{message&&<p className="success-message" role="status">{message}</p>}
  {pending&&(!intent||uncertain)&&<section className="panel"><h2>Funding result needs confirmation</h2><p>The browser stores only the request ID, never a card or PIN. Recover before repeating or handing cash back.</p><button className="primary-action" disabled={busy} onClick={()=>void recover()}>Recover funding result</button></section>}
  {!pending&&ready&&!blocked&&enabled&&data?.enabled&&<FundingForm key={revision} finance={finance} busy={busy} onPrepare={v=>void prepare(v)}/>}
- {intent&&!uncertain&&<FundingConfirm intent={intent} busy={busy} onScan={v=>void scan(v)} onConfirm={v=>void confirm(v)} onRecover={()=>void recover()}/>}
+ {intent&&!uncertain&&<FundingConfirm intent={intent} busy={busy} onScan={scan} onConfirm={v=>void confirm(v)} onRecover={()=>void recover()}/>}
  {receipt&&<FundingReceiptView receipt={receipt}/>}
  <section className="panel form-stack"><h2>Journal date range</h2><label className="field"><span>From (Korea)</span><input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label className="field"><span>To (Korea)</span><input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label><button className="secondary-action" disabled={busy} onClick={()=>setRevision(n=>n+1)}>Refresh funding journal</button></section>
  {data&&<FundingJournal key={`${data.from}:${data.to}:${revision}`} data={data} offset={offset} busy={busy} onPage={setOffset}/>}

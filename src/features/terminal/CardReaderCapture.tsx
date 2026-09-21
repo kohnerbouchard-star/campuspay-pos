@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffectEvent, useLayoutEffect, useRef } from 'react'
 
 export function CardReaderCapture({ active, onRead }: {
   active: boolean
@@ -9,8 +9,14 @@ export function CardReaderCapture({ active, onRead }: {
   const buffer = useRef('')
   const lastKeyAt = useRef(0)
 
-  useEffect(() => {
+  // Callback updates must not clear an in-flight reader frame. This event
+  // always uses the latest committed callback without rearming the listener.
+  const onFrame = useEffectEvent((value: string) => onRead(value))
+
+  // Arm before the ready prompt can be painted, not in a later passive effect.
+  useLayoutEffect(() => {
     buffer.current = ''
+    lastKeyAt.current = 0
     if (!active) return
     let consumed = false
 
@@ -18,13 +24,13 @@ export function CardReaderCapture({ active, onRead }: {
       if (consumed || !/^[a-zA-Z0-9:-]{6,64}$/.test(value)) return false
       consumed = true
       buffer.current = ''
-      onRead(value)
+      onFrame(value)
       return true
     }
 
     const handler = (event: KeyboardEvent) => {
       if (consumed || event.ctrlKey || event.metaKey || event.altKey) return
-      const now = Date.now()
+      const now = event.timeStamp
       if (now - lastKeyAt.current > 120) buffer.current = ''
       lastKeyAt.current = now
       if (event.key === 'Enter') {
@@ -51,7 +57,7 @@ export function CardReaderCapture({ active, onRead }: {
       window.removeEventListener('keydown', handler, true)
       window.removeEventListener('paste', pasted, true)
     }
-  }, [active, onRead])
+  }, [active])
 
   return null
 }

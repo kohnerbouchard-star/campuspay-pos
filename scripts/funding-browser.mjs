@@ -2,19 +2,54 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { chromium,expect } from '@playwright/test'
 export async function fundingBrowser(ctx,cookies,card){
- const browser=await chromium.launch({headless:true}),context=await browser.newContext(),page=await context.newPage(),errors=[]
+ const browser=await chromium.launch({headless:true}),context=await browser.newContext(),page=await context.newPage(),errors=[],frames=[]
  const dir='.validation/funding';fs.mkdirSync(dir,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000)
  await context.addCookies([...cookies].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
- try{
-  await page.goto(ctx.base+'/funding');await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
-  for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${dir}/funding-${width}.png`})}
+ // Retain only frame equality/length diagnostics, never the reader value.
+ page.on('request',request=>{if(new URL(request.url()).pathname==='/api/funding/card'){
+  const value=request.postDataJSON()?.cardRead;frames.push({exact:value===card,length:typeof value==='string'?value.length:0})
+ }})
+ async function prepare(){
+  await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   await page.getByRole('button',{name:'+ ₩1,000',exact:true}).click()
   await page.getByLabel('Cash received before change (won)',{exact:true}).fill('5000')
   await page.getByLabel('Source / recipient / bank reference',{exact:true}).fill('Synthetic browser deposit')
   await page.getByLabel('Reason and supporting evidence',{exact:true}).fill('Actual synthetic deposit with change')
   await page.getByRole('button',{name:'Prepare operation',exact:true}).click()
   await expect(page.getByText('Reader ready. Scan the student card to verify the wallet.',{exact:true})).toBeVisible()
+ }
+ try{
+  await page.goto(ctx.base+'/funding');await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
+  for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${dir}/funding-${width}.png`})}
+  await prepare()
+  // Reproduce callback churn between the prefix and suffix of one frame. The
+  // timestamps model a continuous device frame independently of CI scheduling.
+  const refreshedScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card')
+  await page.evaluate(async value=>{
+   let tick=performance.now()
+   const emit=key=>{const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:tick++});window.dispatchEvent(event)}
+   const journal=[...document.querySelectorAll('h2')].find(e=>e.textContent==='Funding and cash journal')
+   const refresh=[...document.querySelectorAll('button')].find(e=>e.textContent==='Refresh funding journal')
+   if(!journal||!refresh)throw new Error('Funding journal unavailable for the reader regression')
+   for(const char of value.slice(0,8))emit(char)
+   await new Promise((resolve,reject)=>{
+    const observer=new MutationObserver(()=>{if(!journal.isConnected){observer.disconnect();clearTimeout(timer);resolve()}})
+    const timer=setTimeout(()=>{observer.disconnect();reject(new Error('Expected funding-screen rerender did not occur'))},3000)
+    observer.observe(document.body,{childList:true,subtree:true});refresh.click()
+   })
+   for(const char of value.slice(8))emit(char)
+   emit('Enter');emit('Enter')
+  },card)
+  assert.equal((await refreshedScan).status(),200,'Complete frame must survive a funding-screen rerender')
+  await expect(page.getByLabel('Student PIN',{exact:true})).toBeVisible()
+  assert.deepEqual(frames,[{exact:true,length:card.length}],'No truncated or duplicate reader request')
+  await page.getByRole('button',{name:'Cancel and verify no posting',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
+  // Separately exercise native keyboard input, actual posting and lost response.
+  await prepare()
+  const nativeScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card')
   await page.keyboard.type(card,{delay:5});await page.keyboard.press('Enter')
+  assert.equal((await nativeScan).status(),200,'Native reader frame must reach the matching student')
   await expect(page.getByLabel('Student PIN',{exact:true})).toBeVisible();await page.getByLabel('Student PIN',{exact:true}).fill(ctx.pin)
   await page.getByRole('checkbox').check()
   let operation
@@ -31,7 +66,8 @@ export async function fundingBrowser(ctx,cookies,card){
   await page.evaluate(()=>sessionStorage.setItem('campuspay:funding-operation:v1','bad recovery'))
   await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByText('Recovery storage is unavailable or corrupt. Do not start another operation; have the existing request checked.',{exact:true})).toBeVisible()
   await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toHaveCount(0)
+  assert.deepEqual(frames,[{exact:true,length:card.length},{exact:true,length:card.length}])
   assert.deepEqual(errors,[])
-  return {widths:[1440,1024,768,390],opaqueRecovery:true,singlePostedOperation:true,corruptStorageBlocked:true,unexpectedBrowserErrors:errors}
- }catch(e){await page.screenshot({path:dir+'/failure.png'}).catch(()=>{});throw e}finally{await context.close();await browser.close()}
+  return {widths:[1440,1024,768,390],opaqueRecovery:true,singlePostedOperation:true,corruptStorageBlocked:true,rerenderDuringScan:true,exactNativeScan:true,duplicateEnterIgnored:true,frames,unexpectedBrowserErrors:errors}
+ }catch(e){fs.writeFileSync(dir+'/reader-diagnostics.json',JSON.stringify({frames,unexpectedBrowserErrors:errors}));await page.screenshot({path:dir+'/failure.png'}).catch(()=>{});throw e}finally{await context.close();await browser.close()}
 }
