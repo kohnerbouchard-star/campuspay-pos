@@ -44,7 +44,7 @@ export function proxy(request: NextRequest) {
     if (pathname.startsWith('/api/') && !pathname.startsWith('/api/store/')) {
       return secure(NextResponse.json({ ok: false, error: { code: 'FORBIDDEN', message: 'Staff access is available on the staff site.' } }, { status: 403 }))
     }
-    if (['/pos', '/inventory', '/accounting', '/coupons', '/security', '/students', '/reports', '/refunds', '/settings'].some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
+    if (['/pos', '/inventory', '/accounting', '/coupons', '/security', '/students', '/reports', '/refunds', '/cash', '/administration', '/funding', '/settings'].some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
       return secure(NextResponse.redirect(new URL('/store', request.url)))
     }
     if (pathname === '/login') return secure(NextResponse.redirect(new URL('/store/login', request.url)))

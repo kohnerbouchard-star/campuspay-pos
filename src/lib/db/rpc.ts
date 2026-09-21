@@ -9,6 +9,12 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  prepare_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_action',cast:'text'},{name:'p_payload',cast:'jsonb'}],
+  scan_funding_card: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_card_fingerprint',cast:'text'}],
+  confirm_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_student_pin_proof',cast:'text'},{name:'p_approver_code',cast:'text'},{name:'p_approver_proof',cast:'text'},{name:'p_verified',cast:'boolean'}],
+  recover_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'}],
+  funding_history: [{name:'p_session_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_offset',cast:'integer'}],
+  export_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'}],
   partial_refund_snapshot: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_reference', cast: 'text' }, { name: 'p_offset', cast: 'integer' }],
   quote_partial_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }],
   post_partial_refund: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }, { name: 'p_key', cast: 'uuid' }, { name: 'p_items', cast: 'jsonb' }, { name: 'p_expected_count', cast: 'integer' }, { name: 'p_reason_code', cast: 'text' }, { name: 'p_notes', cast: 'text' }, { name: 'p_verified', cast: 'boolean' }, { name: 'p_return_reason', cast: 'text' }],

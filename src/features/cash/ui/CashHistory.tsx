@@ -5,7 +5,7 @@ import { businessDate } from '@/lib/format/business-time'
 export function CashHistory({rows,userId,canReview,busy,onReview}:{rows:CashShift[];userId:string;canReview:boolean;busy:boolean;onReview(id:string,notes:string):void}) {
  const [selected,setSelected]=useState(''),[notes,setNotes]=useState('')
  function exportPage() {
-  const fields=['shift_id','terminal_id','opened_at','closed_at','opening_float_won','cash_sales_won','cash_payouts_won','expected_won','counted_won','variance_won','review_required'] as const
+  const fields=['shift_id','terminal_id','opened_at','closed_at','opening_float_won','cash_sales_won','cash_payouts_won','funding_in_won','funding_out_won','expected_won','counted_won','variance_won','review_required'] as const
   const quote=(v:unknown)=>`"${String(v??'').replaceAll('"','""')}"`
   const csv=[fields.join(','),...rows.map(r=>fields.map(k=>quote(r[k])).join(','))].join('\r\n')
   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download='campuspay-cash-closes-this-page.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)

@@ -20,6 +20,7 @@ export const WORKSPACE_LINKS: readonly WorkspaceLink[] = [
   { label: 'Inventory', title: 'Inventory', href: '/inventory', permission: 'inventory.read' },
   { label: 'Coupons', title: 'Coupons', href: '/coupons', permission: 'coupons.manage' },
   { label: 'Accounting', title: 'Accounting', href: '/accounting', permission: 'wallet.read' },
+  { label: 'Funding and cash', title: 'Funding and cash', href: '/funding', permission: 'wallet.adjust', anyPermissions: ['wallet.adjust','pos.checkout'] },
   { label: 'Cash register', title: 'Cash register', href: '/cash', permission: 'pos.checkout', anyPermissions: ['pos.checkout','reports.sales'] },
   { label: 'Refunds', title: 'Refunds', href: '/refunds', permission: 'reports.sales' },
   { label: 'Reports', title: 'Reports', href: '/reports', permission: 'reports.sales', anyPermissions: REPORT_PERMISSIONS },
