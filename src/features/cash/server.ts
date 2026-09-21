@@ -11,7 +11,7 @@ export async function cashSession() {
  if (!['cashier','accountant','super_admin'].includes(s.role)) throw new ApiError(403,'FORBIDDEN','Cash register access is not permitted')
  return s
 }
-function writer(s: SessionContext) { if (!['cashier','super_admin'].includes(s.role)) throw new ApiError(403,'FORBIDDEN','This cash register view is read-only') }
+function writer(s: SessionContext) { if (!['cashier','accountant','super_admin'].includes(s.role)) throw new ApiError(403,'FORBIDDEN','This cash register view is read-only') }
 const shiftResult = z.array(z.object({ result: CashShiftSchema })).length(1).transform(([row]) => row.result)
 export function cashSnapshot(s: SessionContext, offset: number) {
  if (!Number.isInteger(offset) || offset < 0 || offset > 1000000) throw new ApiError(400,'BAD_REQUEST','Invalid page')
@@ -19,6 +19,7 @@ export function cashSnapshot(s: SessionContext, offset: number) {
 }
 export function openCash(s: SessionContext, input: z.infer<typeof CashOpenSchema>) {
  writer(s)
+ if (s.role === 'accountant' && process.env.FUNDING_ENABLED !== 'true') throw new ApiError(403,'FORBIDDEN','Funding drawers are not activated')
  if (!cashEnabled()) throw new ApiError(403,'FORBIDDEN','New cash shifts are disabled for this installation')
  const v = CashOpenSchema.parse(input)
  return callApiRpc('open_cash_shift',{p_session_id:s.session_id,p_key:v.requestKey,p_counts:v.counts,p_verified:v.verified},shiftResult)

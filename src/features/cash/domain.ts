@@ -13,12 +13,13 @@ export const CashRecoverySchema = z.object({ requestKey: uuid, operation: z.enum
 export type CashRecovery = z.infer<typeof CashRecoverySchema>
 export const CashShiftSchema = z.object({
  shift_id: uuid, terminal_id: uuid, terminal_label: z.string().nullable(), opened_by: uuid, opened_at: z.string(), closed_at: z.string().nullable(),
+ funding_in_won: money.nonnegative().default(0), funding_out_won: money.nonnegative().default(0),
  opening_float_won: money.nonnegative(), cash_sales_won: money.nonnegative(), cash_payouts_won: money.nonnegative(), expected_won: money,
  counted_won: money.nonnegative().nullable(), variance_won: money.nullable(), close_notes: z.string().nullable(), closed_by: uuid.nullable(),
  approved_by: uuid.nullable(), approval_notes: z.string().nullable(), review_required: z.boolean(),
-}).refine(v => v.expected_won === v.opening_float_won + v.cash_sales_won - v.cash_payouts_won && (v.counted_won === null || v.variance_won === v.counted_won - v.expected_won))
+}).refine(v => v.expected_won === v.opening_float_won + v.cash_sales_won - v.cash_payouts_won + v.funding_in_won - v.funding_out_won && (v.counted_won === null || v.variance_won === v.counted_won - v.expected_won))
 export type CashShift = z.infer<typeof CashShiftSchema>
-export const CashSnapshotSchema = z.object({ enabled: z.boolean(), terminal_id: uuid, current_shift: CashShiftSchema.nullable(), closed_shifts: z.array(CashShiftSchema), total_closed: money.nonnegative() })
+export const CashSnapshotSchema = z.object({ enabled: z.boolean(), accountant_cash_enabled: z.boolean().default(false), terminal_id: uuid, current_shift: CashShiftSchema.nullable(), closed_shifts: z.array(CashShiftSchema), total_closed: money.nonnegative() })
 export type CashSnapshot = z.infer<typeof CashSnapshotSchema>
 export const CashResultSchema = z.discriminatedUnion('outcome',[
  z.object({ outcome: z.literal('COMPLETED'), shift: CashShiftSchema }), z.object({ outcome: z.literal('CLOSED'), shift: z.null() }),
