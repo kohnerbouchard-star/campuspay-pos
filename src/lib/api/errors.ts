@@ -57,7 +57,7 @@ export function toApiError(error: unknown): ApiError {
   if (message.includes('FUNDING_WORKFLOW_REQUIRED')) return new ApiError(409, 'CONFLICT', 'Use Wallet funding and cash movements; legacy wallet adjustments are retired after adoption.')
   if (message.includes('FUNDING_DISABLED')) return new ApiError(409, 'CONFLICT', 'Funding and cash movement posting is not activated.')
   if (message.includes('CASH_INSUFFICIENT')) return new ApiError(409, 'CONFLICT', 'The recorded drawer cash does not cover this payout. Nothing was posted.')
-  if (message.includes('EXPORT_TOO_LARGE')) return new ApiError(400, 'BAD_REQUEST', 'More than 50,000 receipts match. Choose a narrower export date range; no rows were omitted.')
+  if (message.includes('EXPORT_TOO_LARGE')) return new ApiError(400, 'BAD_REQUEST', 'More than 50,000 records match. Choose a narrower date or search filter; no rows were omitted.')
   if (message.includes('ADMINISTRATION_DISABLED')) return new ApiError(409, 'ADMINISTRATION_DISABLED', 'Administrative changes are not activated.')
   if (message.includes('LAST_ADMIN_REQUIRED')) return new ApiError(409, 'LAST_ADMIN_REQUIRED', 'At least one active administrator must remain.')
   if (message.includes('OPEN_CASH_SHIFT')) return new ApiError(409, 'OPEN_CASH_SHIFT', 'Close the affected cash drawer before changing this access.')
