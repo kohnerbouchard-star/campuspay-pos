@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export default async function ReportsPage() {
   const session = await requireAnyPagePermission(REPORT_PERMISSIONS, '/reports')
   return <WorkspaceFrame session={session} title="Reports"><main className="workspace"><header className="workspace-header"><div><p className="eyebrow">School operations</p><h1>Reports</h1></div><span className="status-pill">Authorized reports</span></header>
-    {session.permissions.includes('reports.sales') && <SalesReport />}
+    {session.permissions.includes('reports.sales') && <><p><a className="secondary-action" href="/reconciliation">Open daily reconciliation</a></p><SalesReport /></>}
     {session.permissions.includes('reports.inventory') && <InventoryReport />}
     {session.permissions.includes('reports.wallets') && <WalletReport />}
     {session.permissions.includes('reports.coupons') && <div className="section-spacer"><CouponReportPanel /></div>}

@@ -57,6 +57,7 @@ jobs:
       - run: node scripts/verify-partial-refunds.mjs
       - run: node scripts/verify-funding.mjs
       - run: node scripts/verify-history.mjs
+      - run: node scripts/verify-reconciliation.mjs
       - run: npm run test:integration
       - uses: actions/upload-artifact@v4
         if: always()
