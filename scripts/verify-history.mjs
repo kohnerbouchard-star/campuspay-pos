@@ -14,7 +14,7 @@ try{
  await request(admin,'/api/students',{studentCode:code,displayName:name,cardRead:card,pin,confirmationPin:pin,idempotencyKey:randomUUID()},201)
  const student=(await owner.query('select id from private.students where student_code=$1',[code])).rows[0].id
  const walletUrl=`/api/accounting/students/${student}/history`
- const day=(await owner.query("select (clock_timestamp() at time zone 'Asia/Seoul')::date::text day")).rows[0].day
+ const day=(await owner.query("select (clock_timestamp() at time zone 'Asia/Seoul')::date::text as business_date")).rows[0].business_date
  const footprint=async()=>JSON.stringify((await owner.query("select (select md5(string_agg(to_jsonb(l)::text,'' order by l.id)) from private.wallet_ledger l) ledger,(select md5(string_agg(to_jsonb(w)::text,'' order by w.student_id)) from private.wallets w) wallets,(select md5(string_agg(to_jsonb(c)::text,'' order by c.shift_id)) from private.cash_shift_closes c) closes")).rows[0])
  phase='wallet fixture'
  for(let n=0;n<101;n++){
