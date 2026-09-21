@@ -9,6 +9,7 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  daily_reconciliation: [{name:'p_session_id',cast:'uuid'},{name:'p_day',cast:'date'}],
   student_wallet_history_page: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_query',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_export',cast:'boolean'}],
   cash_history_page: [{name:'p_session_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_query',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_export',cast:'boolean'}],
   prepare_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_action',cast:'text'},{name:'p_payload',cast:'jsonb'}],
