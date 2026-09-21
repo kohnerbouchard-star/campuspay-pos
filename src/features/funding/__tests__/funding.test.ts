@@ -1,4 +1,5 @@
 import { describe,it,expect } from 'vitest'
+import { randomInt } from 'node:crypto'
 import { PrepareFundingSchema,FundingKeySchema,ConfirmFundingSchema,type FundingReceipt } from '../domain'
 import { fundingCsv } from '../csv'
 import { CashShiftSchema } from '@/features/cash/domain'
@@ -14,7 +15,7 @@ describe('controlled funds and cash inputs',()=>{
  })
  it('recovery stores only the opaque request key',()=>{
   expect(FundingKeySchema.parse({requestKey:key})).toEqual({requestKey:key})
-  expect(FundingKeySchema.safeParse({requestKey:key,studentPin:'1234'}).success).toBe(false)
+  expect(FundingKeySchema.safeParse({requestKey:key,studentPin:String(randomInt(1000,10000))}).success).toBe(false)
   expect(ConfirmFundingSchema.safeParse({requestKey:key,verified:false}).success).toBe(false)
   expect(ConfirmFundingSchema.safeParse({requestKey:key,verified:true,approverCode:'9001'}).success).toBe(false)
  })
