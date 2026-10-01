@@ -1,10 +1,26 @@
 import { isIP } from 'node:net'
 
-/** Only Vercel's overwritten platform header is authoritative on Vercel.
- * Self-hosted requests share a fallback bucket until a trusted ingress is configured.
- * A caller-supplied X-Forwarded-For/X-Real-IP never chooses a new rate-limit bucket.
+function singleIp(value: string | null | undefined): string | null {
+  const ip = value?.trim()
+  return ip && isIP(ip) ? ip.toLowerCase() : null
+}
+
+/**
+ * Vercel's overwritten platform header is authoritative when VERCEL=1.
+ * Self-hosted production must explicitly name one header that a trusted ingress
+ * overwrites with a single client IP. Without that contract, login rate limiting
+ * fails closed instead of placing every student into one shared bucket.
  */
-export function trustedClientIp(headers: Headers, vercel = process.env.VERCEL === '1'): string {
-  const ip = vercel ? headers.get('x-vercel-forwarded-for')?.trim() : null
-  return ip && isIP(ip) ? ip.toLowerCase() : 'unverified-ingress'
+export function trustedClientIp(
+  headers: Headers,
+  vercel = process.env.VERCEL === '1',
+  trustedIngressHeader = process.env.TRUSTED_CLIENT_IP_HEADER,
+  production = process.env.NODE_ENV === 'production',
+): string | null {
+  if (vercel) return singleIp(headers.get('x-vercel-forwarded-for'))
+  if (!production) return 'development-ingress'
+
+  const headerName = trustedIngressHeader?.trim().toLowerCase()
+  if (!headerName || !/^x-[a-z0-9-]{1,60}$/.test(headerName)) return null
+  return singleIp(headers.get(headerName))
 }
