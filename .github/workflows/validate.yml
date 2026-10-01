@@ -44,7 +44,7 @@ jobs:
       - run: node scripts/verify-local-repair.mjs
       - run: node scripts/verify-workflow-pins.mjs
       - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
-      - run: node --test scripts/backup-envelope.test.mjs
+      - run: node --test scripts/backup-envelope.test.mjs scripts/backup-file.test.mjs
       - run: npm ci
       - name: Enforce complete dependency audit including development tools
         run: npm audit --audit-level=high --json > .validation/dependency-audit.json

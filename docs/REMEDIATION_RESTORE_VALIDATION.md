@@ -24,3 +24,12 @@ proposal publisher is removed from the final candidate. Full dependency auditing
 including development tools, is now an enforced CI gate rather than an informational
 report. Full candidate and actual-main validation outcomes belong in the PR/release
 record; these source notes do not certify a live installation or retained live backup.
+
+Backup publication uses a unique same-directory mode-0600 `.partial` file, flushes
+its complete bytes, and publishes with an exclusive hard link. Existing backups
+cannot be overwritten. Failed writes/flushes/link creation never expose a partial
+archive under the final name; interrupted processes may leave only `.partial`
+files. The directory entry is flushed too. Native failure-injection tests cover
+partial writes, disk/flush/link errors, existing destinations and cleanup.
+This implementation requires a filesystem supporting hard links and directory
+fsync; unsupported filesystems fail rather than silently weakening publication.

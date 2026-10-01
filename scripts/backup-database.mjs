@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import pg from 'pg'
 import { sealBackup, openBackup } from './lib/backup-envelope.mjs'
+import { writeBackupAtomically } from './lib/atomic-backup-file.mjs'
 const MAX_BYTES=64*1024*1024
 const quoted=value=>'"'+value.replaceAll('"','""')+'"'
 function databaseUrl(value) {
@@ -51,7 +52,7 @@ export async function backupDatabase(source,key,output,expectedHost) {
     const dump=pgTool(process.env.PG_DUMP_BIN||'pg_dump',['--format=custom','--no-password','--schema=public','--schema=private','--schema=api','--schema=extensions','--extension=pgcrypto',`--snapshot=${snapshot}`],url)
     const bytes=sealBackup(dump,{captured_at:new Date().toISOString(),database:decodeURIComponent(url.pathname.slice(1)),tables,roles},key)
     if(bytes.length>MAX_BYTES) throw new Error('BACKUP_TOO_LARGE')
-    fs.writeFileSync(output,bytes,{flag:'wx',mode:0o600})
+    writeBackupAtomically(output,bytes)
     await client.query('commit')
     return {tables:tables.length,bytes:bytes.length}
   } finally {await client.end()}
