@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { customerLoginPath } from '@/features/store/navigation'
-import { configuredHttpsHost, contentSecurityPolicy, PERMISSIONS_POLICY } from '@/lib/http/security-headers'
+import {
+  contentSecurityPolicy,
+  PERMISSIONS_POLICY,
+  productionSurfaceConfiguration,
+} from '@/lib/http/security-headers'
 
 function configuredHost(value: string | undefined): string | null {
   if (!value) return null
@@ -22,18 +26,35 @@ function secureHeaders(response: NextResponse, csp: string, requestId: string, h
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const host = (request.headers.get('host') || '').toLowerCase()
+  const production = process.env.NODE_ENV === 'production'
+  const surfaces = productionSurfaceConfiguration(process.env.STAFF_ORIGIN, process.env.STORE_ORIGIN, production)
   const requestId = crypto.randomUUID()
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
-  const https = configuredHttpsHost(host, [process.env.STAFF_ORIGIN, process.env.STORE_ORIGIN, process.env.APP_ORIGIN], process.env.NODE_ENV === 'production')
+  const https = Boolean(production && surfaces && (host === surfaces.staffHost || host === surfaces.storeHost))
   const csp = contentSecurityPolicy(nonce, process.env.NODE_ENV === 'development', https)
   const headers = new Headers(request.headers)
   headers.set('x-nonce', nonce)
   headers.set('x-request-id', requestId)
   headers.set('Content-Security-Policy', csp)
   const secure = (response: NextResponse) => secureHeaders(response, csp, requestId, https)
-  const storeHost = configuredHost(process.env.STORE_ORIGIN)
-  const staffHost = configuredHost(process.env.STAFF_ORIGIN)
 
+  // Production is intentionally fail-closed. A missing, non-HTTPS, duplicate, or
+  // unexpected surface host must never collapse staff and student sessions together.
+  if (production && !surfaces) {
+    return secure(NextResponse.json(
+      { ok: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'CampusPay production routing is not configured.' } },
+      { status: 503 },
+    ))
+  }
+  if (production && surfaces && host !== surfaces.staffHost && host !== surfaces.storeHost) {
+    return secure(NextResponse.json(
+      { ok: false, error: { code: 'HOST_NOT_ALLOWED', message: 'This CampusPay host is not authorized.' } },
+      { status: 421 },
+    ))
+  }
+
+  const storeHost = production ? surfaces!.storeHost : configuredHost(process.env.STORE_ORIGIN)
+  const staffHost = production ? surfaces!.staffHost : configuredHost(process.env.STAFF_ORIGIN)
   const dedicatedStore = Boolean(storeHost && storeHost !== staffHost && host === storeHost)
   const dedicatedStaff = Boolean(staffHost && staffHost !== storeHost && host === staffHost)
   const customerPath = dedicatedStore
