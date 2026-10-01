@@ -10,21 +10,26 @@ const MAX_BYTES=64*1024*1024
 const quoted=value=>'"'+value.replaceAll('"','""')+'"'
 function databaseUrl(value) {
   const url=new URL(value)
-  if(!['postgres:','postgresql:'].includes(url.protocol)||!url.hostname||!url.pathname.slice(1)) throw new Error('BACKUP_CONFIGURATION_INVALID')
+  if(!['postgres:','postgresql:'].includes(url.protocol)||!url.hostname||!url.username||!url.pathname.slice(1)||url.hash) throw new Error('BACKUP_CONFIGURATION_INVALID')
+  // Do not allow query parameters to override the validated local/expected target.
+  for (const key of url.searchParams.keys()) if (key !== 'sslmode') throw new Error('BACKUP_CONNECTION_OPTIONS_INVALID')
+  if (url.searchParams.getAll('sslmode').length > 1 || (url.searchParams.has('sslmode') && !['disable','prefer','require','verify-ca','verify-full'].includes(url.searchParams.get('sslmode')))) throw new Error('BACKUP_CONNECTION_OPTIONS_INVALID')
   return url
 }
 function pgTool(binary,args,url,input) {
-  const env={...process.env,PGHOST:url.hostname,PGPORT:url.port||'5432',PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGDATABASE:decodeURIComponent(url.pathname.slice(1)),PGSSLMODE:url.searchParams.get('sslmode')||'prefer',PGCONNECT_TIMEOUT:'15'}
+  // libpq must not inherit PGHOSTADDR, PGSERVICE or other target/session overrides.
+  const base=Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('PG')))
+  const env={...base,...(process.env.PG_TOOL_CONTAINER ? {PG_TOOL_CONTAINER:process.env.PG_TOOL_CONTAINER} : {}),PGHOST:url.hostname.replace(/^\[|\]$/g,''),PGPORT:url.port||'5432',PGUSER:decodeURIComponent(url.username),PGPASSWORD:decodeURIComponent(url.password),PGDATABASE:decodeURIComponent(url.pathname.slice(1)),PGSSLMODE:url.searchParams.get('sslmode')||'prefer',PGCONNECT_TIMEOUT:'15'}
   const result=spawnSync(binary,args,{env,input,maxBuffer:MAX_BYTES,timeout:120000,stdio:['pipe','pipe','pipe']})
   if(result.error||result.status!==0) throw new Error('POSTGRES_BACKUP_TOOL_FAILED')
   return result.stdout
 }
 async function inventory(client) {
-  const tables=(await client.query("select schemaname,tablename from pg_tables where schemaname in ('public','private') order by schemaname,tablename")).rows
+  const tables=(await client.query("select schemaname,tablename from pg_tables where schemaname in ('public','private') order by schemaname collate \"C\",tablename collate \"C\"")).rows
   const rows=[]
   for(const table of tables) {
     const name=quoted(table.schemaname)+'.'+quoted(table.tablename)
-    const result=await client.query(`select count(*)::text as count, md5(coalesce(string_agg(to_jsonb(t)::text,E'\\n' order by to_jsonb(t)::text),'')) as digest from ${name} t`)
+    const result=await client.query(`select count(*)::text as count, md5(coalesce(string_agg(to_jsonb(t)::text,E'\\n' order by to_jsonb(t)::text collate "C"),'')) as digest from ${name} t`)
     rows.push({...table,...result.rows[0]})
   }
   return rows
@@ -69,15 +74,23 @@ export async function verifyRestore(controlUrl,key,backupPath) {
     }
     await control.query(`create database ${quoted(name)} template template0`);created=true
     target.pathname='/'+name
-    // Keep recorded ACLs. Ownership is mapped only for this isolated verification DB.
-    pgTool(process.env.PG_RESTORE_BIN||'pg_restore',['--no-owner','--no-password','--exit-on-error','--dbname='+name],target,dump)
     restored=new pg.Client({connectionString:target.href,connectionTimeoutMillis:15000});await restored.connect()
+    if((await restored.query('select current_database() as name')).rows[0].name!==name) throw new Error('RESTORE_TARGET_MISMATCH')
     await restored.query("set timezone='UTC'");await restored.query("set statement_timeout='30s'")
+    // Even template0 contains an empty public schema. Remove it only in the newly
+    // created local DB, and only when the authenticated archive will recreate it.
+    // RESTRICT (never CASCADE) refuses an unexpectedly populated schema.
+    const restoreBinary=process.env.PG_RESTORE_BIN||'pg_restore'
+    const toc=pgTool(restoreBinary,['--list'],target,dump).toString('utf8')
+    const recreatesPublic=toc.split('\n').some(line=>/^\d+; \d+ \d+ SCHEMA - public(?: |$)/.test(line))
+    if(recreatesPublic) await restored.query('drop schema if exists public restrict')
+    // Keep recorded ACLs and fail on every restore error; never skip objects.
+    pgTool(restoreBinary,['--no-owner','--no-password','--exit-on-error','--single-transaction','--dbname='+name],target,dump)
     const actual=await inventory(restored)
     if(JSON.stringify(actual)!==JSON.stringify(metadata.tables)) throw new Error('RESTORE_INTEGRITY_MISMATCH')
     const grants=(await restored.query("select count(*)::integer n from information_schema.table_privileges where grantee='campuspay_runtime' and table_schema in ('private','public')")).rows[0].n
     if(grants!==0) throw new Error('RESTORE_RUNTIME_GRANTS_UNSAFE')
-    return {tables:actual.length,integrity:'matched',runtime_direct_table_grants:grants}
+    return {tables:actual.length,integrity:'matched',runtime_direct_table_grants:grants,public_schema_recreated:recreatesPublic}
   } finally {
     if(restored)await restored.end()
     if(created)await control.query(`drop database ${quoted(name)} with (force)`)
