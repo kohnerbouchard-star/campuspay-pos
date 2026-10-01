@@ -10,3 +10,6 @@ coverage/
 .validation/
 .neon
 .DS_Store
+backups/
+*.cpbackup
+*.backup-key

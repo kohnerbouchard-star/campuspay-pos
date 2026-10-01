@@ -2,6 +2,9 @@ name: CampusPay validation
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '17 21 * * 0'
+  workflow_dispatch:
   pull_request:
     branches: [main]
 permissions:
@@ -25,19 +28,26 @@ jobs:
       DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
       NEXT_TELEMETRY_DISABLED: '1'
       CI_BROWSER: '1'
+      CAMPUSPAY_LOCAL_HTTP: 'true'
+      APP_ORIGIN: 'http://localhost:3000'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Record exact candidate source for reproducible validation
         run: |
           mkdir -p .validation
           git rev-parse HEAD > .validation/tested-commit.txt
           git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
           git archive --format=tar.gz --output=.validation/tested-source.tar.gz HEAD
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
       - run: node scripts/verify-local-repair.mjs
+      - run: node scripts/verify-workflow-pins.mjs
+      - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
+      - run: node --test scripts/backup-envelope.test.mjs scripts/backup-file.test.mjs
       - run: npm ci
+      - name: Enforce complete dependency audit including development tools
+        run: npm audit --audit-level=high --json > .validation/dependency-audit.json
       - run: npm run security:dependencies
       - run: npm run validate:static
       - run: npm run typecheck
@@ -59,7 +69,13 @@ jobs:
       - run: node scripts/verify-history.mjs
       - run: node scripts/verify-reconciliation.mjs
       - run: npm run test:integration
-      - uses: actions/upload-artifact@v4
+      - name: Verify encrypted PostgreSQL backup and isolated restore
+        env:
+          PG_TOOL_CONTAINER: ${{ job.services.postgres.id }}
+          PG_DUMP_BIN: ./scripts/ci/pg-dump
+          PG_RESTORE_BIN: ./scripts/ci/pg-restore
+        run: node scripts/verify-backup-restore.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: validation-results

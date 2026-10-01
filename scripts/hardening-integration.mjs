@@ -154,8 +154,12 @@ export async function runHardeningChecks({ owner, request, login, jar, base, car
   const spoofed = await fetch(base + '/api/store/login', { method: 'POST', headers: { origin: base, 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.77', 'x-real-ip': '198.51.100.88', 'x-vercel-forwarded-for': '198.51.100.99' }, body: JSON.stringify({ cardNumber: card, pin: studentPin }) })
   assert.equal(spoofed.status, 401)
   await owner.query('update private.student_credentials set failed_attempts=0,locked_until=null where student_id=$1', [victim])
-  await request(jar(), '/api/store/login', { cardNumber: card, pin: studentPin }, 401)
-  checks.push('persistent student lockout and IP lockout survive spoofed forwarded headers')
+  // Local mode has no trusted IP: one credential's failed attempts must not lock
+  // unrelated credentials. The attacker cannot escape their own bucket via headers.
+  await request(jar(), '/api/store/login', { cardNumber: card, pin: studentPin })
+  const stillLocked = await fetch(base + '/api/store/login', { method: 'POST', headers: { origin: base, 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.21', 'x-real-ip': '198.51.100.22', 'x-vercel-forwarded-for': '198.51.100.23' }, body: JSON.stringify({ cardNumber: '04EEEEEEEEEEEE', pin: '000000' }) })
+  assert.equal(stillLocked.status, 401)
+  checks.push('persistent credential lockout, local bucket isolation and spoofed forwarded-header denial')
   fs.writeFileSync('.validation/hardening-results.json' , JSON.stringify({ passed: true, checks }, null, 2))
   console.log(`PASS: ${checks.length} hardening coverage groups`)
 }

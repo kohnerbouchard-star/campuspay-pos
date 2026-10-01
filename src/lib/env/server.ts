@@ -1,5 +1,6 @@
 import 'server-only'
 import { z } from 'zod'
+import { deploymentPolicy } from '@/lib/http/deployment-policy'
 
 const DatabaseUrlSchema = z.string().min(20).refine(
   (value) => value.startsWith('postgres://') || value.startsWith('postgresql://'),
@@ -45,6 +46,8 @@ export function getServerEnv(): ServerEnv {
   if (!parsed.success) {
     throw new Error('DATABASE_NOT_CONFIGURED: database connection or application secrets are missing or invalid')
   }
+  try { deploymentPolicy(process.env) }
+  catch { throw new Error('DATABASE_NOT_CONFIGURED: unsafe deployment configuration') }
   cached = { ...parsed.data, COOKIE_SECURE: parsed.data.COOKIE_SECURE === 'true' }
   return cached
 }

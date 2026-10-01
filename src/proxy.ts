@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { deploymentPolicy, approvedOrigin } from '@/lib/http/deployment-policy'
 import { customerLoginPath } from '@/features/store/navigation'
 import { configuredHttpsHost, contentSecurityPolicy, PERMISSIONS_POLICY } from '@/lib/http/security-headers'
 
@@ -21,7 +22,7 @@ function secureHeaders(response: NextResponse, csp: string, requestId: string, h
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  const host = (request.headers.get('host') || '').toLowerCase()
+  const host = (request.headers.get('host') || request.nextUrl.host).toLowerCase()
   const requestId = crypto.randomUUID()
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const https = configuredHttpsHost(host, [process.env.STAFF_ORIGIN, process.env.STORE_ORIGIN, process.env.APP_ORIGIN], process.env.NODE_ENV === 'production')
@@ -31,8 +32,12 @@ export function proxy(request: NextRequest) {
   headers.set('x-request-id', requestId)
   headers.set('Content-Security-Policy', csp)
   const secure = (response: NextResponse) => secureHeaders(response, csp, requestId, https)
-  const storeHost = configuredHost(process.env.STORE_ORIGIN)
-  const staffHost = configuredHost(process.env.STAFF_ORIGIN)
+  let policy
+  try { policy = deploymentPolicy(process.env) }
+  catch { return secure(NextResponse.json({ ok: false, error: { code: 'CONNECTION_NOT_CONFIGURED', message: 'The service is not configured for public access.' } }, { status: 503 })) }
+  if (!approvedOrigin(request, policy)) return secure(NextResponse.json({ ok: false, error: { code: 'FORBIDDEN', message: 'This host is not available.' } }, { status: 403 }))
+  const storeHost = configuredHost(policy.store ?? undefined)
+  const staffHost = configuredHost(policy.staff ?? undefined)
 
   const dedicatedStore = Boolean(storeHost && storeHost !== staffHost && host === storeHost)
   const dedicatedStaff = Boolean(staffHost && staffHost !== storeHost && host === staffHost)
