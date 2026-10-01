@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { configuredHttpsHost, contentSecurityPolicy, PERMISSIONS_POLICY } from '../security-headers'
+import {
+  configuredHttpsHost,
+  contentSecurityPolicy,
+  PERMISSIONS_POLICY,
+  productionSurfaceConfiguration,
+} from '../security-headers'
 import { trustedClientIp } from '../trusted-ip'
 import { businessDate, businessDateTimeInput, businessDateTimeToIso, formatBusinessTime } from '@/lib/format/business-time'
 
@@ -15,19 +20,42 @@ describe('production HTTP boundaries', () => {
     expect(contentSecurityPolicy('nonce', false, false)).toContain("style-src 'self' 'nonce-nonce'")
     expect(contentSecurityPolicy('nonce', false, false)).not.toContain('upgrade-insecure-requests')
   })
+  it('requires two distinct exact HTTPS production origins', () => {
+    expect(productionSurfaceConfiguration('https://pos.school.test', 'https://store.school.test', true)).toEqual({
+      staffOrigin: 'https://pos.school.test',
+      storeOrigin: 'https://store.school.test',
+      staffHost: 'pos.school.test',
+      storeHost: 'store.school.test',
+    })
+    expect(productionSurfaceConfiguration(undefined, 'https://store.school.test', true)).toBeNull()
+    expect(productionSurfaceConfiguration('http://pos.school.test', 'https://store.school.test', true)).toBeNull()
+    expect(productionSurfaceConfiguration('https://same.school.test', 'https://same.school.test', true)).toBeNull()
+    expect(productionSurfaceConfiguration('https://pos.school.test/path', 'https://store.school.test', true)).toBeNull()
+    expect(productionSurfaceConfiguration('https://pos.school.test', 'https://store.school.test', false)).toBeNull()
+  })
   it('enables HSTS only on a configured production HTTPS host', () => {
     expect(configuredHttpsHost('staff.example', ['https://staff.example'], true)).toBe(true)
     expect(configuredHttpsHost('localhost:3000', ['http://localhost:3000'], true)).toBe(false)
     expect(configuredHttpsHost('attacker.example', ['https://staff.example'], true)).toBe(false)
     expect(configuredHttpsHost('staff.example', ['https://staff.example'], false)).toBe(false)
   })
-  it('ignores all forwarded IP claims outside the verified Vercel environment', () => {
-    expect(trustedClientIp(new Headers({ 'x-forwarded-for': '1.2.3.4', 'x-real-ip': '2.3.4.5', 'x-vercel-forwarded-for': '3.4.5.6' }), false)).toBe('unverified-ingress')
+  it('fails closed for unverified self-hosted production ingress', () => {
+    const headers = new Headers({
+      'x-forwarded-for': '1.2.3.4',
+      'x-real-ip': '2.3.4.5',
+      'x-vercel-forwarded-for': '3.4.5.6',
+    })
+    expect(trustedClientIp(headers, false, undefined, true)).toBeNull()
+    expect(trustedClientIp(new Headers({ 'x-campuspay-client-ip': '4.5.6.7' }), false, 'x-campuspay-client-ip', true)).toBe('4.5.6.7')
+    expect(trustedClientIp(new Headers({ 'x-campuspay-client-ip': '4.5.6.7, 8.9.10.11' }), false, 'x-campuspay-client-ip', true)).toBeNull()
+    expect(trustedClientIp(headers, false, undefined, false)).toBe('development-ingress')
   })
   it('uses only the Vercel platform IP and rejects ambiguous/malformed chains', () => {
-    expect(trustedClientIp(new Headers({ 'x-forwarded-for': '1.2.3.4', 'x-real-ip': '2.3.4.5', 'x-vercel-forwarded-for': '3.4.5.6' }), true)).toBe('3.4.5.6')
-    for (const ip of ['1.2.3.4, 2.3.4.5', 'unknown', '999.2.3.4', '']) expect(trustedClientIp(new Headers({ 'x-vercel-forwarded-for': ip }), true)).toBe('unverified-ingress')
-    expect(trustedClientIp(new Headers({ 'x-vercel-forwarded-for': '2001:db8::1' }), true)).toBe('2001:db8::1')
+    expect(trustedClientIp(new Headers({ 'x-forwarded-for': '1.2.3.4', 'x-real-ip': '2.3.4.5', 'x-vercel-forwarded-for': '3.4.5.6' }), true, undefined, true)).toBe('3.4.5.6')
+    for (const ip of ['1.2.3.4, 2.3.4.5', 'unknown', '999.2.3.4', '']) {
+      expect(trustedClientIp(new Headers({ 'x-vercel-forwarded-for': ip }), true, undefined, true)).toBeNull()
+    }
+    expect(trustedClientIp(new Headers({ 'x-vercel-forwarded-for': '2001:db8::1' }), true, undefined, true)).toBe('2001:db8::1')
   })
 })
 describe('school business dates', () => {
