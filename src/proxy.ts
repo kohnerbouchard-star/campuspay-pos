@@ -38,8 +38,8 @@ export function proxy(request: NextRequest) {
   headers.set('Content-Security-Policy', csp)
   const secure = (response: NextResponse) => secureHeaders(response, csp, requestId, https)
 
-  // Production is intentionally fail-closed. A missing, non-HTTPS, duplicate, or
-  // unexpected surface host must never collapse staff and student sessions together.
+  // Production is intentionally fail-closed. A missing, non-HTTPS, duplicate,
+  // or unexpected surface host must never collapse staff/student sessions together.
   if (production && !surfaces) {
     return secure(NextResponse.json(
       { ok: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'CampusPay production routing is not configured.' } },
