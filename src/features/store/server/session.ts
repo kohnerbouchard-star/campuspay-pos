@@ -16,8 +16,12 @@ import { trustedClientIp } from '@/lib/http/trusted-ip'
 const CustomerSessionRows = z.array(CustomerSessionSchema).max(1)
 
 function fingerprintIp(request: Request): string {
+  const clientIp = trustedClientIp(request.headers)
+  if (!clientIp) {
+    throw new ApiError(503, 'CONNECTION_NOT_CONFIGURED', 'Student sign-in is temporarily unavailable.')
+  }
   return createHmac('sha256', getServerEnv().SESSION_HMAC_SECRET)
-    .update(`customer-ip:${trustedClientIp(request.headers)}`)
+    .update(`customer-ip:${clientIp}`)
     .digest('hex')
 }
 
