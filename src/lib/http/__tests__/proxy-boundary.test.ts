@@ -33,7 +33,7 @@ describe('actual Next.js proxy enforcement', () => {
     vi.stubEnv('VERCEL', '0'); vi.stubEnv('CAMPUSPAY_LOCAL_HTTP', 'true')
     vi.stubEnv('STAFF_ORIGIN', ''); vi.stubEnv('STORE_ORIGIN', '')
     vi.stubEnv('APP_ORIGIN', 'http://127.0.0.1:3100'); vi.stubEnv('COOKIE_SECURE', 'false')
-    expect(proxy(new NextRequest('http://127.0.0.1:3100/login')).status).toBe(200)
+    expect(proxy(new NextRequest('http://127.0.0.1:3100/login', { headers: { host: '127.0.0.1:3100' } })).status).toBe(200)
     expect(proxy(new NextRequest('http://unapproved.test:3100/login')).status).toBe(403)
   })
 })

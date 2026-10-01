@@ -46,6 +46,8 @@ jobs:
       - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
       - run: node --test scripts/backup-envelope.test.mjs
       - run: npm ci
+      - name: Record complete dependency audit including development tools
+        run: npm audit --json > .validation/dependency-audit.json || true
       - run: npm run security:dependencies
       - run: npm run validate:static
       - run: npm run typecheck

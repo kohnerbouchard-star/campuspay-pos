@@ -27,15 +27,16 @@ describe('customer navigation and session boundaries', () => {
     expect(proxy(new NextRequest('http://localhost/store/account')).status).toBe(307)
   })
   it('blocks staff APIs on a dedicated customer host and customer APIs on the staff host', () => {
+    vi.stubEnv('VERCEL', '1'); vi.stubEnv('COOKIE_SECURE', 'true')
     vi.stubEnv('STORE_ORIGIN', 'https://store.school.test')
     vi.stubEnv('STAFF_ORIGIN', 'https://pos.school.test')
     expect(proxy(new NextRequest('https://store.school.test/api/pos/catalog', { headers: { host: 'store.school.test' } })).status).toBe(403)
     expect(proxy(new NextRequest('https://pos.school.test/api/store/catalog', { headers: { host: 'pos.school.test' } })).status).toBe(403)
     expect(proxy(new NextRequest('https://store.school.test/students', { headers: { host: 'store.school.test' } })).headers.get('location')).toBe('https://store.school.test/store')
   })
-  it('allows local development with both surfaces on the same configured host', () => {
-    vi.stubEnv('STORE_ORIGIN', 'http://localhost:3000')
-    vi.stubEnv('STAFF_ORIGIN', 'http://localhost:3000')
+  it('allows both surfaces on one explicitly configured local loopback origin', () => {
+    vi.stubEnv('CAMPUSPAY_LOCAL_HTTP', 'true')
+    vi.stubEnv('APP_ORIGIN', 'http://localhost:3000')
     expect(proxy(new NextRequest('http://localhost:3000/api/store/login', { headers: { host: 'localhost:3000' } })).status).toBe(200)
   })
   it('rejects malformed credentials before card normalization can throw an internal error', () => {
