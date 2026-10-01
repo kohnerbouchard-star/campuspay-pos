@@ -11,13 +11,13 @@ import {
 } from '@/lib/http/cookies'
 import { callApiCommand, callApiRpc } from '@/lib/db/rpc'
 import { CustomerSessionSchema, type CustomerSession } from '@/features/store/domain'
-import { trustedClientIp } from '@/lib/http/trusted-ip'
+import { customerIngressBucket } from '@/lib/http/trusted-ip'
 
 const CustomerSessionRows = z.array(CustomerSessionSchema).max(1)
 
-function fingerprintIp(request: Request): string {
+function fingerprintIp(request: Request, card: string): string {
   return createHmac('sha256', getServerEnv().SESSION_HMAC_SECRET)
-    .update(`customer-ip:${trustedClientIp(request.headers)}`)
+    .update(customerIngressBucket(request, card, process.env))
     .digest('hex')
 }
 
@@ -27,7 +27,7 @@ export async function loginCustomerSession(request: Request, cardNumber: string,
     p_card_fingerprint: fingerprintCard(cardNumber),
     p_pin_proof: studentPinProof(pin),
     p_session_token_hash: fingerprintCustomerSessionToken(rawToken),
-    p_ip_fingerprint: fingerprintIp(request),
+    p_ip_fingerprint: fingerprintIp(request, fingerprintCard(cardNumber)),
   }, CustomerSessionRows)
   const context = rows[0]
   if (!context) throw new ApiError(401, 'UNAUTHENTICATED', 'We couldn’t verify those MICA Money credentials. Check your card information and PIN and try again. Sign-in may be temporarily locked; wait a few minutes or visit E202 for help.')
