@@ -46,8 +46,8 @@ jobs:
       - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
       - run: node --test scripts/backup-envelope.test.mjs
       - run: npm ci
-      - name: Record complete dependency audit including development tools
-        run: npm audit --json > .validation/dependency-audit.json || true
+      - name: Enforce complete dependency audit including development tools
+        run: npm audit --audit-level=high --json > .validation/dependency-audit.json
       - run: npm run security:dependencies
       - run: npm run validate:static
       - run: npm run typecheck
@@ -80,38 +80,4 @@ jobs:
         with:
           name: validation-results
           path: .validation/
-          include-hidden-files: true
-
-  propose_dependency_lock:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/production-boundaries-recovery-20261001'
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 22
-      - name: Generate narrowly scoped lockfile proposal without executing package scripts
-        run: |
-          mkdir -p .lock-proposal
-          git rev-parse HEAD > .lock-proposal/source-commit.txt
-          npm update brace-expansion --package-lock-only --ignore-scripts --no-audit
-          node scripts/prepare-lock-proposal.mjs
-          cp package-lock.json .lock-proposal/package-lock.json
-          npm audit --json > .lock-proposal/audit.json
-          git diff -- package-lock.json > .lock-proposal/lock.diff
-      - name: Store verified proposal blob without modifying a branch
-        env:
-          PROPOSAL_GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/prepare-lock-proposal.mjs publish
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: always()
-        with:
-          name: dependency-lock-proposal
-          path: .lock-proposal/
           include-hidden-files: true

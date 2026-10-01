@@ -50,6 +50,7 @@ export async function backupDatabase(source,key,output,expectedHost) {
     const roles=(await client.query("select rolname from pg_roles where rolname not like 'pg_%' order by rolname")).rows.map(r=>r.rolname)
     const dump=pgTool(process.env.PG_DUMP_BIN||'pg_dump',['--format=custom','--no-password','--schema=public','--schema=private','--schema=api','--schema=extensions','--extension=pgcrypto',`--snapshot=${snapshot}`],url)
     const bytes=sealBackup(dump,{captured_at:new Date().toISOString(),database:decodeURIComponent(url.pathname.slice(1)),tables,roles},key)
+    if(bytes.length>MAX_BYTES) throw new Error('BACKUP_TOO_LARGE')
     fs.writeFileSync(output,bytes,{flag:'wx',mode:0o600})
     await client.query('commit')
     return {tables:tables.length,bytes:bytes.length}
