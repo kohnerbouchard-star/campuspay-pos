@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate": "npm run typecheck && npm run test && npm run lint",
-    "validate:static": "node scripts/transpile-check.mjs && npm run validate:imports && npm run test:coupon-policy && npm run validate:sql-structure && npm run security:audit && node scripts/schema-drift-check.mjs",
+    "validate:static": "node scripts/transpile-check.mjs && npm run validate:imports && npm run test:coupon-policy && npm run validate:sql-structure && npm run security:audit && node scripts/schema-drift-check.mjs && npm run test:api-recovery",
     "validate:imports": "node scripts/import-check.mjs",
     "test:coupon-policy": "node --experimental-strip-types --no-warnings scripts/coupon-policy-check.mjs",
     "validate:sql-structure": "node scripts/sql-structure-check.mjs",
@@ -29,7 +29,8 @@
     "test:integration:isolated": "node scripts/test-isolated.mjs",
     "test:visual": "CI_BROWSER=1 node scripts/test-isolated.mjs",
     "security:dependencies": "npm audit --omit=dev --audit-level=high",
-    "db:preflight": "node --env-file-if-exists=.env.local scripts/migrate.mjs --preflight --check-runtime"
+    "db:preflight": "node --env-file-if-exists=.env.local scripts/migrate.mjs --preflight --check-runtime",
+    "test:api-recovery": "node --experimental-strip-types --no-warnings --test scripts/api-client.test.mjs scripts/security-action-recovery.test.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

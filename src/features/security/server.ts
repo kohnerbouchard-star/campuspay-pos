@@ -32,7 +32,7 @@ export async function createStepUp(
     p_student_id: input.studentId,
     p_token_hash: fingerprintElevation(token),
   }, z.array(z.object({ expires_at: z.string() })).max(1).transform(([row]) => {
-    if (!row) throw new ApiError(401, 'UNAUTHENTICATED', 'Super-admin authentication failed or is temporarily locked')
+    if (!row) throw new ApiError(401, 'INVALID_PIN', 'Super-admin authentication failed or is temporarily locked')
     return { authorizationToken: token, expiresAt: row.expires_at }
   }))
   return StepUpResultSchema.parse(result)
