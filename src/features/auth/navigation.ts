@@ -27,5 +27,10 @@ export const WORKSPACE_LINKS: readonly WorkspaceLink[] = [
   { label: 'Reports', title: 'Reports', href: '/reports', permission: 'reports.sales', anyPermissions: REPORT_PERMISSIONS },
   { label: 'Security', title: 'Credential security', href: '/security', permission: 'security.credentials.request' },
   { label: 'Staff and terminals', title: 'Staff and terminals', href: '/administration', permission: 'security.staff.manage' },
+  { label: 'Operational readiness', title: 'Operational readiness', href: '/settings/readiness', permission: 'security.staff.manage' },
   { label: 'Payment settings', title: 'Payment settings', href: '/settings/payments', permission: 'security.staff.manage' },
 ]
+
+export function workspaceIsCurrent(link: WorkspaceLink, title: string, parentHref?: string): boolean {
+  return parentHref ? link.href === parentHref : link.title === title
+}

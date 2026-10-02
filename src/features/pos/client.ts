@@ -19,7 +19,7 @@ export function submitCard(intentId: string, cardRead: string) {
 }
 
 export function submitStudentPin(intentId: string, pin: string | null, cashReceivedWon: number | null = null) {
-  return apiFetch<PaymentReceipt>(`/api/pos/intents/${intentId}/confirm`, {
+  return apiFetch<PaymentReceipt & { items: { name: string; quantity: number; lineTotalWon: number }[] }>(`/api/pos/intents/${intentId}/confirm`, {
     method: 'POST', signal: AbortSignal.timeout(30_000), body: JSON.stringify({ pin, cashReceivedWon }),
   })
 }

@@ -1,5 +1,5 @@
 import 'server-only'
-import { InventoryProductSchema } from '@/features/inventory/domain'
+import { InventoryProductSchema, StockAdjustmentRecoverySchema } from '@/features/inventory/domain'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
@@ -68,4 +68,8 @@ export function inventoryProducts(session: SessionContext) {
 export async function recoverStockReceipt(session: SessionContext, idempotencyKey: string) {
   const rows = await callApiRpc('recover_stock_receipt', { p_session_id: session.session_id, p_idempotency_key: idempotencyKey }, z.array(ReceiptResultSchema).max(1))
   return { receipt: rows[0] ?? null }
+}
+
+export function recoverStockAdjustment(session: SessionContext, idempotencyKey: string) {
+  return callApiRpc('recover_stock_adjustment', { p_session_id: session.session_id, p_idempotency_key: idempotencyKey }, z.array(z.object({ result: StockAdjustmentRecoverySchema })).length(1).transform(([row]) => row.result))
 }

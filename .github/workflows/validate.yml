@@ -55,6 +55,8 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm run db:migrate
+      - run: node scripts/verify-installed-functions.mjs --capture-ci .validation/installed-functions.json
+      - run: node scripts/verify-route-upgrade.mjs
       - run: node scripts/verify-runtime-readiness.mjs
       - run: node scripts/verify-student-roster.mjs
       - run: npx playwright install --with-deps chromium

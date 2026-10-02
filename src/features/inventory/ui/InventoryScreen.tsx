@@ -12,7 +12,7 @@ import { StockAdjustmentForm } from '@/features/inventory/ui/StockAdjustmentForm
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback'
 import { Money } from '@/components/ui/Money'
 const views = { products: 'Products', receive: 'Receive stock', lots: 'Inventory lots', create: 'Add product', price: 'Change price', adjust: 'Remove stock' } as const
-export function InventoryScreen() {
+export function InventoryScreen({ operatorId }: { operatorId: string }) {
   const [products, setProducts] = useState<InventoryProduct[]>([])
   const [lots, setLots] = useState<InventoryLot[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -33,7 +33,7 @@ export function InventoryScreen() {
     <div className="segmented" aria-label="Inventory task">{Object.entries(views).map(([key, label]) => <button key={key} aria-pressed={view === key} className={view === key ? 'active' : ''} onClick={() => setView(key as keyof typeof views)}>{label}</button>)}</div>
     {error && <ErrorState message={error} onRetry={refresh} />}{loading && loaded && <p className="notice" role="status">Refreshing inventory…</p>}{loading && !loaded ? <LoadingState label="Loading inventory…" /> : <>
       {view === 'products' && <section className="panel"><div className="panel-heading"><h2>Product register</h2><label className="field"><span>Search products, SKU or category</span><input type="search" className="search-input" value={query} onChange={e => setQuery(e.target.value)} /></label></div>{filtered.length === 0 ? <EmptyState title="No products found">Add a product or try a different search.</EmptyState> : <div className="table-scroll" role="region" tabIndex={0} aria-label="Product register"><table><thead><tr><th>Product</th><th>Category</th><th className="numeric">Stock</th><th className="numeric">Reorder at</th><th className="numeric">Selling price</th><th>Status</th></tr></thead><tbody>{filtered.map(row => <tr key={row.id}><td><strong>{row.name}</strong><small>{row.sku}</small></td><td>{row.category}</td><td className="numeric">{row.stock_on_hand}</td><td className="numeric">{row.reorder_level}</td><td className="numeric"><Money amount={row.selling_price_won} /></td><td><span className={`status-pill ${row.stock_on_hand === 0 ? 'stock-empty' : row.low_stock ? 'stock-low' : ''}`}>{row.stock_on_hand === 0 ? 'Out of stock' : row.low_stock ? 'Reorder soon' : 'In stock'}</span></td></tr>)}</tbody></table></div>}</section>}
-      {view === 'lots' && <LotTable lots={lots} />}{view === 'create' && <ProductForm onSaved={refresh} />}{view === 'price' && <PriceChangeForm products={products} onSaved={refresh} />}{view === 'receive' && <ReceiptForm products={products} onSaved={refresh} />}{view === 'adjust' && <StockAdjustmentForm products={products} lots={lots} onSaved={refresh} />}
+      {view === 'lots' && <LotTable lots={lots} />}{view === 'create' && <ProductForm onSaved={refresh} />}{view === 'price' && <PriceChangeForm products={products} onSaved={refresh} />}{view === 'receive' && <ReceiptForm products={products} onSaved={refresh} />}{view === 'adjust' && <StockAdjustmentForm operatorId={operatorId} products={products} lots={lots} onSaved={refresh} />}
     </>}
   </main>
 }

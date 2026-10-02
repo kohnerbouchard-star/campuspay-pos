@@ -80,9 +80,9 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
     pending.current = true; setStep('processing'); setError(null)
     try {
       const receipt = await submitStudentPin(intent.intent_id, wallet ? pin : null, cash ? tender.cashReceivedWon : null)
-      forgetPendingPayment(); setPin(''); onComplete(receipt)
+      forgetPendingPayment(); setPin(''); onComplete(receipt, receipt.items)
     } catch (caught) {
-      const knownRejection = !uncertain && caught instanceof ClientApiError && caught.status < 500
+      const knownRejection = !uncertain && caught instanceof ClientApiError && caught.outcome === 'rejected' && caught.status >= 400 && caught.status < 500
       if (knownRejection) forgetPendingPayment()
       setUncertain(!knownRejection)
       setError(knownRejection
@@ -97,6 +97,8 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
   return <Dialog title={step === 'card' ? 'Scan MICA Money Card' : step === 'processing' ? 'Completing payment…' : step === 'contribution' ? 'Choose MICA Money contribution' : 'Review payment'} onClose={() => void close()} busy={step === 'processing'}>
     <CardReaderCapture active={step === 'card' && !expired} onRead={onCard} />
     <div className="payment-heading"><span>Sale total</span><strong className="payment-total">{formatWon(intent.total_won)}</strong></div>
+    {intent.pricesChanged && <p className="notice" role="status">Prices changed since the cart was loaded. Review the current line amounts before confirming.</p>}
+    {intent.items && <dl className="tender-summary" aria-label="Current sale items">{intent.items.map((item, index) => <div key={index}><dt>{item.name} × {item.quantity}</dt><dd>{formatWon(item.lineTotalWon)}</dd></div>)}</dl>}
     {intent.discount_won > 0 && <p className="payment-discount">{intent.coupon_name} · {formatWon(intent.discount_won)} saved</p>}
     {step === 'card' && !expired && <div className="reader-state" role="status"><span className="reader-dot" />Reader ready. Scan one card to continue.</div>}
     {step === 'review' && error && <div ref={errorRef} tabIndex={-1} className={uncertain ? 'uncertain-result form-stack' : 'error-message'} role="alert"><strong>{uncertain ? 'Payment result unknown' : 'Payment not completed'}</strong><p>{error}</p>{uncertain && <><button type="button" className="secondary-action" onClick={() => void close()}>Recover payment result</button><a href="/login?next=%2Fpos&amp;expired=1">Sign in again to recover payment</a></>}</div>}

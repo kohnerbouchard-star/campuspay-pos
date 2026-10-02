@@ -13,5 +13,5 @@ export default async function Page({ params }: { params: Promise<{ studentId: st
   if (!z.string().uuid().safeParse(studentId).success) notFound()
   const [student] = await searchRosterStudents(session, { query: studentId, yearGroup: null, offset: 0 })
   if (!student || student.student_id !== studentId) notFound()
-  return <WorkspaceFrame session={session} title="Complete enrollment"><CompletionScreen student={student} enabled={isRosterIssuanceEnabled()} /></WorkspaceFrame>
+  return <WorkspaceFrame navigationHref="/students" session={session} title="Complete enrollment"><CompletionScreen student={student} enabled={isRosterIssuanceEnabled()} /></WorkspaceFrame>
 }

@@ -110,7 +110,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
         setProducts(catalog); setSession(customerProfile(customer))
       }).catch(() => undefined)
     } catch (caught) {
-      if (!(caught instanceof ClientApiError) || caught.status >= 500) {
+      if (!(caught instanceof ClientApiError) || caught.outcome === 'unknown' || caught.status >= 500) {
         setPendingId(review.idempotencyKey)
         setUncertain(true); setError('Your order result is not yet confirmed. Recover the result below before placing another order.')
       } else if (uncertain) {

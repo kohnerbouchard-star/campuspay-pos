@@ -73,9 +73,9 @@ export function ReceiptForm({ products, onSaved }: { products: CatalogProduct[];
       setMessage(`Receipt ${(result as { receipt_number: string }).receipt_number} posted. Stock and purchase costs have been recorded.`)
       setForm(emptyForm()); setUncertain(false); requestKey.current = null; onSaved()
     } catch (caught) {
-      if (!(caught instanceof ClientApiError) || caught.status >= 500) setUncertain(true)
+      if (!(caught instanceof ClientApiError) || caught.outcome === 'unknown' || caught.status >= 500) setUncertain(true)
       else if (!uncertain) { try { sessionStorage.removeItem(recoveryKey(userId)) } catch {} requestKey.current = null }
-      setError(!uncertain && caught instanceof ClientApiError && caught.status < 500 ? `${caught.message}. No stock or purchase costs were posted by this attempt.` : 'The receipt result has not been confirmed.')
+      setError(!uncertain && caught instanceof ClientApiError && caught.outcome === 'rejected' && caught.status >= 400 && caught.status < 500 ? `${caught.message}. No stock or purchase costs were posted by this attempt.` : 'The receipt result has not been confirmed.')
     } finally { pending.current = false; setBusy(false) }
   }
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) { requestKey.current = null; setForm(current => ({ ...current, [key]: value })) }

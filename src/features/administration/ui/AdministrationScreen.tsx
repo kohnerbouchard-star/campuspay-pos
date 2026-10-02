@@ -49,7 +49,7 @@ export function AdministrationScreen({enabled,userId}:{enabled:boolean;userId:st
   catch(e){
    // A 4xx response from this route is an authoritative rejected transaction.
    // Network/5xx uncertainty retains the opaque key and requires recovery.
-   if(e instanceof ClientApiError&&e.status<500){if(clearPending())setError(e.message)}
+   if(e instanceof ClientApiError&&e.outcome === 'rejected' && e.status >= 400 && e.status < 500){if(clearPending())setError(e.message)}
    else setError('The result is unconfirmed. Recover it before submitting another change.')
   }finally{working.current=false;setBusy(false)}
   if(confirmed)await refreshAfterConfirmed()
