@@ -50,6 +50,7 @@ jobs:
         run: npm audit --audit-level=high --json > .validation/dependency-audit.json
       - run: npm run security:dependencies
       - run: npm run validate:static
+      - run: node --experimental-strip-types --no-warnings --test scripts/navigation-ux.test.mjs
       - run: npm run typecheck
       - run: npm test
       - run: npm run lint
@@ -58,6 +59,7 @@ jobs:
       - run: node scripts/verify-runtime-readiness.mjs
       - run: node scripts/verify-student-roster.mjs
       - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-navigation-ux.mjs
       - run: node scripts/verify-security-recovery.mjs
       - run: node scripts/verify-complete-enrollment.mjs
       - run: node scripts/verify-sale-refunds.mjs

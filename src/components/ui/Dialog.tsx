@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useRef, type ReactNode } from 'react'
 
-export function Dialog({ title, children, onClose, busy = false }: {
-  title: string; children: ReactNode; onClose(): void; busy?: boolean
+export function Dialog({ title, children, onClose, busy = false, className = '' }: {
+  title: string; children: ReactNode; onClose(): void; busy?: boolean; className?: string
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -11,7 +11,7 @@ export function Dialog({ title, children, onClose, busy = false }: {
     dialog?.showModal()
     return () => { dialog?.close(); previous?.focus() }
   }, [])
-  return <dialog ref={ref} className="dialog" tabIndex={-1} aria-label={title} aria-busy={busy}
+  return <dialog ref={ref} className={`dialog ${className}`} tabIndex={-1} aria-label={title} aria-busy={busy}
     onKeyDown={event => {
       if (event.key !== 'Tab') return
       const dialog = event.currentTarget

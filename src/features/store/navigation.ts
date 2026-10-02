@@ -15,3 +15,11 @@ export function customerLoginPath(destination: string, expired = false): string 
   if (expired) params.set('reason', 'expired')
   return `/store/login?${params}`
 }
+
+/** Dedicated store hosts rewrite these public aliases to the same customer pages. */
+export function activeCustomerDestination(pathname: string): string | null {
+  const path = pathname.replace(/\/+$/, '') || '/'
+  const aliases: Readonly<Record<string, string>> = { '/': '/store', '/orders': '/store/orders', '/account': '/store/account' }
+  const candidate = aliases[path] ?? path
+  return CUSTOMER_DESTINATIONS.has(candidate) ? candidate : null
+}
