@@ -1,4 +1,5 @@
 import 'server-only'
+import { AUDIT_RPCS } from './audit-rpcs'
 import type { ZodType } from 'zod'
 import { sql } from 'drizzle-orm'
 import { database } from '@/lib/db/client'
@@ -9,6 +10,7 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  ...AUDIT_RPCS,
   daily_reconciliation: [{name:'p_session_id',cast:'uuid'},{name:'p_day',cast:'date'}],
   student_wallet_history_page: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_query',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_export',cast:'boolean'}],
   cash_history_page: [{name:'p_session_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_query',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_export',cast:'boolean'}],
