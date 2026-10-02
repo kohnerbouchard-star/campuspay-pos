@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CatalogProduct } from '@/features/pos/domain'
 import { StockAdjustmentRecoverySchema, type InventoryLot } from '@/features/inventory/domain'
-import { readPendingAdjustment, savePendingAdjustment, clearPendingAdjustment } from '@/features/inventory/adjustment-storage'
+import { readPendingAdjustment, savePendingAdjustment, clearPendingAdjustment, withAdjustmentStorageLock } from '@/features/inventory/adjustment-storage'
 import { apiFetch } from '@/lib/api/client'
 import { Dialog } from '@/components/ui/Dialog'
 export function StockAdjustmentForm({ products, lots, operatorId, onSaved }: { products: CatalogProduct[]; lots: InventoryLot[]; operatorId: string; onSaved(): void }) {
@@ -31,7 +31,7 @@ export function StockAdjustmentForm({ products, lots, operatorId, onSaved }: { p
     pending.current = true; setBusy(true); setError('')
     try {
       const result = StockAdjustmentRecoverySchema.parse(await apiFetch('/api/inventory/adjustments/recover', { method: 'POST', body: JSON.stringify({ idempotencyKey: recoveryKey }) }))
-      clearPendingAdjustment(localStorage, operatorId, recoveryKey); setRecoveryKey(null); setConfirm(false)
+      await withAdjustmentStorageLock(operatorId, () => clearPendingAdjustment(localStorage, operatorId, recoveryKey), navigator.locks); setRecoveryKey(null); setConfirm(false)
       setMessage(result.state === 'POSTED' ? `The original removal is recorded once: ${result.reference_number}. Quantity removed: ${result.quantity_removed}.` : 'The original request is closed without a stock removal. Review the current stock before starting a new request.')
       onSaved()
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Recovery is not confirmed. Keep this request and try recovery again.') }
@@ -40,12 +40,17 @@ export function StockAdjustmentForm({ products, lots, operatorId, onSaved }: { p
   async function post() {
     if (pending.current || recoveryKey || !ready) return
     const key = crypto.randomUUID()
-    try { savePendingAdjustment(localStorage, operatorId, key) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Recovery storage is unavailable. No removal was submitted.'); setReady(false); return }
-    setRecoveryKey(key); pending.current = true; setBusy(true); setError('')
+    pending.current = true; setBusy(true)
+    try { await withAdjustmentStorageLock(operatorId, () => savePendingAdjustment(localStorage, operatorId, key), navigator.locks) }
+    catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Recovery storage is unavailable. No removal was submitted.')
+      try { setRecoveryKey(readPendingAdjustment(localStorage, operatorId)) } catch { setReady(false) }
+      pending.current = false; setBusy(false); return
+    }
+    setRecoveryKey(key); setError('')
     try {
       const result = await apiFetch<{ reference_number: string }>('/api/inventory/adjustments', { method: 'POST', body: JSON.stringify({ ...form, lotId: form.lotId || undefined, idempotencyKey: key }) })
-      clearPendingAdjustment(localStorage, operatorId, key); setRecoveryKey(null)
+      await withAdjustmentStorageLock(operatorId, () => clearPendingAdjustment(localStorage, operatorId, key), navigator.locks); setRecoveryKey(null)
       setMessage(`${form.quantityToRemove} × ${product?.name} removed from stock. Receipt: ${result.reference_number}`)
       setConfirm(false); onSaved()
     } catch {

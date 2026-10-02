@@ -24,3 +24,9 @@ export function clearPendingAdjustment(storage: RecoveryStorage, operatorId: str
   storage.removeItem(key)
   if (storage.getItem(key) !== null) throw new Error('Recovery storage could not be cleared.')
 }
+
+/** Serialize read/write publication across tabs sharing the same origin/storage. */
+export function withAdjustmentStorageLock<T>(operatorId: string, action: () => T, locks: LockManager | undefined): Promise<T> {
+  if (!locks) return Promise.reject(new Error('This browser cannot coordinate safe inventory recovery. Use a current browser; no removal was submitted.'))
+  return locks.request(storageKey(operatorId), action)
+}
