@@ -1,6 +1,7 @@
 export const DATABASE_UPGRADE_MESSAGE = 'CampusPay needs a database update before this version can be used.'
 
 export type ApiErrorCode =
+  | 'RECEIPT_INVOICE_EXISTS'
   | 'DATABASE_UPGRADE_REQUIRED'
   | 'ADMINISTRATION_DISABLED'
   | 'LAST_ADMIN_REQUIRED'

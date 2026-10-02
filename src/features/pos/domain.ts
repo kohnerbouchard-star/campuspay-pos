@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { eventPaymentIssue } from './payment-policy-validation'
 import { CouponCodeSchema } from '@/features/coupons/domain'
 
 export const CatalogProductSchema = z.object({
@@ -30,7 +31,10 @@ export type PaymentPolicy = z.infer<typeof PaymentPolicySchema>
 export const UpdatePaymentPolicySchema = z.object({
   cashEnabled: z.boolean(), eventName: z.string().trim().max(80).nullable(),
   endsAt: z.iso.datetime().nullable().optional(),
-}).refine(v => !v.cashEnabled || (v.eventName?.length ?? 0) >= 2, { message: 'Enter an event name with at least two characters', path: ['eventName'] }).refine(v => !v.cashEnabled || (!!v.endsAt && Date.parse(v.endsAt) > Date.now() && Date.parse(v.endsAt) <= Date.now() + 24 * 60 * 60 * 1000), { message: 'Choose an end time within the next 24 hours', path: ['endsAt'] })
+}).superRefine((value, context) => {
+  const issue = value.cashEnabled ? eventPaymentIssue(value.eventName, value.endsAt) : null
+  if (issue) context.addIssue({ code: 'custom', message: issue.message, path: [issue.field] })
+})
 
 export const CreatePaymentIntentSchema = z.object({
   items: z.array(CartLineSchema).min(1).max(50),

@@ -1,4 +1,5 @@
 import 'server-only'
+import { receiptConflict } from './receipt-conflict'
 import type { ZodType } from 'zod'
 import { sql } from 'drizzle-orm'
 import { database } from '@/lib/db/client'
@@ -130,7 +131,7 @@ export async function callApiRpc<T>(
     const rows = result.rows
     return schema.parse(normalizeDatabaseValue(rows))
   } catch (error) {
-    throw compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
+    throw receiptConflict(error, name) ?? compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
   }
 }
 
@@ -138,6 +139,6 @@ export async function callApiCommand(name: ApiRpcName, args: Record<string, unkn
   try {
     await database().execute(statementFor(name, args))
   } catch (error) {
-    throw compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
+    throw receiptConflict(error, name) ?? compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
   }
 }
