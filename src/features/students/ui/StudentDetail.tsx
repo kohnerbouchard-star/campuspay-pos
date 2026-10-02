@@ -14,15 +14,15 @@ export function StudentDetail({ student }: { student: ManagedStudent }) {
       <div><dt>Wallet balance</dt><dd className="money">{formatWon(student.balance_won)}</dd></div>
       <div><dt>Account</dt><dd>{student.active ? 'Active roster entry' : 'Inactive'}</dd></div>
       <div><dt>MICA Money Card</dt><dd>{student.card_active ? 'Active' : 'No active card'}</dd></div>
-      <div><dt>PIN access</dt><dd>{student.pin_set === false ? 'Not set — roster only' : student.pin_locked_until ? `Temporarily locked until ${formatBusinessTime(student.pin_locked_until)} KST` : 'Available'}</dd></div>
+      <div><dt>PIN access</dt><dd>{student.pin_set === false ? (student.card_active ? 'Missing PIN — authorized reset needed' : 'Not set — roster only') : student.pin_locked_until ? `Temporarily locked until ${formatBusinessTime(student.pin_locked_until)} KST` : 'Available'}</dd></div>
       <div><dt>Registered</dt><dd>{businessDate(new Date(student.created_at))}</dd></div>
     </dl>
     {student.audit_reference && <p className="muted">Enrollment receipt: {student.audit_reference}</p>}
     <div className="action-row">
       {student.active && student.pin_set === false && !student.card_active && <Link className="secondary-action" href={`/students/${student.student_id}/complete`}>Complete enrollment</Link>}
-      {student.active && student.pin_set !== false && <Link className="secondary-action" href={`/security?studentId=${student.student_id}`}>Reset PIN or replace card</Link>}
+      {student.active && (student.pin_set !== false || student.card_active) && <Link className="secondary-action" href={`/security?studentId=${student.student_id}`}>Reset PIN or replace card</Link>}
       <Link className="secondary-action" href="/accounting">Open Accounting</Link>
     </div>
-    <p className="muted">{student.pin_set === false ? 'This student is registered without a PIN. Complete enrollment is a separate, authorized step and is disabled until enabled for this installation. Never create a duplicate student account.' : 'PIN resets and replacement cards require a fresh Super Admin authorization.'}</p>
+    <p className="muted">{student.pin_set === false && student.card_active ? 'This account has an active card but no PIN. Use Reset PIN with fresh Super Admin approval to initialize the missing PIN on this same account. Do not enroll a duplicate.' : student.pin_set === false ? 'This student is registered without a PIN. Complete enrollment is a separate, authorized step and is disabled until enabled for this installation. Never create a duplicate student account.' : 'PIN resets and replacement cards require a fresh Super Admin authorization.'}</p>
   </section>
 }

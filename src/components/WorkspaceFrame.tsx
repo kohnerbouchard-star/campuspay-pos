@@ -10,6 +10,7 @@ export function WorkspaceFrame({ session, title, children }: {
   title: string
   children: ReactNode
 }) {
+  const parentTitle = ({ 'Cash-close history': 'Cash register', 'Item refunds and returns': 'Refunds', 'Complete enrollment': 'Students' } as Record<string, string>)[title] ?? title
   const allowedLinks = WORKSPACE_LINKS.filter((link) => canAccessWorkspace(session.permissions, link))
 
   return <div className="app-shell">
@@ -23,8 +24,8 @@ export function WorkspaceFrame({ session, title, children }: {
       </div>
       <nav aria-label="Permitted workspaces">
         {allowedLinks.map((link) => <Link
-          className={link.title === title ? 'active-nav' : 'nav-link'}
-          aria-current={link.title === title ? 'page' : undefined}
+          className={link.title === parentTitle ? 'active-nav' : 'nav-link'}
+          aria-current={link.title === parentTitle ? 'page' : undefined}
           prefetch={false}
           href={link.href}
           key={link.href}

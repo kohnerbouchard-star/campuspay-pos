@@ -78,11 +78,15 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
     if (pending.current || !valid || unavailable || (expired && !uncertain)) return
     if (!rememberPendingPayment(intent.intent_id)) { setError('This browser cannot safely keep track of payments. Use another browser before taking payment.'); return }
     pending.current = true; setStep('processing'); setError(null)
+    let settled = false
     try {
-      const receipt = await submitStudentPin(intent.intent_id, wallet ? pin : null, cash ? tender.cashReceivedWon : null)
-      forgetPendingPayment(); setPin(''); onComplete(receipt)
+      await submitStudentPin(intent.intent_id, wallet ? pin : null, cash ? tender.cashReceivedWon : null)
+      settled = true
+      const result = await recoverPaymentIntent(intent.intent_id)
+      if (!result.receipt) throw new Error('The posted receipt could not be retrieved')
+      forgetPendingPayment(); setPin(''); onComplete(result.receipt, result.items)
     } catch (caught) {
-      const knownRejection = !uncertain && caught instanceof ClientApiError && caught.status < 500
+      const knownRejection = !settled && !uncertain && caught instanceof ClientApiError && caught.status < 500
       if (knownRejection) forgetPendingPayment()
       setUncertain(!knownRejection)
       setError(knownRejection
