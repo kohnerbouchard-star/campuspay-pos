@@ -64,14 +64,12 @@ for (const [name, response] of [
 ]) {
   test(`real API parser -> security recovery preserves uncertainty for ${name}`, async () => {
     mock.method(globalThis, 'fetch', async () => response())
-    try {
-      await apiFetch('/api/security/students/test/pin-reset', { method: 'POST' })
-      assert.fail('the response must not confirm success')
-    } catch (error) {
+    await assert.rejects(apiFetch('/api/security/students/test/pin-reset', { method: 'POST' }), (error) => {
       const issue = securityActionFailure('reset', error instanceof ClientApiError ? error : null)
       assert.equal(issue.needsReview, true)
       assert.equal(issue.needsSignIn, false)
-    }
+      return true
+    })
   })
 }
 for (const [expiresAt, expected] of [

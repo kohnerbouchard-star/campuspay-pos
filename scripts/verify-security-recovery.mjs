@@ -38,10 +38,11 @@ try {
   const codeField = page.getByLabel('Super Admin employee ID', { exact: true })
   const pinField = page.getByLabel('Super Admin PIN', { exact: true })
   const authorize = page.getByRole('button', { name: 'Authorize protected action', exact: true })
+  const actionAlert = page.getByRole('region', { name: 'PIN and card replacement', exact: true }).getByRole('alert')
   const fillApproval = async () => { await codeField.fill('9001'); await pinField.fill(ctx.staffPin) }
   phase = 'browser approval denial'
   await codeField.fill('9001'); await pinField.fill(invalidPin); await authorize.click()
-  await expect(page.getByRole('alert')).toContainText('Super Admin approval was denied')
+  await expect(actionAlert).toContainText('Super Admin approval was denied')
   await expect(page.getByRole('link', { name: 'Sign in to staff account' })).toHaveCount(0)
   await expect(pinField).toHaveValue('')
   assert.equal(await auditCount(), initialCount)
@@ -62,7 +63,7 @@ try {
     await route.fulfill({ status: 404, contentType: 'text/plain', body: 'The deployment could not be found. SECRET_DO_NOT_ECHO' })
   }, { times: 1 })
   await page.getByRole('button', { name: 'Complete PIN reset', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('The PIN or card may already have changed')
+  await expect(actionAlert).toContainText('The PIN or card may already have changed')
   await expect(authorize).toBeDisabled()
   await expect(codeField).toBeDisabled()
   await expect(page.getByLabel('Search students', { exact: true })).toBeDisabled()
@@ -81,7 +82,7 @@ try {
   await page.getByRole('button', { name: 'Status checked — request fresh approval', exact: true }).click()
   await page.route('**/api/security/step-up', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, data: { authorizationToken: 'x'.repeat(43), expiresAt: 'invalid' } }) }), { times: 1 })
   await fillApproval(); await authorize.click()
-  await expect(page.getByRole('alert')).toContainText('No reset was submitted')
+  await expect(actionAlert).toContainText('No reset was submitted')
   await expect(page.getByRole('button', { name: 'Complete PIN reset', exact: true })).toHaveCount(0)
   checks.push('Malformed approval never opens a protected action')
 
