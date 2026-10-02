@@ -9,6 +9,7 @@
 .report-section:focus { outline-offset: 6px; }
 .inventory-task-groups { display: flex; flex-wrap: wrap; align-items: start; gap: 12px 24px; margin-bottom: 20px; }
 .inventory-task-group { flex: 1 1 280px; min-width: 0; }
+.inventory-task-group:last-child { flex: 2 1 480px; }
 .inventory-task-group > span { display: block; color: var(--muted); font-size: 12px; font-weight: 650; }
 .inventory-task-group .segmented { margin: 6px 0 0; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

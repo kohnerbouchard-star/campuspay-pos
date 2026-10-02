@@ -28,7 +28,7 @@
 .breadcrumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; list-style: none; padding: 0; margin: 0; }
 .breadcrumbs [aria-current] { font-weight: 650; color: var(--ink); }
 .breadcrumbs a { display: inline-flex; align-items: center; min-height: 44px; }
-.drawer { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(100%, 400px); height: 100dvh; max-height: 100dvh; border: 0; border-radius: 12px 0 0 12px; padding: 20px; padding-bottom: max(20px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+dialog.drawer { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(100%, 400px); max-width: 100vw; height: 100dvh; max-height: 100dvh; border: 0; border-radius: 12px 0 0 12px; padding: 20px; padding-bottom: max(20px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
 .drawer .group h2 { color: var(--muted); margin-left: 12px; }
 .drawer .link { color: var(--ink); min-height: 60px; }
 .drawer .link:hover { color: var(--ink); background: var(--surface-soft); }
@@ -45,6 +45,6 @@
 }
 @media (max-width: 600px) {
   .breadcrumbs { padding-inline: 16px; }
-  .drawer { border-radius: 0; }
+  dialog.drawer { border-radius: 0; }
 }
 @media print { .rail, .mobileHeader, .drawer, .breadcrumbs { display: none; } }

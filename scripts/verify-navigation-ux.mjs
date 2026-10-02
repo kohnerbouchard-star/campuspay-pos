@@ -20,7 +20,7 @@ const capture = async (name, width = 1440) => {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 })
   await page.evaluate(() => window.scrollTo(0, 0))
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `No horizontal page overflow: ${name}`)
-  await page.screenshot({ path: `${dir}/${name}-${width}.png`, fullPage: true, animations: 'disabled' })
+  await page.screenshot({ path: `${dir}/${name}-${width}.png`, fullPage: !name.startsWith('menu-'), animations: 'disabled' })
 }
 try {
   ctx = await refundTestContext(); await ctx.start(false)
@@ -65,6 +65,9 @@ try {
     await menu.click()
     const dialog = page.getByRole('dialog', { name: 'Workspaces', exact: true })
     await expect(dialog).toBeVisible(); await expect(menu).toHaveAttribute('aria-expanded', 'true')
+    const box = await dialog.boundingBox()
+    assert.ok(box && Math.abs(box.x) <= 1 && Math.abs(box.width - 390) <= 1 && Math.abs(box.height - 844) <= 1, 'Mobile menu fills the viewport without the native dialog width clamp')
+    assert.ok(await dialog.getByRole('navigation').locator('a').evaluateAll(links => links.every(link => link.getBoundingClientRect().height >= 44)), 'Mobile navigation retains 44px targets')
     assert.deepEqual((await dialog.getByRole('navigation').locator('a').evaluateAll(links => links.map(link => link.getAttribute('href')))).sort(), [...routes].sort())
     for (const key of ['Tab', 'Shift+Tab']) for (let i = 0; i < routes.length + 3; i++) {
       await page.keyboard.press(key)
