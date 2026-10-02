@@ -4,6 +4,7 @@ import type { SessionContext } from '@/features/auth/domain'
 import { postReceipt, recoverReceipt, type ReceiptInput } from '../client'
 import { ReceiveStockSchema } from '../domain'
 import { apiFetch, ClientApiError } from '@/lib/api/client'
+import { validationFeedback } from '@/lib/api/validation'
 import { confirmedStockReceipt, forgetConfirmedReceipt, persistReceipt, receiptRecoveryIssue, receiptStorageKey, savedReceiptReference, type ReceiptRecoveryIssue } from '../receipt-recovery'
 type Saved = { reference: string; input: ReceiptInput | null }
 export function useReceiptRecovery(onSaved: () => void) {
@@ -59,7 +60,7 @@ export function useReceiptRecovery(onSaved: () => void) {
     if (!userId || !ready || running.current || (saved && !replay) || (replay && (!saved?.input || !missing))) return
     const reference = replay ? saved!.reference : crypto.randomUUID()
     const parsed = ReceiveStockSchema.safeParse({ ...input, idempotencyKey: reference })
-    if (!parsed.success) { setIssue({ message: 'Check the receipt fields before submitting. Nothing was submitted by this attempt.', needsSignIn: false }); return }
+    if (!parsed.success) { setIssue({ message: `${validationFeedback(ReceiveStockSchema, parsed.error.issues).message} Nothing was submitted by this attempt.`, needsSignIn: false }); return }
     const operation: Saved = { reference, input: parsed.data }
     running.current = true; setBusy(true); setIssue(null); setMessage(null); setMissing(false)
     if (!replay) {

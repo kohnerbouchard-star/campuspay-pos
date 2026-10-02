@@ -18,6 +18,13 @@ try {
   const input={supplierName:'Synthetic Recovery Supplier',supplierInvoice:randomUUID(),purchaseDate:'2026-10-02',shippingWon:0,otherCostsWon:0,discountWon:0,notes:'Synthetic acceptance only',lines:[{productId:product.id,quantity:10,purchaseUnitCostWon:500,expirationDate:null}],idempotencyKey:randomUUID()}
   const stock=async()=>Number((await owner.query('select sum(quantity_remaining) n from private.inventory_lots where product_id=$1',[product.id])).rows[0].n)
   const before=await stock()
+  phase='shared receipt field validation'
+  const invalid=await request(inventory,'/api/inventory/receipts',{...input,lines:[{...input.lines[0],quantity:0}]},400)
+  assert.equal(invalid.code,'BAD_REQUEST')
+  assert.deepEqual(invalid.details.fieldErrors,[{field:'lines.0.quantity',message:'Enter a number at least 1.'}])
+  assert.equal(JSON.stringify(invalid).includes(input.supplierInvoice),false)
+  assert.equal(await stock(),before)
+  checks.push('Shared validation identifies the invalid receipt quantity without stock changes or input disclosure')
   phase='actual duplicate-invoice conflict'
   const posted=await request(inventory,'/api/inventory/receipts',input,201)
   assert.equal(await stock(),before+10)
@@ -88,7 +95,7 @@ try {
   assert.equal((await request(admin,'/api/pos/payment-policy')).cash_enabled,false)
   for(const [endsAt,text] of [[new Date(Date.now()-3600000).toISOString(),'already passed'],[new Date(Date.now()+48*3600000).toISOString(),'at most 24 hours'],[null,'Korea Standard Time']]){
     const issue=await request(admin,'/api/pos/payment-policy',{cashEnabled:true,eventName:'Synthetic event',endsAt},400)
-    assert.ok(issue.message.includes(text));assert.equal((await request(admin,'/api/pos/payment-policy')).cash_enabled,false)
+    assert.equal(issue.details.fieldErrors[0].field,'endsAt');assert.ok(issue.message.includes(text));assert.equal((await request(admin,'/api/pos/payment-policy')).cash_enabled,false)
   }
   const cashier=await ctx.login('1001')
   await request(cashier,'/api/pos/payment-policy',{cashEnabled:true,eventName:'Synthetic event',endsAt:new Date(Date.now()+3600000).toISOString()},403)
@@ -102,7 +109,9 @@ try {
   await policyPage.getByLabel('Event name',{exact:true}).fill('Synthetic event')
   await policyPage.getByLabel('Automatically turn off',{exact:true}).fill(businessDateTimeInput(new Date(Date.now()+48*3600000)))
   await policyPage.getByRole('button',{name:'Enable event cash and split payments',exact:true}).click()
-  await expect(policyPage.getByText('Event cash can be enabled for at most 24 hours.',{exact:false})).toBeVisible()
+  await expect(policyPage.getByRole('alert').getByText('Event cash can be enabled for at most 24 hours.',{exact:false})).toBeVisible()
+  await expect(policyPage.getByLabel('Automatically turn off',{exact:true})).toHaveAttribute('aria-invalid','true')
+  await expect(policyPage.locator('#event-end-error')).toContainText('at most 24 hours')
   assert.equal(policyPosts,0)
   await policyPage.getByRole('button',{name:'Set end time to one hour from now',exact:true}).click()
   await policyPage.getByRole('button',{name:'Enable event cash and split payments',exact:true}).click()

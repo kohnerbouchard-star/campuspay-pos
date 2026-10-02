@@ -1,12 +1,14 @@
 export class ClientApiError extends Error {
   public readonly code: string
   public readonly status: number
+  public readonly fieldErrors: readonly { field: string; message: string }[]
 
-  constructor(code: string, message: string, status: number) {
+  constructor(code: string, message: string, status: number, fieldErrors: readonly { field: string; message: string }[] = []) {
     super(message)
     this.name = 'ClientApiError'
     this.code = code
     this.status = status
+    this.fieldErrors = fieldErrors
   }
 }
 
@@ -27,6 +29,17 @@ export class UnconfirmedApiResponseError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+// Optional validation metadata must not change rejection/recovery semantics.
+function fieldErrorsFrom(details: unknown): { field: string; message: string }[] {
+  if (!isRecord(details) || !Array.isArray(details.fieldErrors)) return []
+  return details.fieldErrors.slice(0, 8).filter((value): value is { field: string; message: string } =>
+    isRecord(value) && typeof value.field === 'string' && /^[A-Za-z_][A-Za-z0-9_.]{0,159}$/.test(value.field)
+    && !value.field.split('.').some(part => ['__proto__', 'prototype', 'constructor'].includes(part))
+    && typeof value.message === 'string' && value.message.trim().length > 0 && value.message.length <= 240
+    && !/[\u0000-\u001f<>]/.test(value.message)
+  ).map(({ field, message }) => ({ field, message }))
 }
 
 export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
@@ -55,7 +68,7 @@ export async function apiFetch<T>(input: RequestInfo | URL, init?: RequestInit):
     if (!response.ok && response.status >= 400 && payload.ok === false && isRecord(payload.error)) {
       const { code, message } = payload.error
       if (typeof code === 'string' && /^[A-Z][A-Z0-9_]{0,79}$/.test(code) && typeof message === 'string' && message.trim() && message.length <= 1000) {
-        throw new ClientApiError(code, message, response.status)
+        throw new ClientApiError(code, message, response.status, response.status === 400 && code === 'BAD_REQUEST' ? fieldErrorsFrom(payload.error.details) : [])
       }
     }
   }
