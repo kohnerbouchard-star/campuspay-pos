@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import { ZodError } from 'zod'
+import { validationFeedback, type ValidationOptions } from './validation'
 import { ApiError, toApiError } from '@/lib/api/errors'
 import { deploymentPolicy, mutationOriginAllowed } from '@/lib/http/deployment-policy'
 import { recordRequestError } from './request-context'
@@ -33,7 +35,7 @@ export function assertMutationOrigin(request: Request): void {
   if (!mutationOriginAllowed(request, policy)) throw new ApiError(403, 'FORBIDDEN', 'Cross-origin requests are not accepted')
 }
 
-export async function parseJson<T>(request: Request, parser: { parse(value: unknown): T }): Promise<T> {
+export async function parseJson<T>(request: Request, parser: { parse(value: unknown): T }, options: ValidationOptions = {}): Promise<T> {
   assertMutationOrigin(request)
   let body: unknown
   try {
@@ -43,7 +45,12 @@ export async function parseJson<T>(request: Request, parser: { parse(value: unkn
   }
   try {
     return parser.parse(body)
-  } catch {
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const { message, fieldErrors } = validationFeedback(parser, error.issues, options)
+      // Preserve BAD_REQUEST/400 for existing transaction-recovery clients.
+      throw new ApiError(400, 'BAD_REQUEST', message, { fieldErrors })
+    }
     throw new ApiError(400, 'BAD_REQUEST', 'Request validation failed')
   }
 }
