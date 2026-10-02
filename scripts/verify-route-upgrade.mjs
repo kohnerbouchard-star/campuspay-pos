@@ -20,7 +20,10 @@ try {
   await control.query(`create database ${quote(name)} template template0`); created = true
   source.pathname = '/' + name
   target = new pg.Client({ connectionString: source.href }); await target.connect()
-  for (const file of oldFiles) await target.query(fs.readFileSync(path.join('database/migrations', file), 'utf8'))
+  for (const file of oldFiles) {
+    await target.query(fs.readFileSync(path.join('database/migrations', file), 'utf8'))
+    await target.query('insert into private.schema_migrations(version) values($1) on conflict do nothing', [file.slice(0,-4)])
+  }
   const staff = [['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin']].map(([employeeCode,role]) => ({ employeeCode, role, displayName: 'Synthetic upgrade ' + role, pinProof: 'a'.repeat(64) }))
   await target.query('select * from api.bootstrap_demo($1::jsonb,$2,$3,$4)', [JSON.stringify(staff), 'b'.repeat(64), 'c'.repeat(64), 'd'.repeat(64)])
   // Reproduce the old installed bootstrap/header discrepancy only in this fixture.

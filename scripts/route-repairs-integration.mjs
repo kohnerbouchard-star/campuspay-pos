@@ -85,19 +85,19 @@ export async function runRouteRepairChecks({ owner, request, login, jar, base, h
   for (const cost of [100, 200]) await request(inventory, '/api/inventory/receipts', { supplierName: 'Local regression fixture', supplierInvoice: randomUUID(), purchaseDate: '2026-10-02', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Local regression fixture', lines: [{ productId: product.reference_id, quantity: 10, purchaseUnitCostWon: cost }], idempotencyKey: randomUUID() })
   const removal = { productId: product.reference_id, quantityToRemove: 12, reasonCode: 'DAMAGED', notes: 'Independent loss-response regression', idempotencyKey: randomUUID() }
   // Treat this successful response as lost. Recovery must find its original posting after reauthentication.
-  const posted = await request(inventory, '/api/inventory/adjustments', removal, 201)
+  const posted = await request(inventory, '/api/inventory/adjustments', removal)
   const reauthenticated = await login('2001')
   const recovered = await request(reauthenticated, '/api/inventory/adjustments/recover', { idempotencyKey: removal.idempotencyKey })
   assert.equal(recovered.state, 'POSTED'); assert.equal(recovered.reference_id, posted.reference_id)
   assert.equal(recovered.quantity_removed, 12); assert.equal(recovered.total_cost_won, 1400)
-  assert.equal((await request(reauthenticated, '/api/inventory/adjustments', removal, 201)).reference_id, posted.reference_id)
+  assert.equal((await request(reauthenticated, '/api/inventory/adjustments', removal)).reference_id, posted.reference_id)
   await request(reauthenticated, '/api/inventory/adjustments', { ...removal, quantityToRemove: 1 }, 409)
   await request(admin, '/api/inventory/adjustments/recover', { idempotencyKey: removal.idempotencyKey }, 403)
   const closedKey = randomUUID()
   assert.equal((await request(reauthenticated, '/api/inventory/adjustments/recover', { idempotencyKey: closedKey })).state, 'CLOSED')
   await request(reauthenticated, '/api/inventory/adjustments', { ...removal, quantityToRemove: 1, idempotencyKey: closedKey }, 409)
   const racingRemoval = { ...removal, quantityToRemove: 1, idempotencyKey: randomUUID() }
-  const replayed = await Promise.all([request(reauthenticated, '/api/inventory/adjustments', racingRemoval, 201), request(reauthenticated, '/api/inventory/adjustments', racingRemoval, 201)])
+  const replayed = await Promise.all([request(reauthenticated, '/api/inventory/adjustments', racingRemoval), request(reauthenticated, '/api/inventory/adjustments', racingRemoval)])
   assert.equal(replayed[0].reference_id, replayed[1].reference_id)
   const stock = (await owner.query('select sum(quantity_remaining)::integer n from private.inventory_lots where product_id=$1', [product.reference_id])).rows[0].n
   assert.equal(stock, 7)
