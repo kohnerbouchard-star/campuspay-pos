@@ -9,6 +9,10 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  operator_readiness: [{name:'p_session_id',cast:'uuid'}],
+  payment_display_items: [{name:'p_session_id',cast:'uuid'},{name:'p_intent_id',cast:'uuid'}],
+  recover_stock_adjustment: [{name:'p_session_id',cast:'uuid'},{name:'p_idempotency_key',cast:'uuid'}],
+  complete_missing_student_pin: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'},{name:'p_elevation_token_hash',cast:'text'},{name:'p_new_pin_proof',cast:'text'},{name:'p_identity_verified',cast:'boolean'}],
   daily_reconciliation: [{name:'p_session_id',cast:'uuid'},{name:'p_day',cast:'date'}],
   student_wallet_history_page: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_query',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_export',cast:'boolean'}],
   cash_history_page: [{name:'p_session_id',cast:'uuid'},{name:'p_from',cast:'date'},{name:'p_to',cast:'date'},{name:'p_query',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_export',cast:'boolean'}],
@@ -96,7 +100,7 @@ const RPCS = {
 export type ApiRpcName = keyof typeof RPCS
 
 function databaseFunction(name: ApiRpcName) {
-  return name === 'terminal_payment_policy' ? 'terminal_payment_policy_v2' : name === 'search_student_wallets' ? 'search_student_wallets_v2' : name === 'list_coupons' ? 'list_coupons_v2' : name
+  return name === 'search_security_students' ? 'search_security_students_v2' : name === 'terminal_payment_policy' ? 'terminal_payment_policy_v2' : name === 'search_student_wallets' ? 'search_student_wallets_v2' : name === 'list_coupons' ? 'list_coupons_v2' : name
 }
 
 function encodeValue(value: unknown, cast: string): unknown {

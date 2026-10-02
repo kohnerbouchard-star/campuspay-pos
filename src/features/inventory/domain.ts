@@ -80,3 +80,9 @@ export const MutationResultSchema = z.object({
   reference_number: z.string(),
   created_at: z.string(),
 })
+
+export const StockAdjustmentRecoverySchema = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('POSTED'), reference_id: z.string().uuid(), reference_number: z.string(), created_at: z.string(), quantity_removed: z.number().int().positive(), total_cost_won: z.number().int().nonnegative() }),
+  z.object({ state: z.literal('CLOSED') }),
+])
+export type StockAdjustmentRecovery = z.infer<typeof StockAdjustmentRecoverySchema>

@@ -1,3 +1,4 @@
+import { validateRouteParameters, validateQueryParameters } from './parameters'
 import { randomUUID } from 'node:crypto'
 import { failure, assertMutationOrigin } from './response'
 import { requestContext } from './request-context'
@@ -14,6 +15,8 @@ export function withApiRoute<Args extends unknown[]>(route: string, handler: (re
       let response: Response
       try {
         if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) assertMutationOrigin(request)
+        await validateRouteParameters(route, args[0])
+        validateQueryParameters(request)
         response = await handler(request, ...args)
       } catch (error) { response = failure(error) }
       response.headers.set('X-Request-ID', requestId)

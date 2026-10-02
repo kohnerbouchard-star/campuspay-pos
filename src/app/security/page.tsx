@@ -10,5 +10,5 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
   const { studentId } = await searchParams
   const parsed = z.string().uuid().safeParse(studentId)
   const initialStudent = parsed.success ? (await searchSecurityStudents(session, parsed.data))[0] : undefined
-  return <WorkspaceFrame session={session} title="Credential security"><SecurityScreen initialStudent={initialStudent} /></WorkspaceFrame>
+  return <WorkspaceFrame session={session} title="Credential security"><SecurityScreen canEnroll={session.role === 'super_admin'} initialStudent={initialStudent} /></WorkspaceFrame>
 }

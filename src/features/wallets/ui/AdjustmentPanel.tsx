@@ -64,9 +64,9 @@ export function AdjustmentPanel({ onPosted }: { onPosted?(): void }) {
       setMessage(`${result.reference_number} · ${formatWon(result.amount_won)} posted. New balance ${formatWon(result.balance_after_won)}.`)
       onPosted?.()
     } catch (e) {
-      if (!(e instanceof ClientApiError) || e.status >= 500) setUncertain(true)
+      if (!(e instanceof ClientApiError) || e.outcome === 'unknown' || e.status >= 500) setUncertain(true)
       else if (!uncertain) clearAdjustment()
-      setError(!uncertain && e instanceof ClientApiError && e.status < 500 ? `${e.message}. Nothing was posted to the wallet.` : 'The adjustment result has not been confirmed.')
+      setError(!uncertain && e instanceof ClientApiError && e.outcome === 'rejected' && e.status >= 400 && e.status < 500 ? `${e.message}. Nothing was posted to the wallet.` : 'The adjustment result has not been confirmed.')
     }
     finally { setPin(''); pending.current = false; setBusy(false) }
   }

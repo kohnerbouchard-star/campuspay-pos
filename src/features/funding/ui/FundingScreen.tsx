@@ -51,7 +51,7 @@ export function FundingScreen({enabled,role}:{enabled:boolean;role:string}){
  async function confirm(v:z.infer<typeof ConfirmFundingSchema>){
   if(flight.current||!intent||uncertain)return;flight.current=true;setBusy(true);setError('')
   try{result(await apiFetch<unknown>('/api/funding/confirm',{method:'POST',body:JSON.stringify(v)}))}
-  catch(e){if(!(e instanceof ClientApiError)||e.status>=500){setUncertain(true);setError('The result is unknown. Recover it before returning cash or starting another operation.')}else setError(e.message)}
+  catch(e){if(!(e instanceof ClientApiError)||e.outcome === 'unknown' || e.status >= 500){setUncertain(true);setError('The result is unknown. Recover it before returning cash or starting another operation.')}else setError(e.message)}
   finally{flight.current=false;setBusy(false)}
  }
  async function recover(){

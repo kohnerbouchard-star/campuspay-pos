@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
   CatalogSchema,
+  ReceiptItemsSchema,
   PaymentPolicySchema,
   PaymentRecoverySchema,
   type TenderMode,
@@ -22,7 +23,7 @@ export function getCatalog(session: SessionContext) {
   return callApiRpc('catalog', { p_session_id: session.session_id }, CatalogSchema)
 }
 
-export function createPaymentIntent(
+export async function createPaymentIntent(
   session: SessionContext,
   items: CartLine[],
   idempotencyKey: string,
@@ -30,7 +31,7 @@ export function createPaymentIntent(
   tenderMode: TenderMode = 'WALLET',
   walletAmountWon: number | null = null,
 ) {
-  return callApiRpc(
+  const intent = await callApiRpc(
     'create_payment_intent',
     {
       p_session_id: session.session_id,
@@ -42,6 +43,9 @@ export function createPaymentIntent(
     },
     z.array(PaymentIntentSchema).length(1).transform(([row]) => row),
   )
+  const itemsForDisplay = await paymentDisplayItems(session, intent.intent_id)
+  if (itemsForDisplay.reduce((sum, item) => sum + item.lineTotalWon, 0) !== intent.subtotal_won) throw new Error('Payment display invariant failed')
+  return { ...intent, items: itemsForDisplay }
 }
 
 export function scanPaymentCard(session: SessionContext, intentId: string, rawCardRead: string) {
@@ -77,7 +81,14 @@ export async function confirmPayment(session: SessionContext, intentId: string, 
     if (code === 'SESSION_EXPIRED') throw new ApiError(401, 'SESSION_EXPIRED', 'Payment intent expired')
     throw new ApiError(409, 'CONFLICT', 'Payment was not approved')
   }
-  return PaymentReceiptSchema.parse(decision)
+  // Settlement has committed. Any subsequent display/read failure is an unknown
+  // response outcome, never a 4xx rejection that could encourage a second charge.
+  try {
+    const receipt = PaymentReceiptSchema.parse(decision)
+    const items = await paymentDisplayItems(session, intentId)
+    if (items.reduce((sum, item) => sum + item.lineTotalWon, 0) !== receipt.subtotal_won) throw new Error('Receipt display invariant failed')
+    return { ...receipt, items }
+  } catch { throw new ApiError(503, 'INTERNAL_ERROR', 'Payment result needs recovery. Check the existing payment before starting another.') }
 }
 
 export function getPaymentPolicy(session: SessionContext) {
@@ -97,4 +108,8 @@ export function recoverPayment(session: SessionContext, intentId: string) {
 
 export function finalizePaymentTender(session: SessionContext, intentId: string, walletAmountWon: number) {
   return callApiRpc('finalize_payment_tender', { p_session_id: session.session_id, p_intent_id: intentId, p_wallet_amount_won: walletAmountWon }, z.array(PaymentIntentSchema).length(1).transform(([row]) => row))
+}
+
+function paymentDisplayItems(session: SessionContext, intentId: string) {
+  return callApiRpc('payment_display_items', { p_session_id: session.session_id, p_intent_id: intentId }, z.array(z.object({ result: ReceiptItemsSchema })).length(1).transform(([row]) => row.result))
 }

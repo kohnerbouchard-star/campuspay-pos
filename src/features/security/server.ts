@@ -55,3 +55,12 @@ export function resetStudentCard(session: SessionContext, studentId: string, aut
     p_new_card_fingerprint: fingerprintCard(cardRead),
   }, z.array(ResetResultSchema).length(1).transform(([row]) => row))
 }
+
+export function completeMissingStudentPin(session: SessionContext, studentId: string, authorizationToken: string, newPin: string, identityVerified: boolean) {
+  if (session.role !== 'super_admin' || !session.permissions.includes('students.manage')) throw new ApiError(403, 'FORBIDDEN', 'Only Super Admin can complete a missing PIN')
+  return callApiRpc('complete_missing_student_pin', {
+    p_session_id: session.session_id, p_student_id: studentId,
+    p_elevation_token_hash: fingerprintElevation(authorizationToken),
+    p_new_pin_proof: studentPinProof(newPin), p_identity_verified: identityVerified,
+  }, z.array(ResetResultSchema).length(1).transform(([row]) => row))
+}

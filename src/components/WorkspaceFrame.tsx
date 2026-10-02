@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { SessionContext } from '@/features/auth/domain'
-import { WORKSPACE_LINKS, canAccessWorkspace } from '@/features/auth/navigation'
+import { WORKSPACE_LINKS, canAccessWorkspace, workspaceIsCurrent } from '@/features/auth/navigation'
 import { LogoutButton } from '@/components/LogoutButton'
 import { StaffSessionGuard } from '@/features/terminal/StaffSessionGuard'
 
-export function WorkspaceFrame({ session, title, children }: {
+export function WorkspaceFrame({ session, title, navigationHref, children }: {
   session: SessionContext
   title: string
+  navigationHref?: string
   children: ReactNode
 }) {
   const allowedLinks = WORKSPACE_LINKS.filter((link) => canAccessWorkspace(session.permissions, link))
@@ -23,8 +24,8 @@ export function WorkspaceFrame({ session, title, children }: {
       </div>
       <nav aria-label="Permitted workspaces">
         {allowedLinks.map((link) => <Link
-          className={link.title === title ? 'active-nav' : 'nav-link'}
-          aria-current={link.title === title ? 'page' : undefined}
+          className={workspaceIsCurrent(link, title, navigationHref) ? 'active-nav' : 'nav-link'}
+          aria-current={workspaceIsCurrent(link, title, navigationHref) ? 'page' : undefined}
           prefetch={false}
           href={link.href}
           key={link.href}

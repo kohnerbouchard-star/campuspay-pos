@@ -12,6 +12,8 @@ export type ApiErrorCode =
   | 'TENDER_INVALID'
   | 'COUPON_IDENTITY_REQUIRED'
   | 'PRICE_CHANGED'
+  | 'ENROLLMENT_REQUIRED'
+  | 'INCOMPLETE_ENROLLMENT'
   | 'BAD_REQUEST'
   | 'UNAUTHENTICATED'
   | 'FORBIDDEN'
@@ -47,8 +49,13 @@ export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error
   if (error instanceof Error && error.cause instanceof Error && error.cause !== error) return toApiError(error.cause)
 
+  const sqlState = error && typeof error === 'object' && 'code' in error ? error.code : null
+  if (['22P02', '22007', '22008'].includes(String(sqlState))) return new ApiError(400, 'BAD_REQUEST', 'Request parameters are invalid')
+
   const message = error instanceof Error ? error.message : 'Unexpected error'
   if (message.includes('DATABASE_NOT_CONFIGURED') || message.includes('NEON_NOT_CONFIGURED')) return new ApiError(503, 'CONNECTION_NOT_CONFIGURED', 'The service is temporarily unavailable. Please try again later.')
+  if (message.includes('INCOMPLETE_ENROLLMENT')) return new ApiError(409, 'INCOMPLETE_ENROLLMENT', 'This student has an incomplete credential setup. Ask a Super Admin to complete the missing PIN on the existing account.')
+  if (message.includes('ENROLLMENT_REQUIRED')) return new ApiError(409, 'ENROLLMENT_REQUIRED', 'This student is not enrolled for card access. Complete enrollment on the existing roster entry; do not create another student.')
   if (message.includes('SESSION_EXPIRED')) return new ApiError(401, 'SESSION_EXPIRED', 'Session expired')
   if (message.includes('UNAUTHENTICATED')) return new ApiError(401, 'UNAUTHENTICATED', 'Authentication required')
   if (message.includes('FORBIDDEN')) return new ApiError(403, 'FORBIDDEN', 'Permission denied')

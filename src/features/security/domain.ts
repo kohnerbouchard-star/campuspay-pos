@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const StepUpSchema = z.object({
   superAdminEmployeeCode: z.string().trim().min(2).max(32),
   superAdminPin: z.string().min(4).max(16).regex(/^\d+$/),
-  purpose: z.enum(['RESET_STUDENT_PIN', 'RESET_STUDENT_CARD']),
+  purpose: z.enum(['RESET_STUDENT_PIN', 'RESET_STUDENT_CARD', 'COMPLETE_STUDENT_PIN']),
   studentId: z.string().uuid(),
 })
 export const StepUpResultSchema = z.object({
@@ -16,6 +16,13 @@ export const ResetPinSchema = z.object({
   newPin: z.string().min(4).max(12).regex(/^\d+$/),
   confirmationPin: z.string().min(4).max(12).regex(/^\d+$/),
 }).refine((value) => value.newPin === value.confirmationPin, { message: 'PIN entries do not match' })
+
+export const CompleteMissingPinSchema = z.object({
+  authorizationToken: z.string().min(32),
+  newPin: z.string().regex(/^\d{4,12}$/),
+  confirmationPin: z.string().regex(/^\d{4,12}$/),
+  identityVerified: z.literal(true),
+}).strict().refine(value => value.newPin === value.confirmationPin, { message: 'PIN entries do not match' })
 
 export const ResetCardSchema = z.object({
   authorizationToken: z.string().min(32),
@@ -33,5 +40,7 @@ export const SecurityStudentSchema = z.object({
   student_code: z.string(),
   display_name: z.string(),
   card_active: z.boolean(),
+  pin_set: z.boolean(),
+  credential_state: z.enum(['ROSTER_ONLY', 'CARD_ONLY', 'READY', 'CARD_REQUIRED', 'INCOMPLETE', 'INACTIVE']),
 })
 export type SecurityStudent = z.infer<typeof SecurityStudentSchema>

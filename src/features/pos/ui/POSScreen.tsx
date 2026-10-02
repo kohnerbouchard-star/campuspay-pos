@@ -75,14 +75,15 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
     pending.current = true; setBusy(true)
     checkoutKey.current ??= crypto.randomUUID()
     try {
-      setIntent(await openPaymentIntent(cartLines, coupon?.code ?? null, tenderMode, null, checkoutKey.current))
-      setReceiptItems(products.filter(product => cart[product.id]).map(product => ({ name: product.name, quantity: cart[product.id], lineTotalWon: product.selling_price_won * cart[product.id] })))
+      const nextIntent = await openPaymentIntent(cartLines, coupon?.code ?? null, tenderMode, null, checkoutKey.current)
+      setIntent({ ...nextIntent, pricesChanged: nextIntent.subtotal_won !== subtotal })
+      setReceiptItems(nextIntent.items ?? [])
       setError(null)
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Checkout could not be opened') }
     finally { pending.current = false; setBusy(false) }
   }
   function completed(nextReceipt: PaymentReceipt, recoveredItems?: ReceiptLine[]) {
-    if (recoveredItems) setReceiptItems(recoveredItems)
+    setReceiptItems(recoveredItems ?? [])
     setReceipt(nextReceipt); setIntent(null); setCart({}); setCoupon(null); setTenderMode('WALLET'); checkoutKey.current = null; void load()
   }
   const policyChanged = useCallback((next: PaymentPolicy) => { setPolicy(next); if (!next.cash_enabled) { setTenderMode('WALLET'); checkoutKey.current = null } }, [])

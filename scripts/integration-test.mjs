@@ -8,6 +8,7 @@ import pg from 'pg'
 import { runEnrollmentChecks } from './enrollment-integration.mjs'
 import { runOldSchemaCheck } from './old-schema-check.mjs'
 import { runMigrationPreflightChecks } from './migration-preflight-check.mjs'
+import { runRouteRepairChecks } from './route-repairs-integration.mjs'
 import { runHardeningChecks } from './hardening-integration.mjs'
 import { runRemediationChecks } from './remediation-integration.mjs'
 import { runTenderChecks } from './tender-integration-checks.mjs'
@@ -120,6 +121,7 @@ try {
  await runTenderChecks({owner,request,login,jar,card,studentPin})
  await runRemediationChecks({owner,request,login,jar,card,studentPin})
  await runHardeningChecks({owner,request,login,jar,base,card,studentPin})
+ await runRouteRepairChecks({owner,request,login,jar,base,h})
  await runMigrationPreflightChecks(owner)
  await runOldSchemaCheck({owner,ownerUrl,env,staff,h})
 

@@ -57,7 +57,7 @@ export function EnrollmentForm({ onCancel, onComplete }: {
       onComplete(result)
     } catch (cause) {
       // Keep one key and one unchanged request after transport errors: retry cannot enroll twice.
-      const definitive = !uncertain && cause instanceof ClientApiError && cause.status < 500
+      const definitive = !uncertain && cause instanceof ClientApiError && cause.outcome === 'rejected' && cause.status >= 400 && cause.status < 500
       if (definitive) idempotencyKey.current = null
       setUncertain(!definitive)
       setError(definitive ? `${cause.message}. No new account was created by this attempt.` : 'The enrollment result has not been confirmed.')

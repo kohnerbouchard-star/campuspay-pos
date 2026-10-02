@@ -75,7 +75,7 @@ export function CouponForm({ onSaved }: { onSaved(): void }) {
       setForm((current) => ({ ...current, name: '', code: '' }))
       onSaved()
     } catch (caught) {
-      if (!(caught instanceof ClientApiError) || caught.status >= 500) setUncertain(true)
+      if (!(caught instanceof ClientApiError) || caught.outcome === 'unknown' || caught.status >= 500) setUncertain(true)
       setMessage(caught instanceof Error ? caught.message : 'Coupon could not be created')
     } finally {
       pending.current = false

@@ -41,7 +41,11 @@ export const CreatePaymentIntentSchema = z.object({
 })
 export const FinalizeTenderSchema = z.object({ walletAmountWon: z.number().int().positive().max(1000000000) }).strict()
 
+export const ReceiptItemsSchema = z.array(z.object({ name: z.string(), quantity: z.number().int().positive(), lineTotalWon: z.number().int().nonnegative() })).min(1)
+
 export const PaymentIntentSchema = z.object({
+  items: ReceiptItemsSchema.optional(),
+  pricesChanged: z.boolean().optional(),
   intent_id: z.string().uuid(),
   state: z.enum(['awaiting_card', 'awaiting_pin', 'completed', 'cancelled', 'expired']),
   subtotal_won: z.number().int().positive(),
