@@ -48,12 +48,14 @@ export async function managementConcurrency(ctx,{admin,inventory,accountant,stud
    values:[studentId,studentCard,payment.intent_id],
   },()=>ctx.request(admin,`/api/pos/intents/${payment.intent_id}/confirm`,{pin:ctx.pin}))
   assert.ok(paid.sale_id)
+  await ctx.request(admin,'/api/pos/payment-policy',{cashEnabled:true,eventName:'Synthetic lifecycle race',endsAt:new Date(Date.now()+3600000).toISOString()})
   const split=await ctx.request(admin,'/api/pos/intents',{items:[{productId,quantity:1}],tenderMode:'SPLIT',idempotencyKey:randomUUID()},201)
   const finalized=await intentRace('payment_intents','id',split.intent_id,{
    sql:"update private.payment_intents set student_id=$1,student_card_id=$2,state='awaiting_pin' where id=$3",
    values:[studentId,studentCard,split.intent_id],
   },()=>ctx.request(admin,`/api/pos/intents/${split.intent_id}/tender`,{walletAmountWon:split.total_won}))
   assert.equal(finalized.intent_id,split.intent_id)
+  await ctx.request(admin,'/api/pos/payment-policy',{cashEnabled:false,eventName:null,endsAt:null})
 
   await ctx.start(false,{funding:true})
   await ctx.owner.query('update private.system_settings set funding_enabled=true where singleton')

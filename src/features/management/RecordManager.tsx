@@ -72,7 +72,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
       </tbody></table></div>
       {!targetId&&<div className="action-row"><button disabled={locked||offset===0} onClick={()=>setOffset(n=>Math.max(0,n-50))}>Previous managed records</button><span>{data.total} records · Page {offset/50+1}</span><button disabled={locked||offset+50>=data.total} onClick={()=>setOffset(n=>n+50)}>Next managed records</button></div>}
     </>}
-    {selected&&!confirm&&<form className="form-stack management-editor" onSubmit={e=>{e.preventDefault();if(!locked){setPin('');reviewDeadline.current=Date.now()+60000;setConfirm(true)}}}>
+    {selected&&!confirm&&<form className="form-stack management-editor" onSubmit={e=>{e.preventDefault();if(!locked){setError('');setPin('');reviewDeadline.current=Date.now()+60000;setConfirm(true)}}}>
       <h3 tabIndex={-1} ref={editorHeading}>{label}: {selected.name} ({selected.code})</h3><p>{explanation}</p>
       {editing&&<><label className="field"><span>Product name</span><input required maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label><label className="field"><span>Product category</span><input required maxLength={80} value={category} onChange={e=>setCategory(e.target.value)}/></label><label className="field"><span>Product reorder level</span><input type="number" min={0} max={1000000} required value={reorder} onChange={e=>setReorder(Number(e.target.value))}/></label></>}
       <label className="field"><span>Reason for record change</span><textarea required minLength={10} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label>
