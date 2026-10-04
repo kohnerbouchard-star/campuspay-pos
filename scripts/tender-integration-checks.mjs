@@ -7,9 +7,10 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   await request(jar(), '/api/pos/payment-policy', undefined, 401)
   assert.equal((await request(cashier, '/api/pos/payment-policy')).cash_enabled, false)
   await request(cashier, '/api/pos/payment-policy', { cashEnabled: true, endsAt: new Date(Date.now() + 3600000).toISOString(), eventName: 'Unauthorized' }, 403)
-  const product = await request(inventory, '/api/inventory/products', { sku: `TENDER-${randomUUID().slice(0, 8)}`, name: 'Tender integration item', category: 'Tests', sellingPriceWon: 12000, reorderLevel: 0 })
-  await request(inventory, '/api/inventory/receipts', { supplierName: 'Integration fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Disposable tender test stock', lines: [{ productId: product.reference_id, quantity: 30, purchaseUnitCostWon: 1000 }], idempotencyKey: randomUUID() })
-  const items = [{ productId: product.reference_id, quantity: 1 }]
+  const product = await request(inventory, '/api/management', { kind:'PRODUCT', action:'CREATE_PRODUCT', requestKey:randomUUID(), sku:`TENDER-${randomUUID().slice(0,8)}`, name:'Tender integration item', category:'Tests', sellingPriceWon:12000, reorderLevel:0, reason:'Synthetic tender product fixture', verified:true })
+  const productId=product.target_id
+  await request(inventory, '/api/inventory/receipts', { supplierName: 'Integration fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Disposable tender test stock', lines: [{ productId, quantity: 30, purchaseUnitCostWon: 1000 }], idempotencyKey: randomUUID() })
+  const items = [{ productId, quantity: 1 }]
   const proposed = (mode, amount = null, lines = items, couponCode = null) => ({ items: lines, couponCode, tenderMode: mode, walletAmountWon: amount, idempotencyKey: randomUUID() })
   await request(cashier, '/api/pos/intents', proposed('CASH'), 409)
   await request(cashier, '/api/pos/intents', proposed('SPLIT', 7000), 409)
@@ -59,9 +60,10 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   await confirm(intent, { pin: studentPin, cashReceivedWon: 10000 }, 409); await unchanged(before, 'Cancelled payment posts nothing')
 
   // Force an inventory conflict after card authentication by selling the remaining stock to cash.
-  const low = await request(inventory, '/api/inventory/products', { sku: `RACE-${randomUUID().slice(0, 8)}`, name: 'Last-item tender fixture', category: 'Tests', sellingPriceWon: 12000, reorderLevel: 0 })
-  await request(inventory, '/api/inventory/receipts', { supplierName: 'Integration fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'One item only', lines: [{ productId: low.reference_id, quantity: 1, purchaseUnitCostWon: 800 }], idempotencyKey: randomUUID() })
-  const lowItems = [{ productId: low.reference_id, quantity: 1 }]
+  const low = await request(inventory, '/api/management', { kind:'PRODUCT', action:'CREATE_PRODUCT', requestKey:randomUUID(), sku:`RACE-${randomUUID().slice(0,8)}`, name:'Last-item tender fixture', category:'Tests', sellingPriceWon:12000, reorderLevel:0, reason:'Synthetic tender race product fixture', verified:true })
+  const lowId=low.target_id
+  await request(inventory, '/api/inventory/receipts', { supplierName: 'Integration fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'One item only', lines: [{ productId: lowId, quantity: 1, purchaseUnitCostWon: 800 }], idempotencyKey: randomUUID() })
+  const lowItems = [{ productId: lowId, quantity: 1 }]
   const splitRace = await request(admin, '/api/pos/intents', proposed('SPLIT', 1000, lowItems)); await scan(splitRace)
   const cashRace = await request(admin, '/api/pos/intents', proposed('CASH', null, lowItems)); await confirm(cashRace, { cashReceivedWon: 12000 })
   before = await snapshot(); assert.equal((await confirm(splitRace, { pin: studentPin, cashReceivedWon: 11000 }, 409)).code, 'INVENTORY_SHORTAGE'); await unchanged(before, 'Inventory failure rolls back split sale, tenders, wallet, and COGS')
@@ -78,7 +80,7 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   await confirm(intent, { pin: studentPin, cashReceivedWon: 10000 }, 409); await unchanged(before, 'Coupon failure posts nothing')
 
   // The wallet floor uses only the proposed wallet leg, even for a very large cash-backed sale.
-  const expensiveItems = [{ productId: product.reference_id, quantity: 10 }]
+  const expensiveItems = [{ productId: productId, quantity: 10 }]
   intent = await request(admin, '/api/pos/intents', proposed('SPLIT', 119999, expensiveItems)); await scan(intent); before = await snapshot()
   assert.equal((await confirm(intent, { pin: studentPin, cashReceivedWon: 1 }, 409)).code, 'WALLET_LIMIT'); await unchanged(before, 'Wallet floor failure posts nothing')
 
@@ -130,7 +132,7 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   // Stock-receipt recovery is read-only and bound to the same receiving person and terminal.
   const receiver = await login('2001')
   const receiptKey = randomUUID()
-  const receivedStock = await request(receiver, '/api/inventory/receipts', { supplierName: 'Recovery fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Read-only receipt recovery fixture', lines: [{ productId: product.reference_id, quantity: 2, purchaseUnitCostWon: 900 }], idempotencyKey: receiptKey })
+  const receivedStock = await request(receiver, '/api/inventory/receipts', { supplierName: 'Recovery fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Read-only receipt recovery fixture', lines: [{ productId: productId, quantity: 2, purchaseUnitCostWon: 900 }], idempotencyKey: receiptKey })
   const unrelatedReceiver = await login('2001')
   await request(unrelatedReceiver, '/api/inventory/receipts/recover', { idempotencyKey: receiptKey }, 403)
   await request(receiver, '/api/auth/login', { employeeCode: '2001', pin: '12345678' })
@@ -147,7 +149,7 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   await request(receiver, '/api/auth/login', { employeeCode: '2001', pin: '12345678' })
   const retryKey = randomUUID()
   assert.equal((await request(receiver, '/api/inventory/receipts/recover', { idempotencyKey: retryKey })).receipt, null)
-  const originalProposal = { supplierName: 'Recovery retry fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Exact original request reused after absent recovery', lines: [{ productId: product.reference_id, quantity: 3, purchaseUnitCostWon: 950 }], idempotencyKey: retryKey }
+  const originalProposal = { supplierName: 'Recovery retry fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Exact original request reused after absent recovery', lines: [{ productId: productId, quantity: 3, purchaseUnitCostWon: 950 }], idempotencyKey: retryKey }
   before = await snapshot()
   const retriedReceipts = await Promise.all([request(receiver, '/api/inventory/receipts', originalProposal), request(receiver, '/api/inventory/receipts', originalProposal)])
   assert.equal(retriedReceipts[0].receipt_id, retriedReceipts[1].receipt_id)

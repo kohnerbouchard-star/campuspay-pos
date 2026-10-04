@@ -2,7 +2,7 @@
 // CI-only ACL smoke test against the disposable local PostgreSQL service.
 import assert from 'node:assert/strict'
 import pg from 'pg'
-import { checkRuntime } from './lib/local-readiness.mjs'
+import { REQUIRED_APIS, checkRuntime } from './lib/local-readiness.mjs'
 
 const raw = process.env.DATABASE_URL_UNPOOLED
 let client
@@ -14,7 +14,7 @@ try {
   await client.connect()
   await client.query('SET ROLE campuspay_runtime')
   const result = await checkRuntime(client, { DATABASE_URL: raw })
-  assert.equal(result.capabilities, 15)
+  assert.equal(result.capabilities, REQUIRED_APIS.length)
   await client.query('RESET ROLE')
   await assert.rejects(() => checkRuntime(client, { DATABASE_URL: raw }), error => error.safeCode === 'RUNTIME_PRIVILEGES')
   console.log('Disposable PostgreSQL: restricted runtime passes; privileged owner is rejected.')

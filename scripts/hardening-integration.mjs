@@ -72,8 +72,8 @@ export async function runHardeningChecks({ owner, request, login, jar, base, car
 
   const products = []
   for (let i=0; i<2; i++) {
-    const product = await request(inventory, '/api/inventory/products', { sku: `HARD-${randomUUID().slice(0,12)}`, name: `Hardening stock ${i}`, category: 'Test', sellingPriceWon: 1000, reorderLevel: 0 })
-    products.push(product.reference_id)
+    const product = await request(inventory, '/api/management', { kind:'PRODUCT', action:'CREATE_PRODUCT', requestKey:randomUUID(), sku:`HARD-${randomUUID().slice(0,12)}`, name:`Hardening stock ${i}`, category:'Test', sellingPriceWon:1000, reorderLevel:0, reason:'Synthetic hardening product fixture', verified:true })
+    products.push(product.target_id)
   }
   await request(inventory, '/api/inventory/receipts', { supplierName: 'Hardening fixture', supplierInvoice: randomUUID(), purchaseDate: '2026-09-08', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: '', lines: products.map((productId,i) => ({ productId, quantity: 10, purchaseUnitCostWon: (i+1)*100 })), idempotencyKey: randomUUID() })
   const buyers = []

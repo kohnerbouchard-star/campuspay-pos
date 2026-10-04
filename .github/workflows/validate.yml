@@ -46,8 +46,10 @@ jobs:
       - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
       - run: node --test scripts/backup-envelope.test.mjs scripts/backup-file.test.mjs
       - run: npm ci
-      - name: Record complete dependency audit including development tools
-        id: dependency_audit
+      # Collect functional diagnostics even when the audit is red. The final
+      # unconditional gate below still makes this SAME validate job fail.
+      - name: Complete dependency audit including development tools
+        id: complete_dependency_audit
         continue-on-error: true
         run: npm audit --audit-level=high --json > .validation/dependency-audit.json
       - run: npm run security:dependencies
@@ -62,6 +64,7 @@ jobs:
       - run: node scripts/verify-runtime-readiness.mjs
       - run: node scripts/verify-student-roster.mjs
       - run: npx playwright install --with-deps chromium
+      - run: node scripts/verify-management-journeys.mjs
       - run: node --experimental-strip-types --no-warnings scripts/verify-receipt-policy-recovery.mjs
       - run: node scripts/verify-navigation-ux.mjs
       - run: node scripts/verify-security-recovery.mjs
@@ -82,9 +85,9 @@ jobs:
           PG_DUMP_BIN: ./scripts/ci/pg-dump
           PG_RESTORE_BIN: ./scripts/ci/pg-restore
         run: node scripts/verify-backup-restore.mjs
-      - name: Enforce the complete dependency audit result
+      - name: Enforce complete dependency audit policy
         if: always()
-        run: test '${{ steps.dependency_audit.outcome }}' = 'success'
+        run: node scripts/validate-complete-audit.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

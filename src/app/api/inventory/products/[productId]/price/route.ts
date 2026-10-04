@@ -1,15 +1,9 @@
 import { withApiRoute } from '@/lib/api/route'
 import { authorizeRequest } from '@/features/auth/server/session'
-import { PriceChangeSchema } from '@/features/inventory/domain'
-import { changeProductPrice } from '@/features/inventory/server'
-import { failure, ok, parseJson } from '@/lib/api/response'
+import { ApiError } from '@/lib/api/errors'
 
 export const dynamic = 'force-dynamic'
-export const POST = withApiRoute('/api/inventory/products/[productId]/price', async (request: Request, context: { params: Promise<{ productId: string }> }) => {
-  try {
-    const session = await authorizeRequest('inventory.price.manage')
-    const { productId } = await context.params
-    const input = await parseJson(request, PriceChangeSchema)
-    return ok(await changeProductPrice(session, productId, input))
-  } catch (error) { return failure(error) }
+export const POST = withApiRoute('/api/inventory/products/[productId]/price', async () => {
+  await authorizeRequest('inventory.price.manage')
+  throw new ApiError(410, 'CONFLICT', 'This price-write endpoint is retired. Use the Inventory price-change workflow so the reviewed product version and recovery key are enforced.')
 })

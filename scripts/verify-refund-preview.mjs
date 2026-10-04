@@ -87,12 +87,14 @@ try {
   }
   checks.push('wallet/cash/split, one-won sale discount, partial quantities, mixed disposition, stable input ordering, replay and full-selection equivalence')
   phase='fractional-lots'
-  const product=await request(admin,'/api/inventory/products',{sku:'PREVIEW-FRACTION',name:'Preview fractional cost item',category:'QA',sellingPriceWon:1001,reorderLevel:0},201)
+  const product=await request(admin,'/api/management',{kind:'PRODUCT',action:'CREATE_PRODUCT',requestKey:randomUUID(),sku:'PREVIEW-FRACTION',name:'Preview fractional cost item',category:'QA',sellingPriceWon:1001,reorderLevel:0,reason:'Synthetic preview product fixture',verified:true})
+  const productId=product.target_id
   const day=(await owner.query("select (now() at time zone 'Asia/Seoul')::date::text as business_date")).rows[0].business_date
-  for(const [quantity,purchaseUnitCostWon] of [[2,100],[3,201]])await request(admin,'/api/inventory/receipts',{supplierName:'Synthetic supplier',supplierInvoice:randomUUID(),purchaseDate:day,shippingWon:1,otherCostsWon:0,discountWon:0,notes:'Synthetic preview fixture',idempotencyKey:randomUUID(),lines:[{productId:product.reference_id,quantity,purchaseUnitCostWon}]},201)
-  const multi=await sale('CASH',[{productId:product.reference_id,quantity:3}],'PREVIEWONE'),multiInput=selection(multi)
+  for(const [quantity,purchaseUnitCostWon] of [[2,100],[3,201]])await request(admin,'/api/inventory/receipts',{supplierName:'Synthetic supplier',supplierInvoice:randomUUID(),purchaseDate:day,shippingWon:1,otherCostsWon:0,discountWon:0,notes:'Synthetic preview fixture',idempotencyKey:randomUUID(),lines:[{productId,quantity,purchaseUnitCostWon}]},201)
+  const multi=await sale('CASH',[{productId,quantity:3}],'PREVIEWONE'),multiInput=selection(multi)
   const original=await assertQuote(multi,multiInput)
-  await request(admin,`/api/inventory/products/${product.reference_id}/price`,{newPriceWon:2001,reason:'Changed after original sale'})
+  const productRecord=(await request(admin,`/api/management?kind=PRODUCT&status=ACTIVE&targetId=${productId}`)).records[0]
+  await request(admin,'/api/management',{kind:'PRODUCT',action:'CHANGE_PRODUCT_PRICE',targetId:productId,expectedUpdatedAt:productRecord.updated_at,sellingPriceWon:2001,reason:'Changed after original sale verified',verified:true,requestKey:randomUUID()})
   assert.deepEqual(withoutTime(await preview(admin,multiInput)),withoutTime(original))
   const lot=(await owner.query('select c.inventory_lot_id from private.sale_cost_allocations c join private.sale_items i on i.id=c.sale_item_id where i.sale_id=$1 order by c.created_at,c.id limit 1',[multi.sale_id])).rows[0].inventory_lot_id
   await owner.query("update private.inventory_lots set expiration_date='2000-01-01' where id=$1",[lot])

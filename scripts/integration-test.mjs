@@ -33,7 +33,7 @@ const log=fs.openSync('.validation/integration-server.log','w')
 const server=spawn(process.execPath,['node_modules/next/dist/bin/next','start','-p','3100','-H','127.0.0.1'],{env,stdio:['ignore',log,log]})
 const jar=()=>new Map()
 async function request(cookies,path,body,expected=200) {
- if (expected===200 && body!==undefined && ['/api/pos/intents','/api/accounting/intents','/api/inventory/products','/api/inventory/receipts','/api/coupons'].includes(path)) expected=201
+ if (expected===200 && body!==undefined && ['/api/pos/intents','/api/accounting/intents','/api/inventory/receipts','/api/coupons'].includes(path)) expected=201
  const response=await fetch(base+path,{method:body===undefined?'GET':'POST',headers:{'content-type':'application/json',origin:base,cookie:[...cookies].map(([k,v])=>`${k}=${v}`).join('; ')},body:body===undefined?undefined:JSON.stringify(body)})
  for(const cookie of response.headers.getSetCookie()){const first=cookie.split(';')[0];const i=first.indexOf('=');cookies.set(first.slice(0,i),first.slice(i+1))}
  const payload=await response.json()
@@ -79,11 +79,12 @@ try {
  const abandonedAdjustment=await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[1000],reasonCode:'FUNDS_RECEIVED',notes:'Unsubmitted recovery test',idempotencyKey:randomUUID()})
  assert.equal((await request(accountant,`/api/accounting/intents/${abandonedAdjustment.intent_id}/recover`,{})).state,'cancelled')
  for(const name of ['sales','inventory','wallets','coupons'])assert.ok(Array.isArray(await request(accountant,`/api/reports/${name}`)))
- const prod=await request(inventory,'/api/inventory/products',{sku:'FIFO-CHECK',name:'FIFO check',category:'Test',sellingPriceWon:1000,reorderLevel:0})
- catalog=await request(cashier,'/api/pos/catalog');assert.equal(catalog.find(p=>p.id===prod.reference_id).sold_out,true)
- for(const cost of [100,300])await request(inventory,'/api/inventory/receipts',{supplierName:'Test Supplier',supplierInvoice:randomUUID(),purchaseDate:'2026-09-05',shippingWon:0,otherCostsWon:0,discountWon:0,notes:'Cost lot test',lines:[{productId:prod.reference_id,quantity:2,purchaseUnitCostWon:cost}],idempotencyKey:randomUUID()})
- const fifo=await pay(cashier,[{productId:prod.reference_id,quantity:3}]);assert.equal(fifo.r.cogs_won,500)
- await pay(cashier,[{productId:prod.reference_id,quantity:1}]);catalog=await request(cashier,'/api/pos/catalog');assert.equal(catalog.find(p=>p.id===prod.reference_id).sold_out,true)
+ const prod=await request(inventory,'/api/management',{kind:'PRODUCT',action:'CREATE_PRODUCT',requestKey:randomUUID(),sku:'FIFO-CHECK',name:'FIFO check',category:'Test',sellingPriceWon:1000,reorderLevel:0,reason:'Integration FIFO fixture product',verified:true})
+ const prodId=prod.target_id
+ catalog=await request(cashier,'/api/pos/catalog');assert.equal(catalog.find(p=>p.id===prodId).sold_out,true)
+ for(const cost of [100,300])await request(inventory,'/api/inventory/receipts',{supplierName:'Test Supplier',supplierInvoice:randomUUID(),purchaseDate:'2026-09-05',shippingWon:0,otherCostsWon:0,discountWon:0,notes:'Cost lot test',lines:[{productId:prodId,quantity:2,purchaseUnitCostWon:cost}],idempotencyKey:randomUUID()})
+ const fifo=await pay(cashier,[{productId:prodId,quantity:3}]);assert.equal(fifo.r.cogs_won,500)
+ await pay(cashier,[{productId:prodId,quantity:1}]);catalog=await request(cashier,'/api/pos/catalog');assert.equal(catalog.find(p=>p.id===prodId).sold_out,true)
  const coupons=await request(inventory,'/api/coupons');assert.equal(coupons[0].discount_type,'PERCENTAGE')
  const fixed=await request(inventory,'/api/coupons',{name:'Fixed test',code:'FIXEDTEST',discountType:'FIXED',fixedAmountWon:100,percentageBps:null,minimumSubtotalWon:0,maxDiscountWon:null,totalRedemptionLimit:10,perStudentLimit:2,startsAt:new Date(Date.now()-60000).toISOString(),endsAt:null,idempotencyKey:randomUUID()})
  await request(inventory,`/api/coupons/${fixed.coupon_id}/deactivate`,{reason:'Test complete'})

@@ -75,7 +75,7 @@ test('health permits local PostgreSQL integration fixtures', () => assert.doesNo
 test('healthy runtime executes only metadata reads inside a read-only transaction', async () => {
   const client = mockClient()
   const result = await checkRuntime(client, valid.values)
-  assert.equal(result.capabilities, 15)
+  assert.equal(result.capabilities, REQUIRED_APIS.length)
   assert.equal(client.queries[0].sql, 'BEGIN READ ONLY')
   assert.equal(client.queries.at(-1).sql, 'ROLLBACK')
   assert.ok(client.queries.find(q => q.sql.includes('c.oid')))

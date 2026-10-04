@@ -49,6 +49,11 @@ export function toApiError(error: unknown): ApiError {
   if (error instanceof Error && error.cause instanceof Error && error.cause !== error) return toApiError(error.cause)
 
   const message = error instanceof Error ? error.message : 'Unexpected error'
+  if (message.includes('RECORD_STALE')) return new ApiError(409,'CONFLICT','This record changed since it was reviewed. Refresh it and review the new values.')
+  if (message.includes('RECORD_HAS_STOCK')) return new ApiError(409,'CONFLICT','Record remaining stock removal or supplier return before archiving this product.')
+  if (message.includes('RECORD_HAS_BALANCE')) return new ApiError(409,'CONFLICT','Settle this student’s wallet balance through the authorized accounting workflow before deactivation.')
+  if (message.includes('RECORD_HAS_ORDERS')) return new ApiError(409,'CONFLICT','Complete the open online orders before changing this record’s availability.')
+  if (message.includes('RECORD_CODE_EXISTS')) return new ApiError(409,'CONFLICT','That SKU already belongs to a product. Search active and archived products instead of creating a duplicate.')
   if (message.includes('DATABASE_NOT_CONFIGURED') || message.includes('NEON_NOT_CONFIGURED')) return new ApiError(503, 'CONNECTION_NOT_CONFIGURED', 'The service is temporarily unavailable. Please try again later.')
   if (message.includes('SESSION_EXPIRED')) return new ApiError(401, 'SESSION_EXPIRED', 'Session expired')
   if (message.includes('UNAUTHENTICATED')) return new ApiError(401, 'UNAUTHENTICATED', 'Authentication required')
