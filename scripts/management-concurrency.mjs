@@ -48,6 +48,12 @@ export async function managementConcurrency(ctx,{admin,inventory,accountant,stud
    values:[studentId,studentCard,payment.intent_id],
   },()=>ctx.request(admin,`/api/pos/intents/${payment.intent_id}/confirm`,{pin:ctx.pin}))
   assert.ok(paid.sale_id)
+  const split=await ctx.request(admin,'/api/pos/intents',{items:[{productId,quantity:1}],tenderMode:'SPLIT',idempotencyKey:randomUUID()},201)
+  const finalized=await intentRace('payment_intents','id',split.intent_id,{
+   sql:"update private.payment_intents set student_id=$1,student_card_id=$2,state='awaiting_pin' where id=$3",
+   values:[studentId,studentCard,split.intent_id],
+  },()=>ctx.request(admin,`/api/pos/intents/${split.intent_id}/tender`,{walletAmountWon:split.total_won}))
+  assert.equal(finalized.intent_id,split.intent_id)
 
   await ctx.start(false,{funding:true})
   await ctx.owner.query('update private.system_settings set funding_enabled=true where singleton')
@@ -76,6 +82,6 @@ export async function managementConcurrency(ctx,{admin,inventory,accountant,stud
    assert.equal(Number((await ctx.owner.query('select count(*) from private.inventory_lots where product_id=$1',[product])).rows[0].count),0)
   }finally{await archive.query('rollback');await received}
   // Balance and stock changes above are synthetic, separate from the browser fixture.
-  return 'Payment and funding confirmation wait for card assignment then acquire the lifecycle lock; receiving cannot insert stock after a concurrent archive'
+  return 'Payment confirmation, split-tender finalization and funding confirmation wait for card assignment then acquire the lifecycle lock; receiving cannot insert stock after a concurrent archive'
  }finally{for(const c of clients){await c.query('rollback').catch(()=>{});await c.end()}}
 }

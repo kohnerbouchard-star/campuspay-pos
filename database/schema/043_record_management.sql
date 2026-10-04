@@ -145,7 +145,9 @@ begin
   perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||p_target_id::text,40404));
   select balance_won into balance from private.wallets where student_id=p_target_id for update;
   if not found then raise exception 'NOT_FOUND';end if;
-  select * into st from private.students where id=p_target_id for update;
+  -- Identity is immutable. NO KEY UPDATE still fences status writers while
+  -- allowing historical journal foreign keys to acquire their key-share lock.
+  select * into st from private.students where id=p_target_id for no key update;
   if not found then raise exception 'NOT_FOUND';end if;
   if p_payload->>'expected_updated_at' is null then raise exception 'BAD_REQUEST';end if;
   if st.updated_at is distinct from expected then raise exception 'RECORD_STALE';end if;
@@ -277,6 +279,26 @@ begin
 end $$;
 revoke all on function api.confirm_payment(uuid,uuid,text,bigint) from public;
 grant execute on function api.confirm_payment(uuid,uuid,text,bigint) to campuspay_runtime;
+
+alter function api.finalize_payment_tender(uuid,uuid,bigint) set schema private;
+alter function private.finalize_payment_tender(uuid,uuid,bigint) rename to finalize_payment_tender_legacy;
+revoke all on function private.finalize_payment_tender_legacy(uuid,uuid,bigint) from public,campuspay_runtime;
+create function api.finalize_payment_tender(p_session_id uuid,p_intent_id uuid,p_wallet_amount_won bigint)
+returns table(intent_id uuid,state private.intent_state,subtotal_won bigint,discount_won bigint,total_won bigint,
+ coupon_name text,coupon_code_masked text,expires_at timestamptz,tender_mode text,wallet_tender_won bigint,cash_tender_won bigint)
+language plpgsql security definer set search_path = '' as $$
+declare v_session private.staff_sessions; v_intent private.payment_intents;
+begin
+ v_session:=private.assert_session(p_session_id,'pos.checkout');
+ select i.* into v_intent from private.payment_intents i where i.id=p_intent_id for update;
+ if not found or v_intent.staff_session_id<>v_session.id then raise exception 'NOT_FOUND'; end if;
+ if v_intent.student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_intent.student_id::text,40404));
+ end if;
+ return query select * from private.finalize_payment_tender_legacy(p_session_id,p_intent_id,p_wallet_amount_won);
+end $$;
+revoke all on function api.finalize_payment_tender(uuid,uuid,bigint) from public;
+grant execute on function api.finalize_payment_tender(uuid,uuid,bigint) to campuspay_runtime;
 
 alter function api.create_online_order(uuid,jsonb,text,uuid,text,uuid,bigint) set schema private;
 alter function private.create_online_order(uuid,jsonb,text,uuid,text,uuid,bigint) rename to create_online_order_legacy;
