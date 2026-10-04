@@ -25,9 +25,12 @@ try{
  const protectedState=async()=>JSON.stringify((await owner.query(`select
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.sales r) sales,
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.sale_items r) sale_items,
+ (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.sale_tenders r) tenders,
+ (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.sale_cost_allocations r) costs,
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.wallet_ledger r) ledger,
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.inventory_movements r) movements,
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.inventory_lots r) lots,
+ (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.stock_receipts r) receipts,
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.student_id)) from private.wallets r) wallets,
  (select md5(string_agg(to_jsonb(r)::text,'' order by r.id)) from private.student_cards r) cards,
  (select md5(string_agg(r.pin_hash,'' order by r.student_id)) from private.student_credentials r) student_pins,
@@ -123,7 +126,8 @@ try{
  await owner.query('update public.products set active=true,updated_at=clock_timestamp() where id=$1',[productId])
  checks.push('Current account/register and open drawers protected; staff/register deletion hides records and revokes sessions; restores keep PIN/identity and previous inactive state')
  phase='coupons, grants, journal immutability and safe audits'
- const coupon=await request(inventory,'/api/coupons',{name:'Synthetic removable coupon',code:'R'+randomBytes(6).toString('hex'),discountType:'FIXED',fixedAmountWon:100,percentageBps:null,minimumSubtotalWon:0,maxDiscountWon:null,totalRedemptionLimit:10,perStudentLimit:null,startsAt:new Date(Date.now()-60000).toISOString(),endsAt:null,idempotencyKey:randomUUID()},201)
+ const couponCode='R'+randomBytes(6).toString('hex')
+ const coupon=await request(inventory,'/api/coupons',{name:'Synthetic removable coupon',code:couponCode,discountType:'FIXED',fixedAmountWon:100,percentageBps:null,minimumSubtotalWon:0,maxDiscountWon:null,totalRedemptionLimit:10,perStudentLimit:null,startsAt:new Date(Date.now()-60000).toISOString(),endsAt:null,idempotencyKey:randomUUID()},201)
  const couponBefore=await protectedState()
  await change(await input('COUPON',coupon.coupon_id))
  assert.ok(!(await request(inventory,'/api/coupons')).some(c=>c.coupon_id===coupon.coupon_id))
@@ -137,6 +141,27 @@ try{
  const audit=JSON.stringify((await owner.query("select safe_payload from private.audit_events where event_type like 'RECORD_REMOVAL%' ")).rows)
  for(const secret of [staffPin,pin,card,ctx.staffPinProof(staffPin)])assert.ok(!audit.includes(secret))
  checks.push('Coupon deletion hides both read APIs without changing redemptions; restoration works; runtime private-table bypass denied, immutable operation journal and credential-free audit verified')
+ phase='posted sale retains deleted identities, original amounts and redemption'
+ await owner.query('update private.system_settings set cash_controls_enabled=false where singleton')
+ const current=(await request(inventory,`/api/management?kind=PRODUCT&status=ALL&targetId=${productId}`)).records[0]
+ await request(inventory,'/api/management',{kind:'PRODUCT',action:'CHANGE_PRODUCT_PRICE',targetId:productId,expectedUpdatedAt:current.updated_at,sellingPriceWon:1100,requestKey:randomUUID(),reason:'Synthetic discounted sale fixture price',verified:true})
+ const today=(await owner.query("select (clock_timestamp() at time zone 'Asia/Seoul')::date::text day")).rows[0].day
+ await request(inventory,'/api/inventory/receipts',{supplierName:'Synthetic removal supplier',supplierInvoice:randomUUID(),purchaseDate:today,shippingWon:0,otherCostsWon:0,discountWon:0,notes:'Synthetic retained history fixture',lines:[{productId,quantity:1,purchaseUnitCostWon:100}],idempotencyKey:randomUUID()},201)
+ const credit=await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[1000],reasonCode:'FUNDS_RECEIVED',notes:'Synthetic removal history deposit',idempotencyKey:randomUUID()},201)
+ await request(accountant,`/api/accounting/intents/${credit.intent_id}/card`,{cardRead:card});await request(accountant,`/api/accounting/intents/${credit.intent_id}/confirm`,{pin})
+ const saleIntent=await request(cashier,'/api/pos/intents',{items:[{productId,quantity:1}],tenderMode:'WALLET',couponCode,idempotencyKey:randomUUID()},201)
+ await request(cashier,`/api/pos/intents/${saleIntent.intent_id}/card`,{cardRead:card})
+ const receipt=await request(cashier,`/api/pos/intents/${saleIntent.intent_id}/confirm`,{pin})
+ assert.ok(receipt.sale_id);assert.equal(Number((await owner.query('select balance_won from private.wallets where student_id=$1',[studentId])).rows[0].balance_won),0)
+ assert.equal(Number((await owner.query('select count(*) n from private.coupon_redemptions where sale_id=$1',[receipt.sale_id])).rows[0].n),1)
+ const postedBefore=await protectedState(),walletHistory=await request(accountant,`/api/accounting/students/${studentId}/history`)
+ const linked=[['PRODUCT',productId],['STUDENT',studentId],['STAFF',cashierSession.user_id],['TERMINAL',cashierSession.terminal_id],['COUPON',coupon.coupon_id]]
+ for(const [kind,id] of linked){await change(await input(kind,id));assert.equal(await protectedState(),postedBefore)}
+ const historical=await request(admin,`/api/refunds/sale?reference=${receipt.sale_id}`)
+ assert.equal(historical.sale_id,receipt.sale_id);assert.equal(historical.total_won,1000);assert.equal(historical.discount_won,100)
+ assert.deepEqual((await request(accountant,`/api/accounting/students/${studentId}/history`)).rows,walletHistory.rows)
+ for(const [kind,id] of linked){await change(await input(kind,id,'RESTORE'));assert.equal(await protectedState(),postedBefore)}
+ checks.push('An authenticated funded and discounted sale survives deletion/restore of every linked record; original sale/items/tenders/costs, receipt, ledger, card/PIN and coupon redemption remain byte-identical and historical reads work')
  phase='concurrent changes, pagination and recovery across disabled gates'
  const conflict=await input('PRODUCT',productId)
  const results=await Promise.all([raw(admin,'/api/removals',conflict),raw(anotherAdminTerminal,'/api/removals',{...conflict,requestKey:randomUUID()})])
@@ -146,11 +171,11 @@ try{
  const fenced=await Promise.all([raw(admin,'/api/removals',fence),raw(admin,'/api/removals/recover',{kind:fence.kind,requestKey:fence.requestKey})])
  assert.ok(fenced.every(x=>x.status===200));assert.equal(fenced[0].body.data.outcome,fenced[1].body.data.outcome)
  if((await snapshot('PRODUCT',productId)).deleted)await change(await input('PRODUCT',productId,'RESTORE'))
- await owner.query(`with fixtures as(insert into public.products(sku,name,category,selling_price_won,reorder_level,active) select 'REMOVAL-PAGE-'||i,'Synthetic deleted page fixture '||i,'QA',1000,0,false from generate_series(1,61) i returning id) insert into private.deleted_records(kind,target_id,previous_active,deleted_at) select 'PRODUCT',id,true,clock_timestamp() from fixtures`)
+ await owner.query(`with fixtures as(insert into public.products(sku,name,category,selling_price_won,reorder_level,active,created_by) select 'REMOVAL-PAGE-'||i,'Synthetic deleted page fixture '||i,'QA',1000,0,false,$1 from generate_series(1,61) i returning id) insert into private.deleted_records(kind,target_id,previous_active,deleted_at) select 'PRODUCT',id,true,clock_timestamp() from fixtures`,[session.user_id])
  const first=await request(admin,'/api/removals?kind=PRODUCT&offset=0'),second=await request(admin,'/api/removals?kind=PRODUCT&offset=50')
  assert.equal(first.records.length,50);assert.equal(first.total,61);assert.equal(second.records.length,11)
  assert.equal(new Set([...first.records,...second.records].map(r=>r.target_id)).size,61)
- await owner.query("insert into public.products(sku,name,category,selling_price_won,reorder_level) select 'REMOVAL-LIVE-'||i,'Synthetic live page fixture '||i,'QA',1000,0 from generate_series(1,61) i")
+ await owner.query("insert into public.products(sku,name,category,selling_price_won,reorder_level,created_by) select 'REMOVAL-LIVE-'||i,'Synthetic live page fixture '||i,'QA',1000,0,$1 from generate_series(1,61) i",[session.user_id])
  const normalFirst=await request(admin,'/api/management?kind=PRODUCT&status=ALL&offset=0'),normalSecond=await request(admin,'/api/management?kind=PRODUCT&status=ALL&offset=50')
  assert.equal(normalFirst.records.length+normalSecond.records.length,normalFirst.total)
  assert.ok([...normalFirst.records,...normalSecond.records].every(r=>!r.code.startsWith('REMOVAL-PAGE-')))
