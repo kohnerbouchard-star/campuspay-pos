@@ -303,9 +303,9 @@
   .nav a { flex: 1; padding-inline: 7px; font-size: 14px; gap: 7px; border-radius: 10px; }
   .nav a svg { width: 17px; height: 17px; }
   .welcome, .headingRow { align-items: start; flex-wrap: wrap; gap: 18px; }
-  .welcome { padding: 23px; border-radius: 17px; margin-bottom: 26px; }
-  .welcome h1 { font-size: 32px; }
-  .welcome .muted { max-width: 280px; font-size: 14px; }
+  .welcome { padding: 16px; border-radius: 17px; margin-bottom: 26px; gap: 12px; }
+  .welcome h1 { font-size: 28px; margin: 0; }
+  .welcome .eyebrow, .welcome .muted { display: none; }
   .cartLink { min-height: 44px; padding: 8px 10px; font-size: 14px; }
   .products { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .product { min-height: 277px; border-radius: 14px; }

@@ -35,6 +35,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   const checkoutKey = useRef<string | null>(null)
   const { remainingMs, warning, noteActivity } = useInactivityLock(intent ? { key: intent.intent_id, until: Date.parse(intent.expires_at) + PAYMENT_RESULT_GRACE_MS } : receipt ? { key: receipt.sale_id } : busy || loading || recoveryBlocked ? { key: 'payment-recovery' } : null)
   const cartLines = useMemo(() => toCartLines(cart), [cart])
+  const itemCount = cartLines.reduce((count, line) => count + line.quantity, 0)
   const subtotal = useMemo(() => cartTotal(cart, products), [cart, products])
   const discount = coupon?.quote.discount_won ?? 0
   const total = coupon?.quote.total_won ?? subtotal
@@ -109,6 +110,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
     {policy && <PaymentStatus policy={policy} />}
     {loading && <LoadingState label="Loading register…" />}
     <div className="pos-layout" aria-busy={busy} inert={busy || loading || recoveryBlocked || !!error || undefined}>
+      <a className="pos-cart-link" href="#pos-cart"><Icon name="bag" size={18} />View cart · {itemCount} {itemCount === 1 ? 'item' : 'items'}</a>
       <ProductGrid products={products} onSelect={product => mutateCart(current => addProduct(current, product))} />
       <CartPanel cart={cart} products={products} subtotal={subtotal} discount={discount} total={total} coupon={coupon} cartLines={cartLines}
         onCouponApplied={(code, quote) => { checkoutKey.current = null; setCoupon({ code, quote }) }} onCouponRemoved={() => { checkoutKey.current = null; setCoupon(null) }}

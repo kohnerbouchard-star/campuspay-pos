@@ -36,8 +36,8 @@ export function CartPanel({
 }) {
   const lines = products.filter((product) => cart[product.id])
   const itemCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0)
-  return <aside className="cart-panel pos-cart">
-    <div className="cart-heading"><div><p className="eyebrow">Current sale</p><h2>Cart</h2></div><span className="cart-item-count"><Icon name="bag" size={17} />{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div>
+  return <aside id="pos-cart" tabIndex={-1} aria-labelledby="pos-cart-title" className="cart-panel pos-cart">
+    <div className="cart-heading"><div><p className="eyebrow">Current sale</p><h2 id="pos-cart-title">Cart</h2></div><span className="cart-item-count"><Icon name="bag" size={17} />{itemCount} {itemCount === 1 ? 'item' : 'items'}</span></div>
     <div className="cart-lines">
       {lines.length === 0 && <div className="cart-empty"><span><Icon name="bag" size={28} /></span><strong>Ready for the next order</strong><p>Select an item to begin.</p></div>}
       {lines.map((product) => <div className="cart-line" key={product.id}>

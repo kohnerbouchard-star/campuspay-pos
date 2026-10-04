@@ -13,6 +13,7 @@ The visual direction combines a deep navy foundation, vivid teal actions, restra
 - Product categories use consistent icons and colors, without inventing product photography or metadata. The register and store emphasize product names, prices, availability and add controls.
 - Carts, totals, wallet information, order details, tables, forms, feedback, report summaries and shared dialogs use the updated design tokens.
 - Body text is 16px by default. Functional labels and controls generally use at least 14px; secondary metadata uses at least 12px in the refreshed navigation and store. Mobile header information reflows instead of shrinking to tiny text.
+- On phones, the store welcome stays compact so products appear sooner, and a register shortcut jumps to the cart with its current item count and keyboard focus.
 - Hover and press motion is restrained and disabled for reduced-motion users. Keyboard focus remains visible, and existing control labels and focus behavior are preserved.
 
 No new runtime dependency or external asset request is introduced. There are no database migrations, API/service changes, feature activations, payment calculation changes or production data mutations.
