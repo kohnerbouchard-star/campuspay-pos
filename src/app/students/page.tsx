@@ -1,9 +1,10 @@
 import { WorkspaceFrame } from '@/components/WorkspaceFrame'
 import { requirePagePermission } from '@/features/auth/server/page-guard'
+import { administrationEnabled } from '@/features/administration/server'
 import { StudentsScreen } from '@/features/students/ui/StudentsScreen'
 
 export const dynamic = 'force-dynamic'
 export default async function Page() {
   const session = await requirePagePermission('students.manage')
-  return <WorkspaceFrame session={session} title="Students"><StudentsScreen userId={session.user_id} /></WorkspaceFrame>
+  return <WorkspaceFrame session={session} title="Students"><StudentsScreen userId={session.user_id} removalEnabled={administrationEnabled()} /></WorkspaceFrame>
 }

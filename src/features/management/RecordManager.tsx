@@ -5,9 +5,11 @@ import { formatWon } from '@/lib/format/currency'
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import { RecordDirectorySchema, RecordChangeSchema, type RecordDirectory, type RecordKind, type ManagedRecord } from './domain'
 import { useRecordOperation } from './use-record-operation'
+import { RecordRemovalButton,useRemovalRevision } from '@/features/removal/RecordRemoval'
 import { OperationFeedback } from './OperationFeedback'
 
 export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void|Promise<void>}) {
+  const removalRevision=useRemovalRevision()
   const editorHeading=useRef<HTMLHeadingElement>(null)
   const reviewDeadline=useRef(0)
   const [data,setData]=useState<RecordDirectory|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true)
@@ -33,7 +35,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
         .finally(()=>{if(active)setLoading(false)})
     },150)
     return()=>{active=false;clearTimeout(timer)}
-  },[kind,query,status,offset,targetId,revision])
+  },[kind,query,status,offset,targetId,revision,removalRevision])
   const locked=loading||!operation.ready||operation.busy||operation.blocked||!!operation.pending
   function select(row:ManagedRecord,edit=false){setSelected(structuredClone(row));setEditing(edit);setName(row.name);setCategory(row.category??'');setReorder(row.reorder_level??0);setReason('');setPin('');setError('')}
   useEffect(()=>{if(selected&&!confirm){editorHeading.current?.focus();editorHeading.current?.scrollIntoView({block:'start'})}},[selected,confirm])
@@ -67,6 +69,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
       {data.records.map(row=><tr key={row.id}><td><strong>{row.name}</strong><small>{row.code}</small></td><td>{row.active?'Active':kind==='PRODUCT'?'Archived':'Inactive'}</td><td>{kind==='PRODUCT'?row.quantity_or_balance:formatWon(row.quantity_or_balance)}</td><td>
         {kind==='PRODUCT'&&row.active&&<button className="table-action" disabled={locked} onClick={()=>select(row,true)}>Edit product</button>}
         <button className="table-action" disabled={locked||!!row.blocker} onClick={()=>select(row)}>{kind==='PRODUCT'?(row.active?'Archive product':'Restore product'):(row.active?'Deactivate student':'Reactivate student')}</button>
+        {kind==='PRODUCT'&&<RecordRemovalButton kind="PRODUCT" targetId={row.id} disabled={locked}/>}
         {row.blocker&&<small>{row.blocker}</small>}</td></tr>)}
       {!data.records.length&&<tr><td colSpan={4}>No matching records. Change the filter or return to the previous page.</td></tr>}
       </tbody></table></div>
