@@ -7,14 +7,23 @@ import { RecordDirectorySchema, RecordChangeSchema, type RecordDirectory, type R
 import { useRecordOperation } from './use-record-operation'
 import { OperationFeedback } from './OperationFeedback'
 
-export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void}) {
+export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void|Promise<void>}) {
   const editorHeading=useRef<HTMLHeadingElement>(null)
+  const reviewDeadline=useRef(0)
   const [data,setData]=useState<RecordDirectory|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true)
   const [query,setQuery]=useState(''),[status,setStatus]=useState('ALL'),[offset,setOffset]=useState(0),[revision,setRevision]=useState(0)
   const [selected,setSelected]=useState<ManagedRecord|null>(null),[editing,setEditing]=useState(false),[confirm,setConfirm]=useState(false)
   const [name,setName]=useState(''),[category,setCategory]=useState(''),[reorder,setReorder]=useState(0),[reason,setReason]=useState(''),[pin,setPin]=useState('')
-  const refresh=()=>{setSelected(null);setConfirm(false);setLoading(true);setRevision(n=>n+1);onChanged?.()}
+  const refresh=async()=>{setSelected(null);setConfirm(false);setPin('');setLoading(true);setRevision(n=>n+1);await onChanged?.()}
   const operation=useRecordOperation(kind,userId,refresh)
+  useEffect(()=>{
+    if(kind!=='STUDENT'||!confirm||operation.busy)return
+    const expire=()=>{setPin('');setConfirm(false);setError('Student status review expired. Review the record again and enter the current Super Admin PIN.')}
+    const timer=setTimeout(expire,Math.max(0,reviewDeadline.current-Date.now()))
+    const hide=()=>{if(document.visibilityState!=='visible')expire()}
+    document.addEventListener('visibilitychange',hide)
+    return()=>{clearTimeout(timer);document.removeEventListener('visibilitychange',hide)}
+  },[kind,confirm,operation.busy])
   useEffect(()=>{
     let active=true
     const timer=setTimeout(()=>{setLoading(true);setError('')
@@ -32,6 +41,9 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
   const label=editing?'Save product details':kind==='PRODUCT'?(selected?.active?'Archive product':'Restore product'):(selected?.active?'Deactivate student':'Reactivate student')
   async function apply(){
     if(!selected)return
+    if(kind==='STUDENT'&&(Date.now()>=reviewDeadline.current||document.visibilityState!=='visible')){
+      setPin('');setConfirm(false);setError('Student status review expired. Review the record again.');return
+    }
     const input=RecordChangeSchema.safeParse({kind,action,targetId:selected.id,expectedUpdatedAt:selected.updated_at,
       requestKey:crypto.randomUUID(),reason,verified:true,...(editing?{name,category,reorderLevel:reorder}:{}),...(kind==='STUDENT'?{adminPin:pin}:{})})
     if(!input.success){setError('Check the fields, the 10–500 character reason, and administrator PIN.');setConfirm(false);return}
@@ -60,16 +72,16 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
       </tbody></table></div>
       {!targetId&&<div className="action-row"><button disabled={locked||offset===0} onClick={()=>setOffset(n=>Math.max(0,n-50))}>Previous managed records</button><span>{data.total} records · Page {offset/50+1}</span><button disabled={locked||offset+50>=data.total} onClick={()=>setOffset(n=>n+50)}>Next managed records</button></div>}
     </>}
-    {selected&&!confirm&&<form className="form-stack management-editor" onSubmit={e=>{e.preventDefault();if(!locked)setConfirm(true)}}>
+    {selected&&!confirm&&<form className="form-stack management-editor" onSubmit={e=>{e.preventDefault();if(!locked){setPin('');reviewDeadline.current=Date.now()+60000;setConfirm(true)}}}>
       <h3 tabIndex={-1} ref={editorHeading}>{label}: {selected.name} ({selected.code})</h3><p>{explanation}</p>
       {editing&&<><label className="field"><span>Product name</span><input required maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label><label className="field"><span>Product category</span><input required maxLength={80} value={category} onChange={e=>setCategory(e.target.value)}/></label><label className="field"><span>Product reorder level</span><input type="number" min={0} max={1000000} required value={reorder} onChange={e=>setReorder(Number(e.target.value))}/></label></>}
       <label className="field"><span>Reason for record change</span><textarea required minLength={10} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label>
-      {kind==='STUDENT'&&<label className="field"><span>Current Super Admin PIN</span><input required type="password" autoComplete="off" inputMode="numeric" pattern="[0-9]{4,16}" value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,'').slice(0,16))}/></label>}
       <div className="action-row"><button type="button" className="secondary-action" onClick={()=>{setSelected(null);setPin('')}}>Cancel record change</button><button className="primary-action" disabled={locked}>Review record change</button></div>
     </form>}
     {selected&&confirm&&<ConfirmationDialog title={`${label}?`} description={explanation} confirmLabel={label} cancelLabel="Go back"
-      destructive={!editing&&selected.active} confirmationText={!editing?selected.code:undefined} onCancel={()=>{setConfirm(false);setPin('')}} onConfirm={apply}>
+      destructive={!editing&&selected.active} confirmationText={!editing?selected.code:undefined} confirmDisabled={locked||(kind==='STUDENT'&&!/^[0-9]{4,16}$/.test(pin))} onCancel={()=>{setConfirm(false);setPin('')}} onConfirm={apply}>
       <dl className="detail-list"><div><dt>Record</dt><dd>{selected.name} · {selected.code}</dd></div>{editing&&<><div><dt>New name</dt><dd>{name}</dd></div><div><dt>Category</dt><dd>{category}</dd></div><div><dt>Reorder at</dt><dd>{reorder}</dd></div></>}<div><dt>Reason</dt><dd>{reason}</dd></div></dl>
+      {kind==='STUDENT'&&<><p className="muted">Enter your PIN to approve this change. This review expires after one minute or when you leave this tab.</p><label className="field"><span>Current Super Admin PIN</span><input required type="password" autoComplete="off" inputMode="numeric" pattern="[0-9]{4,16}" value={pin} disabled={operation.busy} onChange={e=>setPin(e.target.value.replace(/\D/g,'').slice(0,16))}/></label></>}
     </ConfirmationDialog>}
   </section>
 }

@@ -5,15 +5,15 @@ import { Dialog } from './Dialog'
 
 /** Presentation only: authorization, version checks and replay safety belong to the server. */
 export function ConfirmationDialog({ title, description, confirmLabel, cancelLabel = 'Cancel',
-  destructive = false, confirmationText, children, onConfirm, onCancel,
+  destructive = false, confirmationText, confirmDisabled = false, children, onConfirm, onCancel,
 }: {
   title: string; description: string; confirmLabel: string; cancelLabel?: string
-  destructive?: boolean; confirmationText?: string; children?: ReactNode
+  destructive?: boolean; confirmationText?: string; confirmDisabled?: boolean; children?: ReactNode
   onConfirm(): Promise<void>; onCancel(): void
 }) {
   const id = useId(), lock = useRef(false)
   const [typed, setTyped] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('')
-  const allowed = !confirmationText || typed === confirmationText
+  const allowed = !confirmDisabled && (!confirmationText || typed === confirmationText)
   async function confirm() {
     if (lock.current || !allowed) return
     lock.current = true; setBusy(true); setError('')

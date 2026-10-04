@@ -263,12 +263,15 @@ create function api.confirm_payment(
  coupon_name text,coupon_code_masked text,balance_before_won bigint,balance_after_won bigint,debt_after_won bigint,cogs_won bigint,
  created_at timestamptz,tender_mode text,wallet_tender_won bigint,cash_tender_won bigint,cash_received_won bigint,change_given_won bigint
 ) language plpgsql security definer set search_path = '' as $$
-declare v_student_id uuid;
+declare v_session private.staff_sessions; v_intent private.payment_intents;
 begin
- perform private.assert_session(p_session_id,'pos.checkout');
- select student_id into v_student_id from private.payment_intents where id=p_intent_id;
- if v_student_id is not null then
-  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
+ v_session:=private.assert_session(p_session_id,'pos.checkout');
+ -- Card scanning can assign a student while confirmation waits. Read the
+ -- student only after owning the intent, in the same order as the legacy API.
+ select i.* into v_intent from private.payment_intents i where i.id=p_intent_id for update;
+ if not found or v_intent.staff_session_id<>v_session.id then raise exception 'NOT_FOUND'; end if;
+ if v_intent.student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_intent.student_id::text,40404));
  end if;
  return query select * from private.confirm_payment_legacy(p_session_id,p_intent_id,p_student_pin_proof,p_cash_received_won);
 end $$;
@@ -304,12 +307,15 @@ revoke all on function private.confirm_funding_legacy(uuid,uuid,text,text,text,b
 create function api.confirm_funding(
  p_session_id uuid,p_key uuid,p_student_pin_proof text,p_approver_code text,p_approver_proof text,p_verified boolean
 ) returns table(result jsonb) language plpgsql security definer set search_path = '' as $$
-declare v_student_id uuid;
+declare v_session private.staff_sessions; v_intent private.funding_intents;
 begin
- perform private.funding_session(p_session_id);
- select student_id into v_student_id from private.funding_intents where request_key=p_key;
- if v_student_id is not null then
-  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
+ v_session:=private.funding_session(p_session_id);
+ if p_key is null or p_verified is distinct from true then raise exception 'BAD_REQUEST'; end if;
+ perform pg_advisory_xact_lock(hashtextextended('funding:'||p_key::text,0));
+ select i.* into v_intent from private.funding_intents i where i.request_key=p_key for update;
+ if not found or v_intent.actor_id<>v_session.auth_user_id or v_intent.terminal_id<>v_session.terminal_id then raise exception 'NOT_FOUND'; end if;
+ if v_intent.student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_intent.student_id::text,40404));
  end if;
  return query select * from private.confirm_funding_legacy(p_session_id,p_key,p_student_pin_proof,p_approver_code,p_approver_proof,p_verified);
 end $$;
@@ -323,7 +329,7 @@ create function api.complete_student_enrollment(
  p_session_id uuid,p_student_id uuid,p_expected_code text,p_expected_name text,p_expected_year integer,
  p_expected_academic_year text,p_identity_verified boolean,p_card_fingerprint text,p_pin_proof text,p_idempotency_key uuid
 ) returns table(outcome text,student_id uuid,audit_reference text,completed_at timestamptz)
-language plpgsql security definer set search_path = '' as $
+language plpgsql security definer set search_path = '' as $$
 begin
  perform private.assert_session(p_session_id,'students.manage');
  if p_student_id is not null then
@@ -335,3 +341,28 @@ begin
 end $$;
 revoke all on function api.complete_student_enrollment(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) from public;
 grant execute on function api.complete_student_enrollment(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) to campuspay_runtime;
+
+-- Hold each product's lifecycle row lock through validation and lot insertion.
+-- SHARE conflicts with archive's UPDATE; sorted locks avoid reversed-cart cycles.
+-- An already posted receipt retains its historical replay even after archival.
+alter function api.receive_stock(uuid,text,text,date,bigint,bigint,bigint,text,jsonb,uuid) set schema private;
+alter function private.receive_stock(uuid,text,text,date,bigint,bigint,bigint,text,jsonb,uuid) rename to receive_stock_legacy;
+revoke all on function private.receive_stock_legacy(uuid,text,text,date,bigint,bigint,bigint,text,jsonb,uuid) from public,campuspay_runtime;
+create function api.receive_stock(
+ p_session_id uuid,p_supplier_name text,p_supplier_invoice text,p_purchase_date date,
+ p_shipping_won bigint,p_other_costs_won bigint,p_discount_won bigint,p_notes text,p_lines jsonb,p_idempotency_key uuid
+) returns table(receipt_id uuid,receipt_number text,total_quantity bigint,purchase_subtotal_won bigint,total_landed_cost_won bigint,created_at timestamptz)
+language plpgsql security definer set search_path = '' as $$
+begin
+ perform private.assert_session(p_session_id,'inventory.receive');
+ if not exists(select 1 from private.stock_receipts r where r.idempotency_key=p_idempotency_key) then
+  if jsonb_typeof(p_lines) is distinct from 'array' or jsonb_array_length(p_lines) not between 1 and 200 then raise exception 'BAD_REQUEST'; end if;
+  perform p.id from public.products p
+   where p.id in (select (entry->>'productId')::uuid from jsonb_array_elements(p_lines) entry)
+   order by p.id for share;
+ end if;
+ return query select * from private.receive_stock_legacy(p_session_id,p_supplier_name,p_supplier_invoice,p_purchase_date,
+  p_shipping_won,p_other_costs_won,p_discount_won,p_notes,p_lines,p_idempotency_key);
+end $$;
+revoke all on function api.receive_stock(uuid,text,text,date,bigint,bigint,bigint,text,jsonb,uuid) from public;
+grant execute on function api.receive_stock(uuid,text,text,date,bigint,bigint,bigint,text,jsonb,uuid) to campuspay_runtime;

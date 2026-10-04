@@ -6,7 +6,7 @@ import Link from 'next/link'
 import type { ManagedStudent } from '@/features/students/domain'
 import { formatWon } from '@/lib/format/currency'
 
-export function StudentDetail({ student,userId,onChanged }: { student: ManagedStudent;userId:string;onChanged():void }) {
+export function StudentDetail({ student,userId,onChanged }: { student: ManagedStudent;userId:string;onChanged():void|Promise<void> }) {
   const [managing,setManaging]=useState(false)
   return <section className="panel" aria-labelledby="student-detail-heading">
     <p className="eyebrow">Student account</p>

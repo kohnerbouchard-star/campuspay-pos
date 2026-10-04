@@ -6,6 +6,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import pg from 'pg'
 import { refundTestContext } from './refund-test-context.mjs'
 import { runManagementBrowser } from './management-browser.mjs'
+import { managementConcurrency } from './management-concurrency.mjs'
 let ctx,phase='initialize'
 const checks=[],dir='.validation/management'
 fs.mkdirSync(dir,{recursive:true})
@@ -168,6 +169,10 @@ try {
  assert.equal(fenced[0].body.data.outcome,fenced[1].body.data.outcome)
  assert.equal(await productCount(fenceInput.sku),fenced[0].body.data.outcome==='COMPLETED'?1:0)
  checks.push('Concurrent editors cannot overwrite a newer version; racing change/recovery converges on one committed result or one permanent closure')
+ phase='intent assignment and stock receipt lifecycle races'
+ const raceCard=`RACE${randomBytes(10).toString('hex')}`
+ const raceStudent=await request(admin,'/api/students',{studentCode:'RACE-'+randomUUID().slice(0,8),displayName:'Synthetic concurrent lifecycle',cardRead:raceCard,pin,confirmationPin:pin,idempotencyKey:randomUUID()},201)
+ checks.push(await managementConcurrency(ctx,{admin,inventory,accountant,studentId:raceStudent.student_id,card:raceCard,productId:id}))
  phase='browser management and confirmation'
  const browserResult=await runManagementBrowser(ctx,{admin,inventory,studentId,studentCode,card})
  checks.push(...browserResult.checks)

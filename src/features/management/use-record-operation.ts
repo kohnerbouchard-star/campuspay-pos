@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { apiFetch, ClientApiError } from '@/lib/api/client'
 import { RecordOutcomeSchema, RecordRecoverySchema, type RecordChange, type RecordKind } from './domain'
 
-export function useRecordOperation(kind:RecordKind,userId:string,onSaved:()=>void) {
+export function useRecordOperation(kind:RecordKind,userId:string,onSaved:()=>void|Promise<void>) {
   const storageKey=`campuspay:record-operation:${userId}:${kind}:v1`
   const lock=useRef(false)
   const [ready,setReady]=useState(false),[blocked,setBlocked]=useState(false),[pending,setPending]=useState<string|null>(null)
@@ -47,7 +47,7 @@ export function useRecordOperation(kind:RecordKind,userId:string,onSaved:()=>voi
       // The outcome is authoritative even if local cleanup or list refresh fails.
       setMessage(data.outcome==='COMPLETED'?`Change recorded. Reference: ${data.audit_reference}`:'Request closed without a change. A delayed submission cannot apply it now.')
       try{clear()}catch{setBlocked(true);setError('The result is confirmed but recovery storage could not be cleared. Do not submit another action in this browser.')}
-      try{onSaved()}catch{setError('The change is confirmed. Refresh the directory before another action.')}
+      try{await onSaved()}catch{setError('The change is confirmed. The directory refresh failed; refresh it before another action.')}
       return data.outcome==='COMPLETED'
     }catch(cause){
       if(input&&submitted&&cause instanceof ClientApiError&&cause.status<500){
