@@ -133,9 +133,21 @@ try {
  const runtime=new pg.Client({connectionString:ctx.runtimeUrl});await runtime.connect()
  try{await assert.rejects(()=>runtime.query('select * from private.record_management_operations'),e=>e.code==='42501');await assert.rejects(()=>runtime.query('select * from private.confirm_wallet_adjustment_legacy($1,$2,$3)',[null,null,null]),e=>e.code==='42501')}finally{await runtime.end()}
  await assert.rejects(()=>owner.query('update private.record_management_operations set result=result'),/Journal entries cannot/)
+ const lifecycleNames=['create_customer_session','confirm_payment','create_online_order','confirm_funding','complete_student_enrollment']
+ const lifecycleDefs=(await owner.query(`select p.proname,pg_get_functiondef(p.oid) def from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='api' and p.proname=any($1::text[]) order by p.proname`,[lifecycleNames])).rows
+ assert.equal(lifecycleDefs.length,lifecycleNames.length)
+ for(const row of lifecycleDefs)assert.match(row.def,/campuspay-student-lifecycle:/)
+ for(const signature of [
+   'private.create_customer_session_legacy(text,text,text,text)',
+   'private.confirm_payment_legacy(uuid,uuid,text,bigint)',
+   'private.create_online_order_legacy(uuid,jsonb,text,uuid,text,uuid,bigint)',
+   'private.confirm_funding_legacy(uuid,uuid,text,text,text,boolean)',
+   'private.complete_student_enrollment_legacy(uuid,uuid,text,text,integer,text,boolean,text,text,uuid)',
+ ])assert.equal((await owner.query('select has_function_privilege($1,$2,\'EXECUTE\') allowed',['campuspay_runtime',signature])).rows[0].allowed,false)
  const safe=JSON.stringify((await owner.query("select safe_payload from private.audit_events where event_type like 'RECORD_MANAGEMENT%' ")).rows)
  assert.ok(!safe.includes(staffPin)&&!safe.includes(pin)&&!safe.includes(card))
- checks.push('Runtime cannot bypass wrapper/read private journals; direct-RPC extra properties rejected; operation journal immutable and audit excludes credentials')
+ checks.push('Runtime cannot bypass private legacy writers; active-student money/login/enrollment APIs share the lifecycle lock; extra properties rejected; journal immutable and audit excludes credentials')
  phase='concurrent editors and recovery fencing'
  const raceRecord=await current('PRODUCT',id)
  const raceInput={...common(),kind:'PRODUCT',action:'UPDATE_PRODUCT',targetId:id,expectedUpdatedAt:raceRecord.updated_at,name:'First concurrent revision',category:'QA',reorderLevel:0}

@@ -86,7 +86,10 @@ try {
 
   stage = 'create and receive independent product stock through runtime API'
   await runtime()
-  const product = await one('select * from api.create_product($1,$2,$3,$4,$5,$6)', [session.session_id, sku, 'Isolated branch split-tender item', 'QA fixture', 12000, 0])
+  const productKey = randomUUID()
+  const product = await one(`select (result->>'target_id')::uuid as reference_id
+    from api.change_record($1,$2,'PRODUCT','CREATE_PRODUCT',null,$3::jsonb,null,$4)`,
+    [session.session_id, productKey, JSON.stringify({ sku, name: 'Isolated branch split-tender item', category: 'QA fixture', selling_price_won: 12000, reorder_level: 0 }), 'Synthetic branch product fixture'])
   productId = product.reference_id
   const stockKey = randomUUID()
   const stockArgs = [session.session_id, 'Isolated branch QA', `QA-${fixtureSuffix}`, '2026-09-07', 0, 0, 0, 'Synthetic stock; transaction will roll back', JSON.stringify([{ productId, quantity: 5, purchaseUnitCostWon: 1000 }]), stockKey]

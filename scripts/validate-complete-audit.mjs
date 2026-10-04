@@ -2,10 +2,20 @@
 import fs from 'node:fs'
 
 const report = JSON.parse(fs.readFileSync('.validation/dependency-audit.json', 'utf8'))
-const vulnerabilities = report.vulnerabilities ?? {}
+if (report?.error || !Object.hasOwn(report ?? {}, 'vulnerabilities') || typeof report.vulnerabilities !== 'object' || report.vulnerabilities === null
+  || typeof report.metadata !== 'object' || report.metadata === null || typeof report.metadata.vulnerabilities !== 'object' || report.metadata.vulnerabilities === null) {
+  console.error('Complete dependency audit report is incomplete or contains an audit-endpoint error.')
+  process.exit(1)
+}
+const vulnerabilities = report.vulnerabilities
 const names = Object.keys(vulnerabilities).sort()
 
 if (names.length === 0) {
+  const counts = report.metadata.vulnerabilities
+  if (Object.values(counts).some(value => typeof value !== 'number') || (counts.total ?? 0) !== 0) {
+    console.error('Complete dependency audit metadata is inconsistent with an empty vulnerability set.')
+    process.exit(1)
+  }
   console.log('Complete dependency audit passed with no known vulnerabilities.')
   process.exit(0)
 }

@@ -60,7 +60,7 @@ end $$;
 create function api.change_record(p_session_id uuid,p_key uuid,p_kind text,p_action text,p_target_id uuid,p_payload jsonb,p_admin_pin_proof text,p_notes text)
 returns table(result jsonb) language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions; actor public.staff_profiles; p public.products; st private.students;
- old private.record_management_operations; proof text; response jsonb; target uuid; balance bigint; desired boolean; allowed text[]; expected timestamptz; audit_details jsonb := '{}'::jsonb;
+ old private.record_management_operations; proof text; response jsonb; target uuid; balance bigint; desired boolean; allowed text[]; expected timestamptz; audit_details jsonb := '{}'::jsonb; v_constraint text;
 begin
  if p_kind is null or p_kind not in ('PRODUCT','STUDENT') or p_key is null or p_action is null
   or (p_kind='PRODUCT' and p_action not in ('CREATE_PRODUCT','UPDATE_PRODUCT','CHANGE_PRODUCT_PRICE','ARCHIVE_PRODUCT','RESTORE_PRODUCT'))
@@ -104,7 +104,13 @@ begin
    or jsonb_typeof(p_payload->'selling_price_won') is distinct from 'number' or p_payload->>'selling_price_won' !~ '^[0-9]+$'
    or (p_payload->>'selling_price_won')::numeric not between 0 and 10000000 then raise exception 'BAD_REQUEST'; end if;
   if exists(select 1 from public.products where lower(sku)=lower(btrim(p_payload->>'sku'))) then raise exception 'RECORD_CODE_EXISTS'; end if;
-  select reference_id into target from private.create_product_legacy(s.id,btrim(p_payload->>'sku'),btrim(p_payload->>'name'),btrim(p_payload->>'category'),(p_payload->>'selling_price_won')::bigint,(p_payload->>'reorder_level')::integer);
+  begin
+   select reference_id into target from private.create_product_legacy(s.id,btrim(p_payload->>'sku'),btrim(p_payload->>'name'),btrim(p_payload->>'category'),(p_payload->>'selling_price_won')::bigint,(p_payload->>'reorder_level')::integer);
+  exception when unique_violation then
+   get stacked diagnostics v_constraint = CONSTRAINT_NAME;
+   if v_constraint in ('products_sku_lower_key','products_sku_key') then raise exception 'RECORD_CODE_EXISTS'; end if;
+   raise;
+  end;
   audit_details:=jsonb_build_object('after',jsonb_build_object('sku',btrim(p_payload->>'sku'),'name',btrim(p_payload->>'name'),'category',btrim(p_payload->>'category'),'selling_price_won',(p_payload->>'selling_price_won')::bigint,'reorder_level',(p_payload->>'reorder_level')::integer,'active',true));
  elsif p_kind='PRODUCT' then
   select * into p from public.products where id=p_target_id for update;
@@ -223,3 +229,106 @@ begin
 end $$;
 revoke all on function api.confirm_wallet_adjustment(uuid,uuid,text) from public;
 grant execute on function api.confirm_wallet_adjustment(uuid,uuid,text) to campuspay_runtime;
+
+
+-- All active-student writers acquire the same lifecycle lock before their
+-- historical row-lock order. This serializes deactivation with login, checkout,
+-- online ordering, funding and roster completion without rewriting old migrations.
+alter function api.create_customer_session(text,text,text,text) set schema private;
+alter function private.create_customer_session(text,text,text,text) rename to create_customer_session_legacy;
+revoke all on function private.create_customer_session_legacy(text,text,text,text) from public,campuspay_runtime;
+create function api.create_customer_session(
+ p_card_fingerprint text,p_pin_proof text,p_session_token_hash text,p_ip_fingerprint text
+) returns table(session_id uuid,student_id uuid,display_name text,balance_won bigint,debt_won bigint,expires_at timestamptz)
+language plpgsql security definer set search_path = '' as $$
+declare v_student_id uuid;
+begin
+ select s.id into v_student_id from private.student_cards c join private.students s on s.id=c.student_id
+  where c.card_fingerprint=p_card_fingerprint and c.active and s.active;
+ if v_student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
+ end if;
+ return query select * from private.create_customer_session_legacy(p_card_fingerprint,p_pin_proof,p_session_token_hash,p_ip_fingerprint);
+end $$;
+revoke all on function api.create_customer_session(text,text,text,text) from public;
+grant execute on function api.create_customer_session(text,text,text,text) to campuspay_runtime;
+
+alter function api.confirm_payment(uuid,uuid,text,bigint) set schema private;
+alter function private.confirm_payment(uuid,uuid,text,bigint) rename to confirm_payment_legacy;
+revoke all on function private.confirm_payment_legacy(uuid,uuid,text,bigint) from public,campuspay_runtime;
+create function api.confirm_payment(
+ p_session_id uuid,p_intent_id uuid,p_student_pin_proof text,p_cash_received_won bigint default null
+) returns table(
+ approved boolean,error_code text,sale_id uuid,receipt_number text,subtotal_won bigint,discount_won bigint,total_won bigint,
+ coupon_name text,coupon_code_masked text,balance_before_won bigint,balance_after_won bigint,debt_after_won bigint,cogs_won bigint,
+ created_at timestamptz,tender_mode text,wallet_tender_won bigint,cash_tender_won bigint,cash_received_won bigint,change_given_won bigint
+) language plpgsql security definer set search_path = '' as $$
+declare v_student_id uuid;
+begin
+ select student_id into v_student_id from private.payment_intents where id=p_intent_id;
+ if v_student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
+ end if;
+ return query select * from private.confirm_payment_legacy(p_session_id,p_intent_id,p_student_pin_proof,p_cash_received_won);
+end $$;
+revoke all on function api.confirm_payment(uuid,uuid,text,bigint) from public;
+grant execute on function api.confirm_payment(uuid,uuid,text,bigint) to campuspay_runtime;
+
+alter function api.create_online_order(uuid,jsonb,text,uuid,text,uuid,bigint) set schema private;
+alter function private.create_online_order(uuid,jsonb,text,uuid,text,uuid,bigint) rename to create_online_order_legacy;
+revoke all on function private.create_online_order_legacy(uuid,jsonb,text,uuid,text,uuid,bigint) from public,campuspay_runtime;
+create function api.create_online_order(
+ p_customer_session_id uuid,p_items jsonb,p_coupon_code_fingerprint text,p_delivery_location_id uuid,
+ p_delivery_note text,p_idempotency_key uuid,p_expected_total_won bigint default null
+) returns table(
+ order_id uuid,order_number text,status text,subtotal_won bigint,discount_won bigint,total_won bigint,
+ balance_before_won bigint,balance_after_won bigint,debt_after_won bigint,coupon_name text,coupon_code_masked text,
+ delivery_building text,delivery_floor integer,delivery_room text,created_at timestamptz
+) language plpgsql security definer set search_path = '' as $$
+declare v_student_id uuid;
+begin
+ select student_id into v_student_id from private.customer_sessions where id=p_customer_session_id;
+ if v_student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
+ end if;
+ return query select * from private.create_online_order_legacy(
+  p_customer_session_id,p_items,p_coupon_code_fingerprint,p_delivery_location_id,p_delivery_note,p_idempotency_key,p_expected_total_won);
+end $$;
+revoke all on function api.create_online_order(uuid,jsonb,text,uuid,text,uuid,bigint) from public;
+grant execute on function api.create_online_order(uuid,jsonb,text,uuid,text,uuid,bigint) to campuspay_runtime;
+
+alter function api.confirm_funding(uuid,uuid,text,text,text,boolean) set schema private;
+alter function private.confirm_funding(uuid,uuid,text,text,text,boolean) rename to confirm_funding_legacy;
+revoke all on function private.confirm_funding_legacy(uuid,uuid,text,text,text,boolean) from public,campuspay_runtime;
+create function api.confirm_funding(
+ p_session_id uuid,p_key uuid,p_student_pin_proof text,p_approver_code text,p_approver_proof text,p_verified boolean
+) returns table(result jsonb) language plpgsql security definer set search_path = '' as $$
+declare v_student_id uuid;
+begin
+ select student_id into v_student_id from private.funding_intents where request_key=p_key;
+ if v_student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
+ end if;
+ return query select * from private.confirm_funding_legacy(p_session_id,p_key,p_student_pin_proof,p_approver_code,p_approver_proof,p_verified);
+end $$;
+revoke all on function api.confirm_funding(uuid,uuid,text,text,text,boolean) from public;
+grant execute on function api.confirm_funding(uuid,uuid,text,text,text,boolean) to campuspay_runtime;
+
+alter function api.complete_student_enrollment(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) set schema private;
+alter function private.complete_student_enrollment(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) rename to complete_student_enrollment_legacy;
+revoke all on function private.complete_student_enrollment_legacy(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) from public,campuspay_runtime;
+create function api.complete_student_enrollment(
+ p_session_id uuid,p_student_id uuid,p_expected_code text,p_expected_name text,p_expected_year integer,
+ p_expected_academic_year text,p_identity_verified boolean,p_card_fingerprint text,p_pin_proof text,p_idempotency_key uuid
+) returns table(outcome text,student_id uuid,audit_reference text,completed_at timestamptz)
+language plpgsql security definer set search_path = '' as $$
+begin
+ if p_student_id is not null then
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||p_student_id::text,40404));
+ end if;
+ return query select * from private.complete_student_enrollment_legacy(
+  p_session_id,p_student_id,p_expected_code,p_expected_name,p_expected_year,p_expected_academic_year,p_identity_verified,
+  p_card_fingerprint,p_pin_proof,p_idempotency_key);
+end $$;
+revoke all on function api.complete_student_enrollment(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) from public;
+grant execute on function api.complete_student_enrollment(uuid,uuid,text,text,integer,text,boolean,text,text,uuid) to campuspay_runtime;
