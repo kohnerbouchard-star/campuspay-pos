@@ -138,6 +138,15 @@ try {
    where n.nspname='api' and p.proname=any($1::text[]) order by p.proname`,[lifecycleNames])).rows
  assert.equal(lifecycleDefs.length,lifecycleNames.length)
  for(const row of lifecycleDefs)assert.match(row.def,/campuspay-student-lifecycle:/)
+ const staffFirst=new Map([
+   ['confirm_payment','private.assert_session'],
+   ['confirm_funding','private.funding_session'],
+   ['complete_student_enrollment','private.assert_session'],
+ ])
+ for(const row of lifecycleDefs){
+   const marker=staffFirst.get(row.proname)
+   if(marker)assert.ok(row.def.indexOf(marker)>=0&&row.def.indexOf(marker)<row.def.indexOf('campuspay-student-lifecycle:'),`${row.proname} must lock/authenticate the staff session before the student lifecycle lock`)
+ }
  for(const signature of [
    'private.create_customer_session_legacy(text,text,text,text)',
    'private.confirm_payment_legacy(uuid,uuid,text,bigint)',
