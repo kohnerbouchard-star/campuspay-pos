@@ -40,7 +40,7 @@ export async function managementConcurrency(ctx,{admin,inventory,accountant,stud
  }
  try{
   const receipt={supplierName:'Synthetic race supplier',supplierInvoice:randomUUID(),purchaseDate:'2026-10-04',shippingWon:0,otherCostsWon:0,discountWon:0,notes:'Concurrent lifecycle acceptance',lines:[{productId,quantity:2,purchaseUnitCostWon:100}],idempotencyKey:randomUUID()}
-  await ctx.request(inventory,'/api/inventory/receipts',receipt)
+  await ctx.request(inventory,'/api/inventory/receipts',receipt,201)
   const payment=await ctx.request(admin,'/api/pos/intents',{items:[{productId,quantity:1}],tenderMode:'WALLET',idempotencyKey:randomUUID()},201)
   const studentCard=(await ctx.owner.query('select id from private.student_cards where student_id=$1 and active',[studentId])).rows[0].id
   const paid=await intentRace('payment_intents','id',payment.intent_id,{
