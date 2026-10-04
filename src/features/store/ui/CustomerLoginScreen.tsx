@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ClientApiError } from '@/lib/api/client'
 import { loginCustomer } from '@/features/store/client'
 import { safeCustomerDestination } from '@/features/store/navigation'
+import { Icon } from '@/components/ui/Icon'
 import { StoreBrand } from './StoreShell'
 import styles from './store.module.css'
 
@@ -35,10 +36,27 @@ export function CustomerLoginScreen({ destination, expired }: { destination: str
   }
   return <main className={styles.loginPage}>
     <div className={styles.loginWrap}>
-      <StoreBrand />
+      <section className={styles.loginStory} aria-labelledby="store-welcome-title">
+        <StoreBrand />
+        <div className={styles.loginStoryCopy}>
+          <p className={styles.eyebrow}>Your school. Your store.</p>
+          <h2 id="store-welcome-title">A little joy.<br /> A better school day.</h2>
+          <p>Your campus favourites are a few taps away. Shop with MICA Money and follow your delivery to your room.</p>
+        </div>
+        <div className={styles.loginArtwork} aria-hidden="true">
+          <span className={styles.artworkOrbit} />
+          <span className={styles.artworkBag}><Icon name="bag" size={92} /></span>
+          <span className={styles.artworkCup}><Icon name="cup" size={40} /></span>
+          <span className={styles.artworkSnack}><Icon name="snack" size={37} /></span>
+          <span className={styles.artworkSpark}><Icon name="sparkles" size={27} /></span>
+        </div>
+        <div className={styles.loginSteps}><span><Icon name="bag" size={18} />Choose your favourites</span><span><Icon name="truck" size={20} />Room delivery</span></div>
+      </section>
+      <div className={styles.loginFormPanel}>
       <section className={styles.loginCard} aria-labelledby="customer-login-title">
-        <p className={styles.eyebrow}>Your school. Your store.</p>
-        <h1 id="customer-login-title">Sign in to MICA Money</h1>
+        <span className={styles.loginCardIcon}><Icon name="card" size={24} /></span>
+        <p className={styles.eyebrow}>Welcome back</p>
+        <h1 id="customer-login-title">Sign in to MICA Store</h1>
         <p className={styles.muted}>Use your MICA Money Card information and PIN to access the online student store.</p>
         {expired && !error && <p className={styles.notice} role="status">Your session has ended. Sign in again to continue where you left off.</p>}
         <form className={styles.form} onSubmit={(event) => void signIn(event)} aria-busy={busy}>
@@ -50,10 +68,11 @@ export function CustomerLoginScreen({ destination, expired }: { destination: str
         </form>
       </section>
       <section className={styles.enrollmentInfo}>
-        <h2>Don’t have a MICA Money Card?</h2>
+        <h2><Icon name="building" size={19} />Don’t have a MICA Money Card?</h2>
         <p>Visit <strong>E202</strong> to sign up for a new MICA Money Card and activate access to the online store.</p>
         <details><summary>How to get a MICA Money Card</summary><h3>New to MICA Money?</h3><p>Visit E202 to register for a new MICA Money Card. Once your card has been created and activated, return here and sign in to use the online student store.</p></details>
       </section>
+      </div>
     </div>
   </main>
 }

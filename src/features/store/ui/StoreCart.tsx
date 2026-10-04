@@ -5,6 +5,8 @@ import { useState, type FormEvent } from 'react'
 import type { CartLine, CatalogProduct } from '@/features/pos/domain'
 import type { CustomerProfile, DeliveryLocation, OnlineOrderQuote } from '@/features/store/domain'
 import { formatWon } from '@/lib/format/currency'
+import { Icon } from '@/components/ui/Icon'
+import { ProductCategoryIcon, categoryTone } from '@/components/ui/ProductCategoryIcon'
 import { DeliverySelector } from './DeliverySelector'
 import styles from './store.module.css'
 
@@ -33,12 +35,12 @@ export function StoreCart({ lines, products, locations, session, busy, review, u
     else await onReview({ items: lines, couponCode: coupon.trim() || null, deliveryLocationId: locationId, deliveryNote: note.trim() || null })
   }
   return <aside id="cart" className={styles.cart} aria-labelledby="cart-title">
-    <div className={styles.sectionTitle}><h2 id="cart-title">{review ? 'Review your order' : 'Your cart'}</h2><span>{lines.reduce((total, line) => total + line.quantity, 0)} items</span></div>
-    {lines.length === 0 ? <div className={styles.empty}><strong>A little something for your day</strong><p>Choose an item from the store to start your order.</p></div> : <>
+    <div className={styles.sectionTitle}><h2 id="cart-title"><Icon name={review ? 'receipt' : 'bag'} size={21} />{review ? 'Review your order' : 'Your cart'}</h2><span className={styles.cartCount}>{lines.reduce((total, line) => total + line.quantity, 0)} items</span></div>
+    {lines.length === 0 ? <div className={styles.empty}><span className={styles.emptyIcon}><Icon name="bag" size={32} /></span><strong>A little something for your day</strong><p>Choose an item from the store to start your order.</p></div> : <>
       <div className={styles.cartLines}>{lines.map((line) => {
         const product = byId.get(line.productId)
         if (!product) return null
-        return <div className={styles.cartLine} key={line.productId}><div><strong>{product.name}</strong><small>{formatWon(product.selling_price_won)} each</small></div><div className={styles.cartLineEnd}><strong>{formatWon(product.selling_price_won * line.quantity)}</strong><div className={styles.quantity}><button disabled={locked} aria-label={`Remove one ${product.name}`} onClick={() => onQuantity(product, -1)}>−</button><span aria-label={`${line.quantity} ${product.name}`}>{line.quantity}</span><button disabled={locked || line.quantity >= Math.min(product.stock_on_hand, 99)} aria-label={`Add one ${product.name}`} onClick={() => onQuantity(product, 1)}>+</button></div></div></div>
+        return <div className={styles.cartLine} key={line.productId}><div className={styles.cartProduct}><span className={styles.cartProductIcon} data-category-tone={categoryTone(product.category)}><ProductCategoryIcon category={product.category} size={22} /></span><div><strong>{product.name}</strong><small>{formatWon(product.selling_price_won)} each</small></div></div><div className={styles.cartLineEnd}><strong>{formatWon(product.selling_price_won * line.quantity)}</strong><div className={styles.quantity}><button disabled={locked} aria-label={`Remove one ${product.name}`} onClick={() => onQuantity(product, -1)}><Icon name="minus" size={15} /></button><span aria-label={`${line.quantity} ${product.name}`}>{line.quantity}</span><button disabled={locked || line.quantity >= Math.min(product.stock_on_hand, 99)} aria-label={`Add one ${product.name}`} onClick={() => onQuantity(product, 1)}><Icon name="plus" size={15} /></button></div></div></div>
       })}</div>
       <form className={styles.checkoutForm} onSubmit={(event) => void submit(event)} aria-busy={busy}>
         {review ? <div className={styles.deliveryReview}><strong>{selected?.building} · Floor {selected?.floor} · Room {selected?.room}</strong><span>Recipient: {session.display_name}</span>{review.input.deliveryNote && <p>{review.input.deliveryNote}</p>}</div> : <>
@@ -48,7 +50,7 @@ export function StoreCart({ lines, products, locations, session, busy, review, u
           <label className={styles.field} htmlFor="store-coupon">Coupon code <span className={styles.optional}>(optional)</span><input id="store-coupon" maxLength={40} value={coupon} disabled={busy} autoCapitalize="characters" onChange={(event) => setCoupon(event.target.value)} placeholder="Enter a code" /></label>
         </>}
         <dl className={styles.totals}><div><dt>Subtotal</dt><dd>{formatWon(quote?.subtotal_won ?? subtotal)}</dd></div><div><dt>Discount{quote?.coupon_name ? ` · ${quote.coupon_name}` : ''}</dt><dd>{quote ? (quote.discount_won ? `−${formatWon(quote.discount_won)}` : formatWon(0)) : coupon.trim() ? 'Check at review' : formatWon(0)}</dd></div><div className={styles.finalTotal}><dt>{quote ? 'Order total' : 'Estimated total'}</dt><dd>{formatWon(quote?.total_won ?? subtotal)}</dd></div></dl>
-        <div className={styles.walletSummary}><strong>MICA Money wallet</strong><dl className={styles.totals}><div><dt>Wallet balance</dt><dd>{formatWon(quote?.balance_before_won ?? session.balance_won)}</dd></div><div><dt>{quote ? 'After purchase' : 'Estimated after purchase'}</dt><dd>{formatWon(quote?.balance_after_won ?? (session.balance_won - subtotal))}</dd></div></dl></div>
+        <div className={styles.walletSummary}><strong><Icon name="wallet" size={18} />MICA Money wallet</strong><dl className={styles.totals}><div><dt>Wallet balance</dt><dd>{formatWon(quote?.balance_before_won ?? session.balance_won)}</dd></div><div><dt>{quote ? 'After purchase' : 'Estimated after purchase'}</dt><dd>{formatWon(quote?.balance_after_won ?? (session.balance_won - subtotal))}</dd></div></dl></div>
         {!quote && session.balance_won - subtotal < -15000 && <p className={styles.notice} role="status">This cart may exceed your MICA Money spending limit. Review the order to confirm.</p>}
         {uncertain && <p className="uncertain-result" role="alert"><strong>Order result unknown.</strong> Do not start another transaction until this result is recovered. Retry this same order, or <Link href="/store/orders">check My orders</Link>.</p>}
         <button className={styles.primary} type="submit" disabled={busy || !(review?.input.deliveryLocationId ?? locationId)}>{busy ? (review ? 'Placing your order…' : 'Checking your order…') : review ? `${uncertain ? 'Retry order' : 'Place order'} · ${formatWon(review.quote.total_won)}` : 'Review order'}</button>

@@ -15,7 +15,7 @@ export async function runStoreRefreshChecks({ request, jar, login, owner, base, 
     assert.ok(response.headers.get('location').includes('/store/login?next='))
   }
   const loginPage = await (await fetch(base + '/store/login')).text()
-  assert.match(loginPage, /Sign in to MICA Money/)
+  assert.match(loginPage, /Sign in to MICA Store/)
   assert.match(loginPage, /Visit.*E202/)
   assert.match(loginPage, /How to get a MICA Money Card/)
   assert.doesNotMatch(loginPage, /Bottled Water|Create Account|Register Online/)

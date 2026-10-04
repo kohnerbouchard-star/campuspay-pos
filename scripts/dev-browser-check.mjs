@@ -25,7 +25,7 @@ try {
   fs.mkdirSync('.validation/visual', { recursive: true })
   await page.screenshot({ path: '.validation/visual/development-login-icon-1440.png', fullPage: true })
   await page.goto(`${base}/store/login`); await page.waitForLoadState('networkidle')
-  assert.equal(await page.getByRole('heading', { name: 'Sign in to MICA Money', exact: true }).count(), 1)
+  assert.equal(await page.getByRole('heading', { name: 'Sign in to MICA Store', exact: true }).count(), 1)
   assert.deepEqual(errors, []); assert.deepEqual(failures, [])
   fs.writeFileSync('.validation/dev-browser-results.json', JSON.stringify({ mode: 'development', pageLoads: true, icon, faviconStatus: 200, errors, failures }, null, 2))
   console.log('PASS: development pages render, application icon and favicon probe return 200, no browser errors; React DevTools notice allowed')

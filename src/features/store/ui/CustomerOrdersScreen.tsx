@@ -7,6 +7,7 @@ import { fetchCustomerOrders } from '@/features/store/client'
 import type { CustomerOrder, CustomerProfile } from '@/features/store/domain'
 import { customerLoginPath } from '@/features/store/navigation'
 import { isCustomerSessionError, storeErrorMessage } from '@/features/store/presentation'
+import { Icon } from '@/components/ui/Icon'
 import { StoreShell } from './StoreShell'
 import { CustomerOrderCard } from './CustomerOrderCard'
 import styles from './store.module.css'
@@ -30,10 +31,10 @@ export function CustomerOrdersScreen({ session }: { session: CustomerProfile }) 
     return () => { active = false }
   }, [router, refresh])
   return <StoreShell session={session}>
-    <div className={styles.headingRow}><div className={styles.heading}><p className={styles.eyebrow}>MICA Money</p><h1>My orders</h1><p className={styles.muted}>Follow your delivery and see your recent purchases.</p></div><button className={styles.secondary} disabled={loading} onClick={() => { setLoading(true); setRefresh((value) => value + 1) }}>{loading ? 'Refreshing…' : 'Refresh orders'}</button></div>
+    <div className={styles.headingRow}><div className={styles.heading}><p className={styles.eyebrow}><Icon name="receipt" size={16} />MICA Store</p><h1>My orders</h1><p className={styles.muted}>Follow your delivery and see your recent purchases.</p></div><button className={styles.secondary} disabled={loading} onClick={() => { setLoading(true); setRefresh((value) => value + 1) }}>{loading ? 'Refreshing…' : 'Refresh orders'}</button></div>
     {error && <p className={styles.error} role="alert">{error}</p>}
     {loading && <p className={styles.notice} role="status">Checking your orders…</p>}
-    {!loading && !error && orders.length === 0 && <section className={styles.empty}><h2>Your first order starts here</h2><p>Shop the student store and we’ll deliver to your room.</p><Link className={styles.primary} href="/store">Explore the store</Link></section>}
+    {!loading && !error && orders.length === 0 && <section className={styles.empty}><span className={styles.emptyIcon}><Icon name="receipt" size={32} /></span><h2>Your first order starts here</h2><p>Shop the student store and we’ll deliver to your room.</p><Link className={styles.primary} href="/store">Explore the store</Link></section>}
     <div className={styles.orderList}>{orders.map((order) => <CustomerOrderCard key={order.order_id} order={order} recipient={session.display_name} />)}</div>
   </StoreShell>
 }

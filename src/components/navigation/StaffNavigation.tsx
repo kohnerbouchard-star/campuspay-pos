@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { StaffRole } from '@/features/auth/domain'
 import type { WorkspaceLink } from '@/features/auth/navigation'
 import { Dialog } from '@/components/ui/Dialog'
+import { Icon } from '@/components/ui/Icon'
 import { LogoutButton } from '@/components/LogoutButton'
 import { WorkspaceLinks } from './WorkspaceLinks'
 import styles from './navigation.module.css'
@@ -14,9 +15,16 @@ const ROLE_LABELS: Record<StaffRole, string> = {
   cashier: 'Cashier', inventory_admin: 'Inventory administrator', accountant: 'Accountant', super_admin: 'Super Admin',
 }
 function Brand() {
-  return <Link href="/" className={styles.brand} aria-label="MICA Money · return to your starting workspace">
-    <span aria-hidden="true">M</span><div><strong>MICA Money</strong><small>Staff operations</small></div>
+  return <Link href="/" className={styles.brand} aria-label="CampusPay · return to your starting workspace">
+    <span aria-hidden="true"><Icon name="card" size={23} /></span><div><strong>CampusPay</strong><small>MICA staff operations</small></div>
   </Link>
+}
+function AccountIdentity({ displayName, role }: { displayName: string; role: StaffRole }) {
+  const initials = displayName.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toUpperCase()
+  return <div className={styles.accountIdentity}>
+    <span className={styles.avatar} aria-hidden="true">{initials || 'S'}</span>
+    <p><small>Signed in</small><strong>{displayName}</strong><small>{ROLE_LABELS[role]}</small></p>
+  </div>
 }
 function MobileMenu({ links, pathname, onClose, displayName, role }: {
   links: readonly WorkspaceLink[]; pathname: string; onClose(): void; displayName: string; role: StaffRole
@@ -29,7 +37,7 @@ function MobileMenu({ links, pathname, onClose, displayName, role }: {
   return <Dialog title="Workspaces" className={styles.drawer} onClose={onClose}>
     <p className={styles.menuHint}>Choose a task. Only workspaces available to your account are shown.</p>
     <WorkspaceLinks links={links} pathname={pathname} onNavigate={onClose} detailed />
-    <div className={styles.menuAccount}><p><strong>{displayName}</strong><small>{ROLE_LABELS[role]}</small></p><LogoutButton /></div>
+    <div className={styles.menuAccount}><AccountIdentity displayName={displayName} role={role} /><LogoutButton /></div>
   </Dialog>
 }
 
@@ -53,12 +61,12 @@ export function StaffNavigation({ links, displayName, role }: {
     <aside ref={rail} className={styles.rail} aria-label="Staff navigation">
       <Brand />
       <WorkspaceLinks links={links} pathname={pathname} />
-      <div className={styles.account}><p><small>Signed in</small><strong>{displayName}</strong><small>{ROLE_LABELS[role]}</small></p><LogoutButton /></div>
+      <div className={styles.account}><AccountIdentity displayName={displayName} role={role} /><LogoutButton /></div>
     </aside>
     <header className={styles.mobileHeader}>
       <Brand />
       <button type="button" className={styles.menuButton} aria-haspopup="dialog" aria-expanded={open}
-        onClick={() => setOpen(true)}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" /></svg>Menu</button>
+        onClick={() => setOpen(true)}><Icon name="menu" />Menu</button>
     </header>
     {open && <MobileMenu links={links} pathname={pathname} onClose={() => setOpen(false)} displayName={displayName} role={role} />}
   </>
