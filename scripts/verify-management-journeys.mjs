@@ -43,6 +43,8 @@ try {
  await assert.rejects(()=>owner.query('select * from api.record_directory($1,$2,$3,$4,$5,$6)',[cashierSession.session_id,'PRODUCT','','ALL',0,null]),/FORBIDDEN/)
  checks.push('Anonymous, wrong-role, wrong-surface, forged payload, invalid page and cross-origin requests denied; DB authorization independently enforced')
  phase='create, exact replay and recovery ownership'
+ await request(inventory,'/api/inventory/products',{sku:'LEGACY',name:'Legacy bypass',category:'QA',sellingPriceWon:100,reorderLevel:0},410)
+ await request(inventory,`/api/inventory/products/${randomUUID()}/price`,{newPriceWon:100,reason:'Legacy bypass attempt'},410)
  const before=await snapshot(),created=await post(inventory,input),id=created.target_id
  assert.equal(created.outcome,'COMPLETED');assert.equal(await stock(id),0)
  assert.deepEqual(await post(inventory,input),created);assert.equal(await productCount(input.sku),1)
@@ -56,10 +58,20 @@ try {
  const closed=create();assert.equal((await recovery(inventory,'PRODUCT',closed.requestKey)).outcome,'CLOSED')
  assert.equal((await post(inventory,closed)).outcome,'CLOSED');assert.equal(await productCount(closed.sku),0)
  await post(inventory,create({sku:input.sku}),409)
- checks.push('Creation is zero-stock and exactly-once; changed replay and wrong operator/register rejected; re-login recovery and permanent closure fence verified')
+ const folded=`CASE-${randomUUID().slice(0,8)}`
+ const foldedPair=await Promise.all([
+   ctx.raw(inventory,'/api/management',create({sku:folded})),
+   ctx.raw(otherTerminal,'/api/management',create({sku:folded.toLowerCase()})),
+ ])
+ assert.deepEqual(foldedPair.map(r=>r.status).sort(),[200,409])
+ assert.equal(Number((await owner.query('select count(*) n from public.products where lower(sku)=lower($1)',[folded])).rows[0].n),1)
+ checks.push('Creation is zero-stock and exactly-once; legacy product writes are retired; case-insensitive SKU races yield one identity; re-login recovery and closure fencing verified')
  phase='metadata, price and availability'
  const update=await edit('PRODUCT',id,'UPDATE_PRODUCT',{name:'Renamed fixture',category:'QA revised',reorderLevel:6})
  await post(inventory,update);await post(inventory,{...update,requestKey:randomUUID()},409)
+ const metadataAudit=(await owner.query("select safe_payload from private.audit_events where event_type='RECORD_MANAGEMENT_CHANGED' and subject_id=$1 and safe_payload->>'action'='UPDATE_PRODUCT' order by created_at desc limit 1",[id])).rows[0]?.safe_payload
+ assert.deepEqual(metadataAudit.before,{name:'Synthetic managed product',category:'QA',reorder_level:0})
+ assert.deepEqual(metadataAudit.after,{name:'Renamed fixture',category:'QA revised',reorder_level:6})
  const price=await edit('PRODUCT',id,'CHANGE_PRODUCT_PRICE',{sellingPriceWon:1500})
  await post(inventory,price);assert.equal((await current('PRODUCT',id)).selling_price_won,1500)
  assert.equal(Number((await owner.query('select count(*) n from private.product_price_history where product_id=$1',[id])).rows[0].n),1)

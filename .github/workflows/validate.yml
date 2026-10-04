@@ -85,15 +85,9 @@ jobs:
           PG_DUMP_BIN: ./scripts/ci/pg-dump
           PG_RESTORE_BIN: ./scripts/ci/pg-restore
         run: node scripts/verify-backup-restore.mjs
-      - name: Enforce the complete dependency audit result
+      - name: Enforce complete dependency audit policy
         if: always()
-        env:
-          COMPLETE_AUDIT_OUTCOME: ${{ steps.complete_dependency_audit.outcome }}
-        run: |
-          if [ "$COMPLETE_AUDIT_OUTCOME" != "success" ]; then
-            echo "Complete dependency audit did not pass. Release is blocked; functional diagnostics do not override this result."
-            exit 1
-          fi
+        run: node scripts/validate-complete-audit.mjs
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

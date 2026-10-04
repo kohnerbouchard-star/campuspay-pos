@@ -35,5 +35,13 @@ describe('Staff role review language',()=>{
  })
  it('marks a role change as sensitive even while the account remains active',()=>expect(administrationReview({...change,active:true,role:'super_admin'},previous).destructive).toBe(true))
  it('separates staff and student identities at creation',()=>expect(administrationReview({action:'CREATE_STAFF',requestKey:key,adminPin:'12345678',employeeCode:'NEW-STAFF',displayName:'New person',role:'accountant',newPin:'1234',confirmationPin:'1234',notes:'New staff verified',verified:true}).description).toContain('not a student wallet'))
+ it('requires the terminal identifier for both deactivation and reactivation',()=>{
+  const terminal={terminal_id:target,label:'QA terminal',active:false,has_open_shift:false} as any
+  const reactivate={action:'UPDATE_TERMINAL' as const,requestKey:key,adminPin:'12345678',targetId:target,label:'QA terminal',active:true,expectedActive:false,expectedLabel:'QA terminal',notes:'Verified terminal status change',verified:true as const}
+  const review=administrationReview(reactivate,terminal)
+  expect(review.destructive).toBe(true)
+  expect(review.token).toBe(target)
+  expect(review.label).toBe('Reactivate register')
+ })
  it('covers all four real application roles without adding a new privilege',()=>expect(Object.keys(ROLE_DESCRIPTIONS).sort()).toEqual(['accountant','cashier','inventory_admin','super_admin']))
 })

@@ -13,6 +13,21 @@ create trigger immutable_journal before update or delete on private.record_manag
  for each row execute function private.reject_journal_mutation();
 revoke all on private.record_management_operations from public,campuspay_runtime;
 
+do $
+begin
+ if exists(select lower(sku) from public.products group by lower(sku) having count(*)>1) then
+  raise exception 'SCHEMA_DRIFT: duplicate case-insensitive product SKU';
+ end if;
+end $;
+create unique index products_sku_lower_key on public.products(lower(sku));
+
+alter function api.create_product(uuid,text,text,text,bigint,integer) set schema private;
+alter function private.create_product(uuid,text,text,text,bigint,integer) rename to create_product_legacy;
+revoke all on function private.create_product_legacy(uuid,text,text,text,bigint,integer) from public,campuspay_runtime;
+alter function api.change_product_price(uuid,uuid,bigint,text) set schema private;
+alter function private.change_product_price(uuid,uuid,bigint,text) rename to change_product_price_legacy;
+revoke all on function private.change_product_price_legacy(uuid,uuid,bigint,text) from public,campuspay_runtime;
+
 create function api.record_directory(p_session_id uuid,p_kind text,p_query text,p_status text,p_offset integer,p_target_id uuid)
 returns table(result jsonb) language plpgsql security definer set search_path = '' as $$
 begin
@@ -51,7 +66,7 @@ end $$;
 create function api.change_record(p_session_id uuid,p_key uuid,p_kind text,p_action text,p_target_id uuid,p_payload jsonb,p_admin_pin_proof text,p_notes text)
 returns table(result jsonb) language plpgsql security definer set search_path = '' as $$
 declare s private.staff_sessions; actor public.staff_profiles; p public.products; st private.students;
- old private.record_management_operations; proof text; response jsonb; target uuid; balance bigint; desired boolean; allowed text[]; expected timestamptz;
+ old private.record_management_operations; proof text; response jsonb; target uuid; balance bigint; desired boolean; allowed text[]; expected timestamptz; audit_details jsonb := '{}'::jsonb;
 begin
  if p_kind is null or p_kind not in ('PRODUCT','STUDENT') or p_key is null or p_action is null
   or (p_kind='PRODUCT' and p_action not in ('CREATE_PRODUCT','UPDATE_PRODUCT','CHANGE_PRODUCT_PRICE','ARCHIVE_PRODUCT','RESTORE_PRODUCT'))
@@ -95,7 +110,8 @@ begin
    or jsonb_typeof(p_payload->'selling_price_won') is distinct from 'number' or p_payload->>'selling_price_won' !~ '^[0-9]+$'
    or (p_payload->>'selling_price_won')::numeric not between 0 and 10000000 then raise exception 'BAD_REQUEST'; end if;
   if exists(select 1 from public.products where lower(sku)=lower(btrim(p_payload->>'sku'))) then raise exception 'RECORD_CODE_EXISTS'; end if;
-  select reference_id into target from api.create_product(s.id,btrim(p_payload->>'sku'),btrim(p_payload->>'name'),btrim(p_payload->>'category'),(p_payload->>'selling_price_won')::bigint,(p_payload->>'reorder_level')::integer);
+  select reference_id into target from private.create_product_legacy(s.id,btrim(p_payload->>'sku'),btrim(p_payload->>'name'),btrim(p_payload->>'category'),(p_payload->>'selling_price_won')::bigint,(p_payload->>'reorder_level')::integer);
+  audit_details:=jsonb_build_object('after',jsonb_build_object('sku',btrim(p_payload->>'sku'),'name',btrim(p_payload->>'name'),'category',btrim(p_payload->>'category'),'selling_price_won',(p_payload->>'selling_price_won')::bigint,'reorder_level',(p_payload->>'reorder_level')::integer,'active',true));
  elsif p_kind='PRODUCT' then
   select * into p from public.products where id=p_target_id for update;
   if not found then raise exception 'NOT_FOUND';end if;
@@ -106,34 +122,39 @@ begin
    if not private.role_has_permission(s.role_snapshot,'inventory.price.manage') then raise exception 'FORBIDDEN';end if;
    if not p.active then raise exception 'RECORD_STALE';end if;
    if jsonb_typeof(p_payload->'selling_price_won') is distinct from 'number' or p_payload->>'selling_price_won' !~ '^[0-9]+$' or (p_payload->>'selling_price_won')::numeric not between 0 and 10000000 then raise exception 'BAD_REQUEST';end if;
-   perform api.change_product_price(s.id,p.id,(p_payload->>'selling_price_won')::bigint,btrim(p_notes));
+   audit_details:=jsonb_build_object('before',jsonb_build_object('selling_price_won',p.selling_price_won),'after',jsonb_build_object('selling_price_won',(p_payload->>'selling_price_won')::bigint));
+   perform private.change_product_price_legacy(s.id,p.id,(p_payload->>'selling_price_won')::bigint,btrim(p_notes));
   elsif p_action='UPDATE_PRODUCT' then
    if not p.active then raise exception 'RECORD_STALE';end if;
+   audit_details:=jsonb_build_object(
+    'before',jsonb_build_object('name',p.name,'category',p.category,'reorder_level',p.reorder_level),
+    'after',jsonb_build_object('name',btrim(p_payload->>'name'),'category',btrim(p_payload->>'category'),'reorder_level',(p_payload->>'reorder_level')::integer));
    update public.products set name=btrim(p_payload->>'name'),category=btrim(p_payload->>'category'),reorder_level=(p_payload->>'reorder_level')::integer,updated_at=clock_timestamp() where id=p.id;
   else
    desired:=p_action='RESTORE_PRODUCT';
    if p.active=desired then raise exception 'RECORD_STALE';end if;
    if not desired and exists(select 1 from private.inventory_lots where product_id=p.id and quantity_remaining<>0) then raise exception 'RECORD_HAS_STOCK';end if;
    if not desired and exists(select 1 from private.online_order_items i join private.online_orders o on o.id=i.order_id where i.product_id=p.id and o.status in ('PLACED','PICKING','READY','OUT_FOR_DELIVERY')) then raise exception 'RECORD_HAS_ORDERS';end if;
+   audit_details:=jsonb_build_object('before',jsonb_build_object('active',p.active),'after',jsonb_build_object('active',desired));
    update public.products set active=desired,updated_at=clock_timestamp() where id=p.id;
   end if;
  else
-  -- Drain existing customer transactions and block new session creation until status
-  -- and revocation commit together. Take this barrier BEFORE student/wallet locks.
-  -- Rare administrator action; bounded lock wait prevents indefinite checkout blocking.
+  -- Per-student lifecycle lock fences session creation without a table-level cycle.
+  -- Wallet-before-student matches financial writers and avoids wallet/student deadlocks.
   perform set_config('lock_timeout','5s',true);
-  lock table private.customer_sessions in share row exclusive mode;
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||p_target_id::text,40404));
+  select balance_won into balance from private.wallets where student_id=p_target_id for update;
+  if not found then raise exception 'NOT_FOUND';end if;
   select * into st from private.students where id=p_target_id for update;
   if not found then raise exception 'NOT_FOUND';end if;
   if p_payload->>'expected_updated_at' is null then raise exception 'BAD_REQUEST';end if;
   if st.updated_at is distinct from expected then raise exception 'RECORD_STALE';end if;
   desired:=p_action='REACTIVATE_STUDENT';
   if st.active=desired then raise exception 'RECORD_STALE';end if;
-  select balance_won into balance from private.wallets where student_id=st.id for update;
-  if not found then raise exception 'NOT_FOUND';end if;
   if not desired and balance<>0 then raise exception 'RECORD_HAS_BALANCE';end if;
   if not desired and exists(select 1 from private.online_orders where student_id=st.id and status in ('PLACED','PICKING','READY','OUT_FOR_DELIVERY')) then raise exception 'RECORD_HAS_ORDERS';end if;
   target:=st.id;
+  audit_details:=jsonb_build_object('before',jsonb_build_object('active',st.active),'after',jsonb_build_object('active',desired));
   update private.students set active=desired,updated_at=clock_timestamp() where id=st.id;
   -- Reactivation also invalidates any old session; it never reissues a PIN or card.
   update private.customer_sessions set revoked_at=clock_timestamp() where student_id=st.id and revoked_at is null;
@@ -141,7 +162,7 @@ begin
  response:=jsonb_build_object('outcome','COMPLETED','target_id',target,'audit_reference','AUD-RECORD-'||p_key);
  insert into private.record_management_operations(request_key,actor_id,terminal_id,kind,request_proof,result) values(p_key,s.auth_user_id,s.terminal_id,p_kind,proof,response);
  insert into private.audit_events(event_type,actor_user_id,staff_session_id,subject_type,subject_id,reference_number,safe_payload)
- values('RECORD_MANAGEMENT_CHANGED',s.auth_user_id,s.id,p_kind,target,'AUD-RECORD-'||p_key,jsonb_build_object('action',p_action,'reason',btrim(p_notes),'history_preserved',true));
+ values('RECORD_MANAGEMENT_CHANGED',s.auth_user_id,s.id,p_kind,target,'AUD-RECORD-'||p_key,jsonb_build_object('action',p_action,'reason',btrim(p_notes),'history_preserved',true)||audit_details);
  return query select response;
 end $$;
 
@@ -173,6 +194,8 @@ grant execute on function api.record_directory(uuid,text,text,text,integer,uuid)
 create function private.require_active_customer_session_insert() returns trigger
 language plpgsql security definer set search_path = '' as $$
 begin
+ perform set_config('lock_timeout','5s',true);
+ perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||new.student_id::text,40404));
  perform 1 from private.students where id=new.student_id and active for share;
  if not found then raise exception 'FORBIDDEN';end if;
  return new;
@@ -197,6 +220,8 @@ begin
  select * into i from private.wallet_adjustment_intents where id=p_intent_id for update;
  if not found or i.staff_session_id<>s.id then raise exception 'NOT_FOUND';end if;
  if i.state<>'completed' and i.student_id is not null then
+  perform set_config('lock_timeout','5s',true);
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||i.student_id::text,40404));
   perform 1 from private.students where id=i.student_id and active for share;
   if not found then raise exception 'FORBIDDEN';end if;
  end if;
