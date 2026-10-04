@@ -1,0 +1,100 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { chromium, expect } from '@playwright/test'
+export async function runManagementBrowser(ctx,{admin,inventory,studentId,studentCode}) {
+ const browser=await chromium.launch({headless:true}),contexts=[],pages=[],errors=[],checks=[],dir='.validation/management'
+ fs.mkdirSync(dir,{recursive:true})
+ let releaseResponse=()=>{}
+ async function pageFor(cookies){const context=await browser.newContext({viewport:{width:390,height:844}});contexts.push(context);await context.addCookies([...cookies].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})));const page=await context.newPage();pages.push(page);page.on('pageerror',e=>errors.push(e.message));return page}
+ async function capture(page,name){for(const width of [390,1440]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No page overflow');await page.screenshot({path:`${dir}/${name}-${width}.png`,fullPage:true})}}
+ try{
+  const page=await pageFor(inventory),sku=`UI-${randomUUID().slice(0,8)}`
+  await page.goto(ctx.base+'/inventory');await page.getByRole('button',{name:'Add product',exact:true}).click()
+  await page.getByLabel('SKU',{exact:true}).fill(sku);await page.getByLabel('Name',{exact:true}).fill('Synthetic UI archive fixture')
+  let writes=0;page.on('request',r=>{if(new URL(r.url()).pathname==='/api/management'&&r.method()==='POST')writes++})
+  await page.getByRole('button',{name:'Review new product',exact:true}).click()
+  let dialog=page.getByRole('dialog',{name:'Create product?',exact:true})
+  await expect(dialog.getByRole('button',{name:'Go back',exact:true})).toBeFocused()
+  await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);assert.equal(writes,0)
+  await page.getByRole('button',{name:'Review new product',exact:true}).click()
+  await dialog.getByRole('button',{name:'Create product',exact:true}).click()
+  await expect(page.getByText(/Change recorded\. Reference:/)).toBeVisible();assert.equal(writes,1)
+  const product=(await ctx.owner.query('select id from public.products where sku=$1',[sku])).rows[0]
+  assert.ok(product)
+  await page.getByRole('button',{name:'Edit / archive products',exact:true}).click()
+  const row=page.getByRole('row').filter({hasText:sku})
+  await row.getByRole('button',{name:'Archive product',exact:true}).click()
+  await expect(page.getByRole('heading',{level:3,name:/Archive product: Synthetic UI/})).toBeFocused()
+  await page.getByLabel('Reason for record change',{exact:true}).fill('Synthetic confirmed product retirement')
+  await page.getByRole('button',{name:'Review record change',exact:true}).click()
+  dialog=page.getByRole('alertdialog',{name:'Archive product?',exact:true})
+  await expect(dialog.getByRole('button',{name:'Go back',exact:true})).toBeFocused()
+  const describedBy=await dialog.getAttribute('aria-describedby');assert.ok(describedBy)
+  assert.ok(await page.evaluate(id=>!!document.getElementById(id)?.textContent,describedBy))
+  const typed=dialog.locator('input[data-confirmation-text]'),confirm=dialog.locator('button.primary-action')
+  await typed.fill('wrong code');await expect(confirm).toBeDisabled();assert.equal(writes,1)
+  await typed.fill(sku);await expect(confirm).toBeEnabled();await capture(page,'archive-review')
+  await dialog.getByRole('button',{name:'Go back',exact:true}).click();assert.equal(writes,1)
+  await expect(page.getByRole('heading',{level:3,name:/Archive product: Synthetic UI/})).toBeFocused()
+  await page.getByRole('button',{name:'Review record change',exact:true}).click();await typed.fill(sku)
+  let savedKey,committed=false
+  const release=new Promise(resolve=>{releaseResponse=resolve})
+  await page.route('**/api/management',async route=>{
+   if(route.request().method()!=='POST')return route.continue()
+   savedKey=route.request().postDataJSON().requestKey
+   const response=await route.fetch();assert.equal(response.status(),200);assert.equal((await response.json()).data.outcome,'COMPLETED');committed=true
+   await release
+   await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,error:{code:'INTERNAL_ERROR',message:'Synthetic lost result'}})})
+  },{times:1})
+  await confirm.click();await expect.poll(()=>committed).toBe(true)
+  await expect(dialog).toHaveAttribute('aria-busy','true');await expect(confirm).toBeDisabled()
+  await page.keyboard.press('Escape');await expect(dialog).toBeVisible()
+  await confirm.evaluate(button=>{button.click();button.click()});assert.equal(writes,2)
+  releaseResponse();await expect(page.getByRole('region',{name:'Saved management action'})).toBeVisible()
+  const session=await ctx.request(inventory,'/api/auth/session'),storageKey=`campuspay:record-operation:${session.user_id}:PRODUCT:v1`
+  const saved=await page.evaluate(key=>sessionStorage.getItem(key),storageKey)
+  assert.deepEqual(JSON.parse(saved),{kind:'PRODUCT',requestKey:savedKey})
+  await page.reload();await page.getByRole('button',{name:'Edit / archive products',exact:true}).click()
+  await page.getByRole('button',{name:'Recover management action',exact:true}).click()
+  await expect(page.getByText(/Change recorded\. Reference:/)).toBeVisible();await expect(row).toContainText('Archived');assert.equal(writes,2)
+  assert.equal(await page.evaluate(key=>sessionStorage.getItem(key),storageKey),null)
+  assert.equal(Number((await ctx.owner.query('select count(*) n from private.record_management_operations where request_key=$1',[savedKey])).rows[0].n),1)
+  await capture(page,'archive-recovered')
+  await row.getByRole('button',{name:'Restore product',exact:true}).click();await page.getByLabel('Reason for record change',{exact:true}).fill('Synthetic restore of same catalog identity')
+  await page.getByRole('button',{name:'Review record change',exact:true}).click();dialog=page.getByRole('dialog',{name:'Restore product?',exact:true})
+  await dialog.locator('input[data-confirmation-text]').fill(sku);await dialog.getByRole('button',{name:'Restore product',exact:true}).click();await expect(row).toContainText('Active')
+  checks.push('Product creation, archive/restore, least-destructive focus, typed confirmation, Escape, busy double-submit guard and original-key recovery after a real committed/lost response work on desktop and mobile')
+
+  const a=await pageFor(admin)
+  await a.goto(ctx.base+'/administration');await expect(a.getByRole('heading',{name:'Staff directory',exact:true})).toBeVisible()
+  await expect(a.getByText(/The directory is read-only/)).toBeVisible()
+  await expect(a.getByRole('button',{name:'Create named staff account',exact:true})).toBeDisabled()
+  await capture(a,'administration-read-only')
+  checks.push('Staff and terminal directories stay visible when activation is off; mutations remain disabled rather than silently enabling the feature')
+  await a.goto(ctx.base+'/students');await a.getByLabel('Search students',{exact:true}).fill(studentCode)
+  await a.getByRole('button').filter({hasText:studentCode}).click()
+  await a.getByRole('button',{name:'Manage student status',exact:true}).click()
+  const studentRegion=a.getByRole('region',{name:'Student account lifecycle',exact:true})
+  await studentRegion.getByRole('button',{name:'Deactivate student',exact:true}).click()
+  await a.getByLabel('Reason for record change',{exact:true}).fill('Verified synthetic student account retirement')
+  await a.getByLabel('Current Super Admin PIN',{exact:true}).fill(ctx.staffPin)
+  await a.getByRole('button',{name:'Review record change',exact:true}).click()
+  dialog=a.getByRole('alertdialog',{name:'Deactivate student?',exact:true})
+  assert.ok(!(await dialog.innerText()).includes(ctx.staffPin))
+  await dialog.getByRole('button',{name:'Go back',exact:true}).click()
+  await expect(a.getByLabel('Current Super Admin PIN',{exact:true})).toHaveValue('')
+  await a.getByLabel('Current Super Admin PIN',{exact:true}).fill(ctx.staffPin)
+  await a.getByRole('button',{name:'Review record change',exact:true}).click();await dialog.locator('input[data-confirmation-text]').fill(studentCode)
+  await capture(a,'student-deactivation-review')
+  await dialog.getByRole('button',{name:'Deactivate student',exact:true}).click()
+  await expect(studentRegion.getByText(/Change recorded\. Reference:/)).toBeVisible()
+  await expect(studentRegion.getByRole('row').filter({hasText:studentCode})).toContainText('Inactive')
+  assert.equal((await ctx.owner.query('select active from private.students where id=$1',[studentId])).rows[0].active,false)
+  await capture(a,'student-inactive')
+  checks.push('Student deactivation reviews the correct student, clears approval PIN on cancellation, preserves the success receipt and refreshes inactive status without losing the selected account')
+  assert.deepEqual(errors,[])
+  return {checks,unexpectedPageErrors:errors,screenshots:fs.readdirSync(dir).filter(name=>name.endsWith('.png')).length,liveDataUsed:false}
+ }catch(e){for(let i=0;i<pages.length;i++)await pages[i].screenshot({path:`${dir}/failure-${i}.png`,fullPage:true}).catch(()=>{});throw e}
+ finally{releaseResponse();for(const context of contexts)await context.close();await browser.close()}
+}

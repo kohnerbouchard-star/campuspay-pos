@@ -29,6 +29,7 @@ export async function runAdministrationBrowser(ctx,cookies){
    await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,error:{code:'INTERNAL_ERROR',message:'Simulated lost response'}})})
   },{times:1})
   await page.getByRole('button',{name:'Apply verified change',exact:true}).click()
+  await confirmReviewedChange(page)
   await expect(page.getByRole('button',{name:'Recover administrative result',exact:true})).toBeVisible()
   const stored=JSON.parse(await page.evaluate(()=>sessionStorage.getItem('campuspay:administration-operation:v1')))
   assert.deepEqual(Object.keys(stored),['requestKey']);assert.match(stored.requestKey,/^[0-9a-f-]{36}$/)
@@ -44,6 +45,7 @@ export async function runAdministrationBrowser(ctx,cookies){
   await fillAccount()
   await page.route('**/api/administration?**',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,error:{code:'INTERNAL_ERROR',message:'Synthetic directory outage'}})}),{times:1})
   await page.getByRole('button',{name:'Apply verified change',exact:true}).click()
+  await confirmReviewedChange(page)
   await expect(page.getByText('The change is confirmed. The directory refresh failed; refresh the directory before making another change.',{exact:true})).toBeVisible()
   await expect(page.getByRole('button',{name:'Recover administrative result',exact:true})).toHaveCount(0)
   assert.equal(Number((await ctx.owner.query('select count(*) from public.staff_profiles')).rows[0].count),before+2)
@@ -57,4 +59,12 @@ export async function runAdministrationBrowser(ctx,cookies){
   fs.writeFileSync(dir+'/browser.json',JSON.stringify({widths,screenshots,unexpectedBrowserErrors:errors,layoutFindings:[],opaqueRecovery:true,postCommitRefreshFailure:true,corruptStorageBlocksWrites:true,liveDataUsed:false},null,2))
  }catch(e){await page.screenshot({path:dir+'/last-failure.png',fullPage:true}).catch(()=>{});throw e}
  finally{await context.close();await browser.close()}
+}
+
+async function confirmReviewedChange(page) {
+ const dialog=page.locator('dialog[open]')
+ await expect(dialog).toBeVisible()
+ const typed=dialog.locator('input[data-confirmation-text]')
+ if(await typed.count())await typed.fill(await typed.getAttribute('data-confirmation-text'))
+ await dialog.getByRole('button').filter({hasNotText:/^(Go back|×)$/}).last().click()
 }

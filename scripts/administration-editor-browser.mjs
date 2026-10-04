@@ -26,6 +26,7 @@ export async function runAdministrationEditorBrowser(ctx,admin){
   await form.getByRole('checkbox',{name:'I verified the person or terminal and approve this exact change.',exact:true}).check()
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/administration'&&r.request().method()==='POST')
   await form.getByRole('button',{name:'Apply verified change',exact:true}).click()
+  await confirmReviewedChange(page)
   const result=await response;assert.equal(result.status(),expected)
   const body=await result.json();assert.equal(body.ok,expected===200)
   if(expected!==200){assert.equal(body.error.code,'CONFLICT');await expect(page.getByRole('alert').filter({hasText:'Conflicting operation'})).toBeVisible()}
@@ -97,4 +98,12 @@ export async function runAdministrationEditorBrowser(ctx,admin){
   return {checks,widths:[1440,1024,768,390],unexpectedBrowserErrors:errors,liveDataUsed:false}
  }catch(e){for(let i=0;i<pages.length;i++)await pages[i].screenshot({path:`${dir}/editor-failure-${i}.png`,fullPage:true}).catch(()=>{});throw e}
  finally{for(const context of contexts)await context.close();await browser.close()}
+}
+
+async function confirmReviewedChange(page) {
+ const dialog=page.locator('dialog[open]')
+ await expect(dialog).toBeVisible()
+ const typed=dialog.locator('input[data-confirmation-text]')
+ if(await typed.count())await typed.fill(await typed.getAttribute('data-confirmation-text'))
+ await dialog.getByRole('button').filter({hasNotText:/^(Go back|×)$/}).last().click()
 }
