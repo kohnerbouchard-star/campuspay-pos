@@ -158,7 +158,8 @@ try{
  const linked=[['PRODUCT',productId],['STUDENT',studentId],['STAFF',cashierSession.user_id],['TERMINAL',cashierSession.terminal_id],['COUPON',coupon.coupon_id]]
  for(const [kind,id] of linked){await change(await input(kind,id));assert.equal(await protectedState(),postedBefore)}
  const historical=await request(admin,`/api/refunds/sale?reference=${receipt.sale_id}`)
- assert.equal(historical.sale_id,receipt.sale_id);assert.equal(historical.total_won,1000);assert.equal(historical.discount_won,100)
+ assert.equal(historical.sale_id,receipt.sale_id);assert.equal(historical.total_won,1000)
+ assert.equal(Number((await owner.query('select discount_won from private.coupon_redemptions where sale_id=$1',[receipt.sale_id])).rows[0].discount_won),100)
  assert.deepEqual((await request(accountant,`/api/accounting/students/${studentId}/history`)).rows,walletHistory.rows)
  for(const [kind,id] of linked){await change(await input(kind,id,'RESTORE'));assert.equal(await protectedState(),postedBefore)}
  checks.push('An authenticated funded and discounted sale survives deletion/restore of every linked record; original sale/items/tenders/costs, receipt, ledger, card/PIN and coupon redemption remain byte-identical and historical reads work')
