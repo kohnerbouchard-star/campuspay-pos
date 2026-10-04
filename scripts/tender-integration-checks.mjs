@@ -80,7 +80,7 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   await confirm(intent, { pin: studentPin, cashReceivedWon: 10000 }, 409); await unchanged(before, 'Coupon failure posts nothing')
 
   // The wallet floor uses only the proposed wallet leg, even for a very large cash-backed sale.
-  const expensiveItems = [{ productId: product.reference_id, quantity: 10 }]
+  const expensiveItems = [{ productId: productId, quantity: 10 }]
   intent = await request(admin, '/api/pos/intents', proposed('SPLIT', 119999, expensiveItems)); await scan(intent); before = await snapshot()
   assert.equal((await confirm(intent, { pin: studentPin, cashReceivedWon: 1 }, 409)).code, 'WALLET_LIMIT'); await unchanged(before, 'Wallet floor failure posts nothing')
 
@@ -132,7 +132,7 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   // Stock-receipt recovery is read-only and bound to the same receiving person and terminal.
   const receiver = await login('2001')
   const receiptKey = randomUUID()
-  const receivedStock = await request(receiver, '/api/inventory/receipts', { supplierName: 'Recovery fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Read-only receipt recovery fixture', lines: [{ productId: product.reference_id, quantity: 2, purchaseUnitCostWon: 900 }], idempotencyKey: receiptKey })
+  const receivedStock = await request(receiver, '/api/inventory/receipts', { supplierName: 'Recovery fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Read-only receipt recovery fixture', lines: [{ productId: productId, quantity: 2, purchaseUnitCostWon: 900 }], idempotencyKey: receiptKey })
   const unrelatedReceiver = await login('2001')
   await request(unrelatedReceiver, '/api/inventory/receipts/recover', { idempotencyKey: receiptKey }, 403)
   await request(receiver, '/api/auth/login', { employeeCode: '2001', pin: '12345678' })
@@ -149,7 +149,7 @@ export async function runTenderChecks({ owner, request, login, jar, card, studen
   await request(receiver, '/api/auth/login', { employeeCode: '2001', pin: '12345678' })
   const retryKey = randomUUID()
   assert.equal((await request(receiver, '/api/inventory/receipts/recover', { idempotencyKey: retryKey })).receipt, null)
-  const originalProposal = { supplierName: 'Recovery retry fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Exact original request reused after absent recovery', lines: [{ productId: product.reference_id, quantity: 3, purchaseUnitCostWon: 950 }], idempotencyKey: retryKey }
+  const originalProposal = { supplierName: 'Recovery retry fixtures', supplierInvoice: randomUUID(), purchaseDate: '2026-09-07', shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: 'Exact original request reused after absent recovery', lines: [{ productId: productId, quantity: 3, purchaseUnitCostWon: 950 }], idempotencyKey: retryKey }
   before = await snapshot()
   const retriedReceipts = await Promise.all([request(receiver, '/api/inventory/receipts', originalProposal), request(receiver, '/api/inventory/receipts', originalProposal)])
   assert.equal(retriedReceipts[0].receipt_id, retriedReceipts[1].receipt_id)
