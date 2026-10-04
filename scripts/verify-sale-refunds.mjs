@@ -94,10 +94,12 @@ try {
   assert.equal((await post(admin, expiryInput)).outcome, 'EXPIRED_STOCK'); assert.equal(await refunds(expired.detail.sale_id), 0)
   assert.equal((await post(admin, input(expired.detail, 'WRITE_OFF'))).outcome, 'COMPLETED')
   for (const lot of lots.rows) await owner.query('update private.inventory_lots set expiration_date=null where id=$1', [lot.inventory_lot_id])
-  const product = await request(admin, '/api/inventory/products', { sku: 'REFUND-FRACTION', name: 'Fractional cost fixture', category: 'QA', sellingPriceWon: 500, reorderLevel: 0 }, 201)
-  for (const [q,cost,shipping] of [[2,100,1],[3,201,1]]) await request(admin, '/api/inventory/receipts', { supplierName: 'Synthetic supplier', supplierInvoice: randomUUID(), purchaseDate: today, shippingWon: shipping, otherCostsWon: 0, discountWon: 0, notes: 'Synthetic cost fixture', idempotencyKey: randomUUID(), lines: [{ productId: product.reference_id, quantity: q, purchaseUnitCostWon: cost }] }, 201)
-  const fractional = await sale({ items: [{ productId: product.reference_id, quantity: 3 }] }), fractionalBefore = await original(fractional.detail.sale_id)
-  await request(admin, `/api/inventory/products/${product.reference_id}/price`, { newPriceWon: 600, reason: 'Post-sale price change' })
+  const product = await request(admin, '/api/management', { kind:'PRODUCT', action:'CREATE_PRODUCT', requestKey:randomUUID(), sku:'REFUND-FRACTION', name:'Fractional cost fixture', category:'QA', sellingPriceWon:500, reorderLevel:0, reason:'Synthetic refund cost fixture product', verified:true })
+  const productId = product.target_id
+  for (const [q,cost,shipping] of [[2,100,1],[3,201,1]]) await request(admin, '/api/inventory/receipts', { supplierName: 'Synthetic supplier', supplierInvoice: randomUUID(), purchaseDate: today, shippingWon: shipping, otherCostsWon: 0, discountWon: 0, notes: 'Synthetic cost fixture', idempotencyKey: randomUUID(), lines: [{ productId, quantity: q, purchaseUnitCostWon: cost }] }, 201)
+  const fractional = await sale({ items: [{ productId, quantity: 3 }] }), fractionalBefore = await original(fractional.detail.sale_id)
+  const productRecord=(await request(admin,`/api/management?kind=PRODUCT&status=ACTIVE&targetId=${productId}`)).records[0]
+  await request(admin, '/api/management', {kind:'PRODUCT',action:'CHANGE_PRODUCT_PRICE',targetId:productId,expectedUpdatedAt:productRecord.updated_at,sellingPriceWon:600,reason:'Post-sale price change verified',verified:true,requestKey:randomUUID()})
   const fractionalRefund = (await post(admin, input(fractional.detail))).refund
   assert.equal(fractionalRefund.cogs_reversed_won, fractional.detail.cogs_won); assert.equal(fractionalRefund.total_won, 1500); assert.deepEqual(await original(fractional.detail.sale_id), fractionalBefore)
   checks.push('mixed restock/write-off, expired stock refusal, fractional multi-lot original costs and changed price independence')
