@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import { DATABASE_UPGRADE_MESSAGE } from '@/lib/api/errors'
+import { Icon } from '@/components/ui/Icon'
 
 export function EmptyState({ title, children }: { title: string; children?: ReactNode }) {
-  return <div className="empty-state"><strong>{title}</strong>{children && <p>{children}</p>}</div>
+  return <div className="empty-state"><span className="empty-state-mark"><Icon name="box" size={25} /></span><strong>{title}</strong>{children && <p>{children}</p>}</div>
 }
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   return <div className="loading-state" role="status" aria-live="polite"><span className="loading-indicator" aria-hidden="true" />{label}</div>

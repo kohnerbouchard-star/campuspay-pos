@@ -16,6 +16,7 @@ import { PAYMENT_RESULT_GRACE_MS } from '@/features/terminal/inactivity'
 import { useInactivityLock } from '@/features/terminal/use-inactivity-lock'
 import { forgetPendingPayment, readPendingPayment } from '@/features/pos/pending-payment'
 import { ErrorState, LoadingState } from '@/components/ui/Feedback'
+import { Icon } from '@/components/ui/Icon'
 
 export function POSScreen({ cashierName }: { cashierName: string }) {
   const [products, setProducts] = useState<CatalogProduct[]>([])
@@ -34,6 +35,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   const checkoutKey = useRef<string | null>(null)
   const { remainingMs, warning, noteActivity } = useInactivityLock(intent ? { key: intent.intent_id, until: Date.parse(intent.expires_at) + PAYMENT_RESULT_GRACE_MS } : receipt ? { key: receipt.sale_id } : busy || loading || recoveryBlocked ? { key: 'payment-recovery' } : null)
   const cartLines = useMemo(() => toCartLines(cart), [cart])
+  const itemCount = cartLines.reduce((count, line) => count + line.quantity, 0)
   const subtotal = useMemo(() => cartTotal(cart, products), [cart, products])
   const discount = coupon?.quote.discount_won ?? 0
   const total = coupon?.quote.total_won ?? subtotal
@@ -100,7 +102,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   return <main className="workspace">
     <header className="workspace-header">
       <div><p className="eyebrow">MICA Money · Staff register</p><h1>Point of sale</h1><p className="muted">Find an item, build the sale, and take payment.</p></div>
-      <div className="session-chip"><span>{cashierName}</span><span>{policy?.terminal_label ?? 'Register'}</span>{policy?.cash_enabled && <b>Cash enabled · {policy.event_name}</b>}</div>
+      <div className="session-chip"><Icon name="register" size={19} /><span className="session-details"><span>{cashierName}</span><small>{policy?.terminal_label ?? 'Register'}</small></span>{policy?.cash_enabled && <b>Cash enabled · {policy.event_name}</b>}</div>
     </header>
     {warning && <div className="timeout-warning" role="status">Register locks in {Math.ceil(remainingMs / 1000)} seconds. <button className="secondary-action" onClick={noteActivity}>Stay signed in</button></div>}
     {error && <ErrorState message={error} onRetry={() => void load()} />}
@@ -108,6 +110,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
     {policy && <PaymentStatus policy={policy} />}
     {loading && <LoadingState label="Loading register…" />}
     <div className="pos-layout" aria-busy={busy} inert={busy || loading || recoveryBlocked || !!error || undefined}>
+      <a className="pos-cart-link" href="#pos-cart"><Icon name="bag" size={18} />View cart · {itemCount} {itemCount === 1 ? 'item' : 'items'}</a>
       <ProductGrid products={products} onSelect={product => mutateCart(current => addProduct(current, product))} />
       <CartPanel cart={cart} products={products} subtotal={subtotal} discount={discount} total={total} coupon={coupon} cartLines={cartLines}
         onCouponApplied={(code, quote) => { checkoutKey.current = null; setCoupon({ code, quote }) }} onCouponRemoved={() => { checkoutKey.current = null; setCoupon(null) }}

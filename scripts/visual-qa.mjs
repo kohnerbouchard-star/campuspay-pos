@@ -133,7 +133,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await anonymous.getByRole('heading', { name: 'Staff sign in' }).waitFor()
     await captureAll(anonymous, 'staff-login')
     await anonymous.goto(`${base}/store/login`)
-    await anonymous.getByRole('heading', { name: 'Sign in to MICA Money' }).waitFor()
+    await anonymous.getByRole('heading', { name: 'Sign in to MICA Store' }).waitFor()
     await captureAll(anonymous, 'student-login')
     await anonymous.getByText('How to get a MICA Money Card', { exact: true }).click()
     await capture(anonymous, 'student-e202-help', viewports[3])
@@ -202,7 +202,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     // UI authentication preserves the protected order-history destination.
     const customerPage = await pageFor()
     await customerPage.goto(`${base}/store/orders`)
-    await customerPage.getByRole('heading', { name: 'Sign in to MICA Money' }).waitFor()
+    await customerPage.getByRole('heading', { name: 'Sign in to MICA Store' }).waitFor()
     assert.match(customerPage.url(), /next=%2Fstore%2Forders/)
     await customerPage.getByLabel('Card number', { exact: true }).fill(visualCard)
     await customerPage.getByLabel('PIN', { exact: true }).fill(currentPin)
