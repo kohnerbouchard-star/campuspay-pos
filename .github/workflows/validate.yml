@@ -46,7 +46,11 @@ jobs:
       - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
       - run: node --test scripts/backup-envelope.test.mjs scripts/backup-file.test.mjs
       - run: npm ci
-      - name: Enforce complete dependency audit including development tools
+      # Collect functional diagnostics even when the audit is red. The final
+      # unconditional gate below still makes this SAME validate job fail.
+      - name: Complete dependency audit including development tools
+        id: complete_dependency_audit
+        continue-on-error: true
         run: npm audit --audit-level=high --json > .validation/dependency-audit.json
       - run: npm run security:dependencies
       - run: npm run validate:static
@@ -81,6 +85,15 @@ jobs:
           PG_DUMP_BIN: ./scripts/ci/pg-dump
           PG_RESTORE_BIN: ./scripts/ci/pg-restore
         run: node scripts/verify-backup-restore.mjs
+      - name: Enforce the complete dependency audit result
+        if: always()
+        env:
+          COMPLETE_AUDIT_OUTCOME: ${{ steps.complete_dependency_audit.outcome }}
+        run: |
+          if [ "$COMPLETE_AUDIT_OUTCOME" != "success" ]; then
+            echo "Complete dependency audit did not pass. Release is blocked; functional diagnostics do not override this result."
+            exit 1
+          fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
