@@ -265,6 +265,7 @@ create function api.confirm_payment(
 ) language plpgsql security definer set search_path = '' as $$
 declare v_student_id uuid;
 begin
+ perform private.assert_session(p_session_id,'pos.checkout');
  select student_id into v_student_id from private.payment_intents where id=p_intent_id;
  if v_student_id is not null then
   perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
@@ -305,6 +306,7 @@ create function api.confirm_funding(
 ) returns table(result jsonb) language plpgsql security definer set search_path = '' as $$
 declare v_student_id uuid;
 begin
+ perform private.funding_session(p_session_id);
  select student_id into v_student_id from private.funding_intents where request_key=p_key;
  if v_student_id is not null then
   perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||v_student_id::text,40404));
@@ -321,8 +323,9 @@ create function api.complete_student_enrollment(
  p_session_id uuid,p_student_id uuid,p_expected_code text,p_expected_name text,p_expected_year integer,
  p_expected_academic_year text,p_identity_verified boolean,p_card_fingerprint text,p_pin_proof text,p_idempotency_key uuid
 ) returns table(outcome text,student_id uuid,audit_reference text,completed_at timestamptz)
-language plpgsql security definer set search_path = '' as $$
+language plpgsql security definer set search_path = '' as $
 begin
+ perform private.assert_session(p_session_id,'students.manage');
  if p_student_id is not null then
   perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||p_student_id::text,40404));
  end if;
