@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { RecordChangeSchema, RecordQuerySchema, RecordRecoverySchema, RecordOutcomeSchema } from '../domain'
 import { administrationReview, ROLE_DESCRIPTIONS } from '@/features/administration/review'
 import { toApiError } from '@/lib/api/errors'
-import type { StaffRecord } from '@/features/administration/domain'
+import type { StaffRecord, TerminalRecord } from '@/features/administration/domain'
 const key='10000000-0000-4000-8000-000000000001', target='10000000-0000-4000-8000-000000000002'
 const common={requestKey:key,reason:'Verified catalog change',verified:true}
 const existing={targetId:target,expectedUpdatedAt:'2026-10-04T01:00:00.123456+00:00'}
@@ -36,7 +36,7 @@ describe('Staff role review language',()=>{
  it('marks a role change as sensitive even while the account remains active',()=>expect(administrationReview({...change,active:true,role:'super_admin'},previous).destructive).toBe(true))
  it('separates staff and student identities at creation',()=>expect(administrationReview({action:'CREATE_STAFF',requestKey:key,adminPin:'12345678',employeeCode:'NEW-STAFF',displayName:'New person',role:'accountant',newPin:'1234',confirmationPin:'1234',notes:'New staff verified',verified:true}).description).toContain('not a student wallet'))
  it('requires the terminal identifier for both deactivation and reactivation',()=>{
-  const terminal={terminal_id:target,label:'QA terminal',active:false,has_open_shift:false} as any
+  const terminal:TerminalRecord={terminal_id:target,label:'QA terminal',active:false,has_open_shift:false}
   const reactivate={action:'UPDATE_TERMINAL' as const,requestKey:key,adminPin:'12345678',targetId:target,label:'QA terminal',active:true,expectedActive:false,expectedLabel:'QA terminal',notes:'Verified terminal status change',verified:true as const}
   const review=administrationReview(reactivate,terminal)
   expect(review.destructive).toBe(true)
