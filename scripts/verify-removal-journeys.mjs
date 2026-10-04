@@ -145,7 +145,7 @@ try{
  await owner.query('update private.system_settings set cash_controls_enabled=false where singleton')
  const current=(await request(inventory,`/api/management?kind=PRODUCT&status=ALL&targetId=${productId}`)).records[0]
  await request(inventory,'/api/management',{kind:'PRODUCT',action:'CHANGE_PRODUCT_PRICE',targetId:productId,expectedUpdatedAt:current.updated_at,sellingPriceWon:1100,requestKey:randomUUID(),reason:'Synthetic discounted sale fixture price',verified:true})
- const today=(await owner.query("select (clock_timestamp() at time zone 'Asia/Seoul')::date::text day")).rows[0].day
+ const today=(await owner.query("select (clock_timestamp() at time zone 'Asia/Seoul')::date::text as business_date")).rows[0].business_date
  await request(inventory,'/api/inventory/receipts',{supplierName:'Synthetic removal supplier',supplierInvoice:randomUUID(),purchaseDate:today,shippingWon:0,otherCostsWon:0,discountWon:0,notes:'Synthetic retained history fixture',lines:[{productId,quantity:1,purchaseUnitCostWon:100}],idempotencyKey:randomUUID()},201)
  const credit=await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[1000],reasonCode:'FUNDS_RECEIVED',notes:'Synthetic removal history deposit',idempotencyKey:randomUUID()},201)
  await request(accountant,`/api/accounting/intents/${credit.intent_id}/card`,{cardRead:card});await request(accountant,`/api/accounting/intents/${credit.intent_id}/confirm`,{pin})
