@@ -6,7 +6,7 @@ import { safeCustomerDestination } from '@/features/store/navigation'
 import { CustomerLoginScreen } from '@/features/store/ui/CustomerLoginScreen'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Sign in · MICA Money' }
+export const metadata = { title: 'Sign in · MICA Store' }
 export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams
   const destination = safeCustomerDestination(params.next)

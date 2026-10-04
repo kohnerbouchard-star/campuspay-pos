@@ -5,7 +5,7 @@ import { formatWon } from '@/lib/format/currency'
 import styles from '@/features/store/ui/store.module.css'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'My account · MICA Money' }
+export const metadata = { title: 'My account · MICA Store' }
 export default async function Page() {
   const session = await requireCustomerPage('/store/account')
   return <StoreShell session={customerProfile(session)}>

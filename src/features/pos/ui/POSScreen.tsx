@@ -16,6 +16,7 @@ import { PAYMENT_RESULT_GRACE_MS } from '@/features/terminal/inactivity'
 import { useInactivityLock } from '@/features/terminal/use-inactivity-lock'
 import { forgetPendingPayment, readPendingPayment } from '@/features/pos/pending-payment'
 import { ErrorState, LoadingState } from '@/components/ui/Feedback'
+import { Icon } from '@/components/ui/Icon'
 
 export function POSScreen({ cashierName }: { cashierName: string }) {
   const [products, setProducts] = useState<CatalogProduct[]>([])
@@ -100,7 +101,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   return <main className="workspace">
     <header className="workspace-header">
       <div><p className="eyebrow">MICA Money · Staff register</p><h1>Point of sale</h1><p className="muted">Find an item, build the sale, and take payment.</p></div>
-      <div className="session-chip"><span>{cashierName}</span><span>{policy?.terminal_label ?? 'Register'}</span>{policy?.cash_enabled && <b>Cash enabled · {policy.event_name}</b>}</div>
+      <div className="session-chip"><Icon name="register" size={19} /><span className="session-details"><span>{cashierName}</span><small>{policy?.terminal_label ?? 'Register'}</small></span>{policy?.cash_enabled && <b>Cash enabled · {policy.event_name}</b>}</div>
     </header>
     {warning && <div className="timeout-warning" role="status">Register locks in {Math.ceil(remainingMs / 1000)} seconds. <button className="secondary-action" onClick={noteActivity}>Stay signed in</button></div>}
     {error && <ErrorState message={error} onRetry={() => void load()} />}
