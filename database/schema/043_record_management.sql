@@ -13,12 +13,6 @@ create trigger immutable_journal before update or delete on private.record_manag
  for each row execute function private.reject_journal_mutation();
 revoke all on private.record_management_operations from public,campuspay_runtime;
 
-do $
-begin
- if exists(select lower(sku) from public.products group by lower(sku) having count(*)>1) then
-  raise exception 'SCHEMA_DRIFT: duplicate case-insensitive product SKU';
- end if;
-end $;
 create unique index products_sku_lower_key on public.products(lower(sku));
 
 alter function api.create_product(uuid,text,text,text,bigint,integer) set schema private;
