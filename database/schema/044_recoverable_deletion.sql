@@ -124,8 +124,9 @@ begin
  case p_kind
  when 'PRODUCT' then update public.products set active=desired,updated_at=clock_timestamp() where id=p_target_id;
  when 'STUDENT' then
-  update private.students set active=desired,updated_at=clock_timestamp() where id=p_target_id;
+ update private.students set active=desired,updated_at=clock_timestamp() where id=p_target_id;
   update private.customer_sessions set revoked_at=clock_timestamp() where student_id=p_target_id and revoked_at is null;
+  if p_action='DELETE' then update private.elevation_tokens set consumed_at=clock_timestamp() where student_id=p_target_id and consumed_at is null; end if;
  when 'STAFF' then
   update public.staff_profiles set active=desired,updated_at=clock_timestamp() where auth_user_id=p_target_id;
   update private.staff_sessions set revoked_at=clock_timestamp() where auth_user_id=p_target_id and revoked_at is null;
@@ -133,9 +134,13 @@ begin
   update private.terminals set active=desired where id=p_target_id;
   update private.staff_sessions set revoked_at=clock_timestamp() where terminal_id=p_target_id and revoked_at is null;
  when 'COUPON' then
-  update private.coupons set active=desired,deactivated_at=case when desired then null else clock_timestamp() end,
-   deactivated_by=case when desired then null else s.auth_user_id end,deactivated_session_id=case when desired then null else s.id end,
-   deactivation_reason=case when desired then null else btrim(p_notes) end where id=p_target_id;
+  -- An inactive coupon already has its own deactivation provenance.
+  -- Removal/restoration must not replace that earlier event's metadata.
+  update private.coupons set active=desired,
+   deactivated_at=case when desired then null when active then clock_timestamp() else deactivated_at end,
+   deactivated_by=case when desired then null when active then s.auth_user_id else deactivated_by end,
+   deactivated_session_id=case when desired then null when active then s.id else deactivated_session_id end,
+   deactivation_reason=case when desired then null when active then btrim(p_notes) else deactivation_reason end where id=p_target_id;
  end case;
  if p_action='DELETE' then
   insert into private.deleted_records(kind,target_id,previous_active,deleted_at) values(p_kind,p_target_id,(snapshot->>'active')::boolean,clock_timestamp())
@@ -183,6 +188,35 @@ create trigger removed_activation before update on private.students for each row
 create trigger removed_activation before update on public.staff_profiles for each row execute function private.block_removed_activation('STAFF','auth_user_id');
 create trigger removed_activation before update on private.terminals for each row execute function private.block_removed_activation('TERMINAL','id');
 create trigger removed_activation before update on private.coupons for each row execute function private.block_removed_activation('COUPON','id');
+
+-- Credential reset writers share the student lifecycle lock before touching
+-- elevation/card/PIN rows. Approval checks take the approver credential first,
+-- matching deletion's credential -> student lifecycle ordering.
+do $$
+declare r record; definition text; replacement text;
+begin
+ for r in select * from (values
+ ('api.reset_student_pin(uuid,uuid,text,text)'),
+ ('api.reset_student_card(uuid,uuid,text,text)')
+ ) functions(signature) loop
+  definition:=pg_get_functiondef(r.signature::regprocedure);
+  replacement:=$guard$v_session := private.assert_session(p_session_id, 'security.credentials.request');
+  perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||p_student_id::text,40404));
+  if exists(select 1 from private.deleted_records where kind='STUDENT' and target_id=p_student_id and deleted) then raise exception 'RECORD_REMOVED'; end if;$guard$;
+  if (length(definition)-length(replace(definition,$anchor$v_session := private.assert_session(p_session_id, 'security.credentials.request');$anchor$,'')))/length($anchor$v_session := private.assert_session(p_session_id, 'security.credentials.request');$anchor$)<>1 then raise exception 'REMOVAL_CREDENTIAL_PATCH_PRECONDITION'; end if;
+  execute replace(definition,$anchor$v_session := private.assert_session(p_session_id, 'security.credentials.request');$anchor$,replacement);
+ end loop;
+ definition:=pg_get_functiondef('api.create_elevation(uuid,text,text,text,uuid,text)'::regprocedure);
+ if (length(definition)-length(replace(definition,'insert into private.elevation_tokens(','')))/length('insert into private.elevation_tokens(')<>1 then raise exception 'REMOVAL_ELEVATION_PATCH_PRECONDITION'; end if;
+ execute replace(definition,'insert into private.elevation_tokens(',$guard$perform pg_advisory_xact_lock(hashtextextended('campuspay-student-lifecycle:'||p_student_id::text,40404));
+  if not exists(select 1 from private.students where id=p_student_id and active) then raise exception 'NOT_FOUND'; end if;
+  if exists(select 1 from private.deleted_records where kind='STUDENT' and target_id=p_student_id and deleted) then raise exception 'RECORD_REMOVED'; end if;
+  insert into private.elevation_tokens($guard$);
+ definition:=pg_get_functiondef('api.change_administration(uuid,uuid,text,uuid,jsonb,text,text)'::regprocedure);
+ if (length(definition)-length(replace(definition,'changed:=target.auth_user_id;','')))/length('changed:=target.auth_user_id;')<>1 then raise exception 'REMOVAL_STAFF_CREDENTIAL_PATCH_PRECONDITION'; end if;
+ execute replace(definition,'changed:=target.auth_user_id;',$guard$if exists(select 1 from private.deleted_records where kind='STAFF' and target_id=p_target_id and deleted) then raise exception 'RECORD_REMOVED'; end if;
+  changed:=target.auth_user_id;$guard$);
+end $$;
 
 -- Filter BEFORE pagination/counts; financial reporting keeps all identities.
 do $$

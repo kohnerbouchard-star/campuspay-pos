@@ -77,8 +77,14 @@ try{
  const student=await request(admin,'/api/students',{studentCode:code,displayName:'Synthetic removal student',cardRead:card,pin,confirmationPin:pin,idempotencyKey:randomUUID()},201)
  const studentId=student.student_id,customer=new Map()
  await request(customer,'/api/store/login',{cardNumber:card,pin})
+ const elevations=[]
+ for(const purpose of ['RESET_STUDENT_PIN','RESET_STUDENT_CARD'])elevations.push(await request(admin,'/api/security/step-up',{superAdminEmployeeCode:'9001',superAdminPin:staffPin,purpose,studentId}))
  const studentBefore=await protectedState()
  await change(await input('STUDENT',studentId))
+ const oldPinReset={authorizationToken:elevations[0].authorizationToken,newPin:pin,confirmationPin:pin}
+ const oldCardReset={authorizationToken:elevations[1].authorizationToken,newCardRead:card+'NEW'}
+ await request(admin,`/api/security/students/${studentId}/pin-reset`,oldPinReset,409)
+ await request(admin,`/api/security/students/${studentId}/card-reset`,oldCardReset,409)
  assert.equal((await request(admin,`/api/students/roster?q=${code}&offset=0`)).length,0)
  assert.equal((await owner.query('select * from api.search_students($1,$2)',[session.session_id,code])).rows.length,0)
  assert.ok((await raw(customer,'/api/store/session')).status>=400)
@@ -86,6 +92,8 @@ try{
  await assert.rejects(()=>owner.query('update private.students set active=true where id=$1',[studentId]),/RECORD_REMOVED/)
  assert.equal(await protectedState(),studentBefore)
  await change(await input('STUDENT',studentId,'RESTORE'))
+ await request(admin,`/api/security/students/${studentId}/pin-reset`,oldPinReset,403)
+ await request(admin,`/api/security/students/${studentId}/card-reset`,oldCardReset,403)
  assert.ok((await raw(customer,'/api/store/session')).status>=400)
  await request(customer,'/api/store/login',{cardNumber:card,pin})
  assert.equal((await request(customer,'/api/store/session')).student_id,studentId)
@@ -107,6 +115,7 @@ try{
  await request(cashier,'/api/cash/close',{requestKey:randomUUID(),shiftId:shift.shift_id,counts:{'1000':2},notes:'Verified synthetic cash count',verified:true})
  const identityBefore=await protectedState()
  await change(staffInput)
+ await request(admin,'/api/administration',{action:'RESET_STAFF_PIN',targetId:cashierSession.user_id,newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Old synthetic PIN reset reviewed before deletion',verified:true,requestKey:randomUUID()},409)
  assert.ok(!(await request(admin,'/api/administration')).staff.some(r=>r.user_id===cashierSession.user_id))
  await request(cashier,'/api/auth/session',undefined,401)
  await request(new Map(),'/api/auth/login',{employeeCode:'1001',pin:staffPin},401)
@@ -135,6 +144,11 @@ try{
  await change(await input('COUPON',coupon.coupon_id,'RESTORE'))
  assert.ok((await request(inventory,'/api/coupons')).some(c=>c.coupon_id===coupon.coupon_id&&c.active))
  assert.equal(await protectedState(),couponBefore)
+ await request(inventory,`/api/coupons/${coupon.coupon_id}/deactivate`,{reason:'Original synthetic promotion withdrawal'})
+ const inactiveCoupon=(await owner.query('select to_jsonb(c) value from private.coupons c where id=$1',[coupon.coupon_id])).rows[0].value
+ await change(await input('COUPON',coupon.coupon_id));await change(await input('COUPON',coupon.coupon_id,'RESTORE'))
+ assert.deepEqual((await owner.query('select to_jsonb(c) value from private.coupons c where id=$1',[coupon.coupon_id])).rows[0].value,inactiveCoupon)
+ await owner.query('update private.coupons set active=true,deactivated_at=null,deactivated_by=null,deactivated_session_id=null,deactivation_reason=null where id=$1',[coupon.coupon_id])
  const runtime=new pg.Client({connectionString:ctx.runtimeUrl});await runtime.connect()
  try{for(const table of ['private.deleted_records','private.record_removal_operations'])await assert.rejects(()=>runtime.query(`select * from ${table}`),e=>e.code==='42501')}finally{await runtime.end()}
  await assert.rejects(()=>owner.query('update private.record_removal_operations set result=result'),/Journal entries cannot/)
