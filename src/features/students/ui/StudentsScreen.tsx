@@ -7,9 +7,10 @@ import { EnrollmentForm } from '@/features/students/ui/EnrollmentForm'
 import { StudentDirectory } from '@/features/students/ui/StudentDirectory'
 import { StudentDetail } from '@/features/students/ui/StudentDetail'
 import { EnrollmentSuccess } from '@/features/students/ui/EnrollmentSuccess'
+import { RecordRemovalProvider } from '@/features/removal/RecordRemoval'
 import { formatWon } from '@/lib/format/currency'
 
-export function StudentsScreen({userId}:{userId:string}) {
+export function StudentsScreen({userId,removalEnabled=false}:{userId:string;removalEnabled?:boolean}) {
   const [enrolling, setEnrolling] = useState(false)
   const [student, setStudent] = useState<ManagedStudent | null>(null)
   const [result, setResult] = useState<EnrollmentResult | null>(null)
@@ -34,7 +35,7 @@ export function StudentsScreen({userId}:{userId:string}) {
   }
   function startEnrollment() { refreshGeneration.current++;setRefreshError('');setStudent(null); setResult(null); setEnrolling(true) }
 
-  return <main className="workspace">
+  return <RecordRemovalProvider userId={userId} enabled={removalEnabled} onChanged={async removal=>{if(removal.outcome==='COMPLETED'&&removal.kind==='STUDENT'&&removal.deleted){refreshGeneration.current++;setStudent(current=>current?.student_id===removal.target_id?null:current);setRefreshError('');setRefreshKey(n=>n+1)}else await refreshSelected()}}><main className="workspace">
     <header className="workspace-header"><div><p className="eyebrow">MICA Money · E202</p><h1>Students</h1><p className="muted">Enroll students, review their accounts, and manage card access.</p></div>
       <button className="primary-action" disabled={enrolling} onClick={startEnrollment}>+ Enroll student</button>
     </header>
@@ -47,5 +48,5 @@ export function StudentsScreen({userId}:{userId:string}) {
           student ? <StudentDetail key={student.student_id} student={student} userId={userId} onChanged={refreshSelected} /> :
             <section className="panel empty-state"><h2>Select a student</h2><p className="muted">Review a student’s wallet and card status, or enroll a new student at E202.</p></section>}
     </div>
-  </main>
+  </main></RecordRemovalProvider>
 }

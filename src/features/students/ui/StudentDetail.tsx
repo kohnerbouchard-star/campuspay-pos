@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { RecordRemovalButton } from '@/features/removal/RecordRemoval'
 import { RecordManager } from '@/features/management/RecordManager'
 import { businessDate, formatBusinessTime } from '@/lib/format/business-time'
 import Link from 'next/link'
@@ -26,6 +27,7 @@ export function StudentDetail({ student,userId,onChanged }: { student: ManagedSt
       {student.active && student.pin_set === false && !student.card_active && <Link className="secondary-action" href={`/students/${student.student_id}/complete`}>Complete enrollment</Link>}
       {student.active && student.pin_set !== false && <Link className="secondary-action" href={`/security?studentId=${student.student_id}`}>Reset PIN or replace card</Link>}
       <button className="secondary-action" aria-expanded={managing} onClick={()=>setManaging(!managing)}>Manage student status</button>
+      <RecordRemovalButton kind="STUDENT" targetId={student.student_id}/>
       <Link className="secondary-action" href="/accounting">Open Accounting</Link>
     </div>
     {managing&&<RecordManager kind="STUDENT" userId={userId} targetId={student.student_id} onChanged={onChanged}/>}

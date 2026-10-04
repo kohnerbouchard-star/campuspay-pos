@@ -10,6 +10,9 @@ import { compatibilityError } from '@/lib/db/compatibility'
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  removal_directory: [{name:'p_session_id',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_offset',cast:'integer'}],
+  change_record_removal: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_version',cast:'text'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],
+  recover_record_removal: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'}],
   record_directory: [{name:'p_session_id',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_query',cast:'text'},{name:'p_status',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_target_id',cast:'uuid'}],
   change_record: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_payload',cast:'jsonb'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],
   recover_record_operation: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'}],

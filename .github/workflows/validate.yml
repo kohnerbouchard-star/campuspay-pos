@@ -65,6 +65,7 @@ jobs:
       - run: node scripts/verify-student-roster.mjs
       - run: npx playwright install --with-deps chromium
       - run: node scripts/verify-management-journeys.mjs
+      - run: node scripts/verify-removal-journeys.mjs
       - run: node --experimental-strip-types --no-warnings scripts/verify-receipt-policy-recovery.mjs
       - run: node scripts/verify-navigation-ux.mjs
       - run: node scripts/verify-security-recovery.mjs

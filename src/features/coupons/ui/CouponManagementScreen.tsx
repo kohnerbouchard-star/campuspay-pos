@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { fetchCoupons } from '@/features/coupons/client'
 import type { CouponSummary } from '@/features/coupons/domain'
 import { CouponForm } from '@/features/coupons/ui/CouponForm'
+import { RecordRemovalProvider } from '@/features/removal/RecordRemoval'
 import { CouponTable } from '@/features/coupons/ui/CouponTable'
 
-export function CouponManagementScreen() {
+export function CouponManagementScreen({userId,superAdmin=false,removalEnabled=false}:{userId:string;superAdmin?:boolean;removalEnabled?:boolean}) {
   const [coupons, setCoupons] = useState<CouponSummary[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -25,7 +26,7 @@ export function CouponManagementScreen() {
     return () => { active = false }
   }, [])
 
-  return <main className="workspace">
+  const content=<main className="workspace">
     <header className="workspace-header">
       <div><p className="eyebrow">Store promotions</p><h1>Coupons</h1></div>
       <span className="status-pill">Codes hidden after creation</span>
@@ -42,4 +43,5 @@ export function CouponManagementScreen() {
       <CouponTable coupons={coupons} onChanged={() => void load()} />
     </div>
   </main>
+  return superAdmin?<RecordRemovalProvider userId={userId} enabled={removalEnabled} onChanged={load}>{content}</RecordRemovalProvider>:content
 }

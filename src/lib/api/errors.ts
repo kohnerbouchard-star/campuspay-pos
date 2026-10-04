@@ -49,6 +49,7 @@ export function toApiError(error: unknown): ApiError {
   if (error instanceof Error && error.cause instanceof Error && error.cause !== error) return toApiError(error.cause)
 
   const message = error instanceof Error ? error.message : 'Unexpected error'
+  if (message.includes('RECORD_REMOVED')) return new ApiError(409,'CONFLICT','This record was deleted. Restore it from Deleted records in Staff & registers before using its normal editor.')
   if (message.includes('RECORD_STALE')) return new ApiError(409,'CONFLICT','This record changed since it was reviewed. Refresh it and review the new values.')
   if (message.includes('RECORD_HAS_STOCK')) return new ApiError(409,'CONFLICT','Record remaining stock removal or supplier return before archiving this product.')
   if (message.includes('RECORD_HAS_BALANCE')) return new ApiError(409,'CONFLICT','Settle this student’s wallet balance through the authorized accounting workflow before deactivation.')
