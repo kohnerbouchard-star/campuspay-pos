@@ -12,7 +12,7 @@ export async function runRemovalBrowser(ctx,{admin,inventory,productId,studentId
   await page.goto(ctx.base+'/inventory')
   const row=page.getByRole('row').filter({hasText:record.sku})
   await row.getByRole('button',{name:'Delete product',exact:true}).click()
-  let dialog=page.getByRole('alertdialog',{name:'Delete product?',exact:true}),confirm=dialog.getByRole('button',{name:'Delete product',exact:true})
+  let dialog=page.getByRole('alertdialog',{name:'Delete product?',exact:true}),confirm=dialog.locator('button.primary-action')
   await expect(dialog.getByRole('button',{name:'Keep record',exact:true})).toBeFocused()
   const description=await dialog.getAttribute('aria-describedby');assert.ok(await page.evaluate(id=>!!document.getElementById(id)?.textContent,description))
   await expect(confirm).toBeDisabled();await fill(dialog,'wrong');await expect(confirm).toBeDisabled()
