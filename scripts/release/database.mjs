@@ -18,9 +18,16 @@ export async function checkRuntime(client) {
        where nspname in ('public','private','api','extensions')) as schema_create,
       has_function_privilege($1,'api.authorize_session(text,text,text)','EXECUTE') as execute,
       (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace
-       where n.nspname in ('private','public') and c.relkind in ('r','p') and
-       has_table_privilege($1,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')) as table_access`, [role])).rows[0]
-    requireThat(rights.member && rights.usage && rights.execute && !rights.database_create && !rights.schema_create && rights.table_access === 0, 'UNSAFE_RUNTIME_GRANTS')
+       where n.nspname in ('private','public') and c.relkind in ('r','p','v','m','f') and
+       (has_table_privilege($1,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') or
+        has_any_column_privilege($1,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))) as table_access,
+      (select count(*)::integer from pg_class c join pg_namespace n on n.oid=c.relnamespace
+       where n.nspname in ('private','public') and case when c.relkind='S' then
+       has_sequence_privilege($1,c.oid,'USAGE,SELECT,UPDATE') else false end) as sequence_access,
+      (select count(*)::integer from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+       where n.nspname='private' and has_function_privilege($1,p.oid,'EXECUTE')) as private_function_access`, [role])).rows[0]
+    requireThat(rights.member && rights.usage && rights.execute && !rights.database_create && !rights.schema_create &&
+      rights.table_access === 0 && rights.sequence_access === 0 && rights.private_function_access === 0, 'UNSAFE_RUNTIME_GRANTS')
     const memberships = (await client.query(`with recursive memberships(oid) as (
       select roleid from pg_auth_members where member=(select oid from pg_roles where rolname=$1)
       union select m.roleid from pg_auth_members m join memberships p on m.member=p.oid
