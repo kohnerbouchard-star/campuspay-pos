@@ -2,7 +2,7 @@
 import { PRESETS,PRESET_LABELS,PRESET_DESCRIPTIONS,PRESET_DEFAULTS,type AccessPreset } from '@/features/auth/capabilities'
 import { EffectiveAccess } from '@/features/access/EffectiveAccess'
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
-import { administrationReview, ROLE_DESCRIPTIONS } from '../review'
+import { administrationReview } from '../review'
 import { useEffect, useId, useRef, useState } from 'react'
 import { AdministrationChangeSchema,type AdministrationChange,type StaffRecord,type TerminalRecord } from '../domain'
 export type AdministrationTarget = {kind:'CREATE'}|{kind:'STAFF';record:StaffRecord;initialActive?:boolean}|{kind:'TERMINAL';record:TerminalRecord;isCurrent?:boolean}
@@ -50,6 +50,6 @@ export function AdministrationForm({target,busy,onSubmit,onCancel}:{target:Admin
    <p className="muted">Changes are audited. Staff changes sign out that person. Terminal changes sign out that terminal; renaming your active terminal keeps your session. An open cash shift must be closed before deactivation or a cashier role change.</p>
    <button className="primary-action">{busy?'Applying change…':'Apply verified change'}</button><button type="button" className="secondary-action" onClick={onCancel}>Cancel</button>
   </fieldset>
- {review&&summary&&<ConfirmationDialog title={`${summary.label}?`} description={summary.description} confirmLabel={summary.label} cancelLabel="Go back" destructive={summary.destructive} confirmationText={summary.token} onCancel={()=>setReview(null)} onConfirm={async()=>{const input=review;await onSubmit(input);setReview(null)}}><p>Reason: {review.notes}</p>{'role' in review&&<p>{ROLE_DESCRIPTIONS[review.role]}</p>}</ConfirmationDialog>}
+ {review&&summary&&<ConfirmationDialog title={`${summary.label}?`} description={summary.description} confirmLabel={summary.label} cancelLabel="Go back" destructive={summary.destructive} confirmationText={summary.token} onCancel={()=>setReview(null)} onConfirm={async()=>{const input=review;await onSubmit(input);setReview(null)}}><p>Reason: {review.notes}</p>{review.action==='CREATE_STAFF'&&<><p>Preset: {PRESET_LABELS[review.preset]}</p><p>{PRESET_DESCRIPTIONS[review.preset]}</p><EffectiveAccess permissions={PRESET_DEFAULTS[review.preset]}/></>}</ConfirmationDialog>}
  </form>
 }

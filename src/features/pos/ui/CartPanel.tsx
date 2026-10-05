@@ -8,7 +8,7 @@ import { formatWon } from '@/lib/format/currency'
 import { Icon } from '@/components/ui/Icon'
 
 export function CartPanel({
-  cart,
+  cart,canRedeem,
   products,
   subtotal,
   discount,
@@ -21,6 +21,7 @@ export function CartPanel({
   onCheckout,
   tenderMode, cashEnabled, onTenderChange, busy,
 }: {
+  canRedeem:boolean
   cart: CartState
   products: CatalogProduct[]
   subtotal: number
@@ -49,12 +50,12 @@ export function CartPanel({
         </div>
       </div>)}
     </div>
-    <CouponEntry
+    {canRedeem&&<CouponEntry
       items={cartLines}
       applied={coupon}
       onApplied={onCouponApplied}
       onRemoved={onCouponRemoved}
-    />
+    />}
     <div className="order-summary">
       {discount > 0 && <>
         <div><span>Subtotal</span><b>{formatWon(subtotal)}</b></div>

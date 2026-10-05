@@ -17,7 +17,7 @@ const ownerUrl = process.env.DATABASE_URL_UNPOOLED
 if (!ownerUrl || !['localhost','127.0.0.1'].includes(new URL(ownerUrl).hostname)) throw new Error('Integration tests require an isolated localhost PostgreSQL database')
 const owner = new pg.Client({ connectionString: ownerUrl })
 await owner.connect()
-const env = { ...process.env, DATABASE_URL_UNPOOLED: '', COOKIE_SECURE:'false', APP_ORIGIN:'http://127.0.0.1:3100', NODE_ENV:'production', NEXT_TELEMETRY_DISABLED:'1' }
+const env = { ...process.env, DATABASE_URL_UNPOOLED: '', COOKIE_SECURE:'false', APP_ORIGIN:'http://127.0.0.1:3100', NODE_ENV:'production', NEXT_TELEMETRY_DISABLED:'1', FUNDING_ENABLED:'true' }
 for (const key of ['CARD_HMAC_SECRET','COUPON_HMAC_SECRET','STAFF_PIN_PEPPER','STUDENT_PIN_PEPPER','SESSION_HMAC_SECRET','TERMINAL_COOKIE_SECRET']) env[key] = randomBytes(32).toString('hex')
 const h=(key,s)=>createHmac('sha256',env[key]).update(s).digest('hex')
 const staff=[['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin']].map(([employeeCode,role])=>({employeeCode,role,displayName:`Test ${role}`,pinProof:h('STAFF_PIN_PEPPER','staff-pin:12345678')}))
@@ -70,14 +70,19 @@ try {
  const discounted=await pay(cashier,[{productId:water.id,quantity:5}],'WELCOME10');assert.equal(discounted.r.discount_won,600)
  const couponDenied=await pay(cashier,[{productId:water.id,quantity:1}],'WELCOME10',409);assert.equal(couponDenied.r.code,'COUPON_STUDENT_LIMIT')
  const wallets=await request(accountant,'/api/accounting/students');assert.equal(wallets[0].card_active,true);const sid=wallets[0].student_id
- const a=await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[20000],reasonCode:'FUNDS_RECEIVED',notes:'Integration test receipt',idempotencyKey:randomUUID()})
- await request(accountant,`/api/accounting/intents/${a.intent_id}/card`,{cardRead:card})
- const ar=await request(accountant,`/api/accounting/intents/${a.intent_id}/confirm`,{pin:studentPin});assert.equal(ar.balance_after_won,12100)
+ await owner.query('update private.system_settings set funding_enabled=true where singleton')
+ const funding={requestKey:randomUUID(),action:'NONCASH_CREDIT',denominations:[20000],sourceReference:'Synthetic verified integration source',notes:'Integration funding receipt'}
+ await request(accountant,'/api/funding/prepare',funding)
+ await request(accountant,'/api/funding/card',{requestKey:funding.requestKey,cardRead:card})
+ const ar=(await request(accountant,'/api/funding/confirm',{requestKey:funding.requestKey,studentPin,verified:true,approverCode:'9001',approverPin:'12345678'})).receipt;assert.equal(ar.balance_after_won,12100)
  await request(accountant,'/api/auth/login',{employeeCode:'3001',pin:'12345678'})
- const recoveredAdjustment=await request(accountant,`/api/accounting/intents/${a.intent_id}/recover`,{});assert.equal(recoveredAdjustment.receipt.reference_number,ar.reference_number)
- const foreignAccountant=await login('3001');await request(foreignAccountant,`/api/accounting/intents/${a.intent_id}/recover`,{},403)
- const abandonedAdjustment=await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[1000],reasonCode:'FUNDS_RECEIVED',notes:'Unsubmitted recovery test',idempotencyKey:randomUUID()})
- assert.equal((await request(accountant,`/api/accounting/intents/${abandonedAdjustment.intent_id}/recover`,{})).state,'cancelled')
+ const recoveredFunding=await request(accountant,'/api/funding/recover',{requestKey:funding.requestKey});assert.equal(recoveredFunding.receipt.reference_number,ar.reference_number)
+ const foreignAccountant=await login('3001');await request(foreignAccountant,'/api/funding/recover',{requestKey:funding.requestKey},403)
+ const abandonedFunding={...funding,requestKey:randomUUID(),denominations:[1000]}
+ await request(accountant,'/api/funding/prepare',abandonedFunding)
+ assert.equal((await request(accountant,'/api/funding/recover',{requestKey:abandonedFunding.requestKey})).outcome,'CLOSED')
+ await request(accountant,'/api/funding/prepare',abandonedFunding,409)
+ await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[1000],reasonCode:'FUNDS_RECEIVED',notes:'Retired bypass must fail',idempotencyKey:randomUUID()},403)
  for(const name of ['sales','inventory','wallets','coupons'])assert.ok(Array.isArray(await request(accountant,`/api/reports/${name}`)))
  const prod=await request(inventory,'/api/management',{kind:'PRODUCT',action:'CREATE_PRODUCT',requestKey:randomUUID(),sku:'FIFO-CHECK',name:'FIFO check',category:'Test',sellingPriceWon:1000,reorderLevel:0,reason:'Integration FIFO fixture product',verified:true})
  const prodId=prod.target_id
@@ -88,9 +93,9 @@ try {
  const coupons=await request(inventory,'/api/coupons');assert.equal(coupons[0].discount_type,'PERCENTAGE')
  const fixed=await request(inventory,'/api/coupons',{name:'Fixed test',code:'FIXEDTEST',discountType:'FIXED',fixedAmountWon:100,percentageBps:null,minimumSubtotalWon:0,maxDiscountWon:null,totalRedemptionLimit:10,perStudentLimit:2,startsAt:new Date(Date.now()-60000).toISOString(),endsAt:null,idempotencyKey:randomUUID()})
  await request(inventory,`/api/coupons/${fixed.coupon_id}/deactivate`,{reason:'Test complete'})
- const up=await request(superadmin,'/api/security/step-up',{superAdminEmployeeCode:'9001',superAdminPin:'12345678',purpose:'RESET_STUDENT_PIN',studentId:sid})
- await request(superadmin,`/api/security/students/${sid}/pin-reset`,{authorizationToken:up.authorizationToken,newPin:'445566',confirmationPin:'445566'});studentPin='445566'
- await request(superadmin,`/api/security/students/${sid}/pin-reset`,{authorizationToken:up.authorizationToken,newPin:'445566',confirmationPin:'445566'},403)
+ const up=await request(accountant,'/api/security/step-up',{superAdminEmployeeCode:'9001',superAdminPin:'12345678',purpose:'RESET_STUDENT_PIN',studentId:sid})
+ await request(accountant,`/api/security/students/${sid}/pin-reset`,{authorizationToken:up.authorizationToken,newPin:'445566',confirmationPin:'445566'});studentPin='445566'
+ await request(accountant,`/api/security/students/${sid}/pin-reset`,{authorizationToken:up.authorizationToken,newPin:'445566',confirmationPin:'445566'},403)
 
  // Customer online store: authenticated catalog, isolated card/PIN session, East-room delivery,
  // shared inventory/wallet/coupons, and staff fulfillment state transitions.

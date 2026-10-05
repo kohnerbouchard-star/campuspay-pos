@@ -37,7 +37,9 @@ try {
  const input=create()
  await post(new Map(),input,401)
  for(const who of [cashier,accountant]){await post(who,input,403);await request(who,'/api/management?kind=PRODUCT',undefined,403);await recovery(who,'PRODUCT',input.requestKey,403)}
- for(const who of [inventory,cashier,accountant])await request(who,'/api/management?kind=STUDENT',undefined,403)
+ await request(cashier,'/api/management?kind=STUDENT',undefined,403)
+ const readOnlyStudents=await request(inventory,'/api/management?kind=STUDENT');assert.ok(readOnlyStudents.records.every(r=>r.quantity_or_balance===null),'Student view never grants wallet data')
+ await request(accountant,'/api/management?kind=STUDENT')
  await request(admin,'/api/management',input,403,'https://untrusted.example')
  for(const extra of [{verified:false},{role:'super_admin'},{sellingPriceWon:-1},{stock:100},{action:'DELETE_PRODUCT'}])await post(inventory,{...input,...extra},400)
  await request(admin,'/api/management?kind=PRODUCT&offset=-1',undefined,400)

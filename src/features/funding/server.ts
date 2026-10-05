@@ -19,7 +19,10 @@ export function prepareStudentFunding(s:SessionContext,studentId:string,input:Pr
 }
 function enabled(){if(!fundingEnabled())throw new ApiError(409,'CONFLICT','Wallet funding is not activated for this installation. No balance has changed')}
 export function prepareFunding(s:SessionContext,input:PrepareFunding){
- enabled();const v=PrepareFundingSchema.parse(input)
+ const v=PrepareFundingSchema.parse(input)
+ const permission=v.action==='CASH_DEPOSIT'?'wallet.fund':v.action==='REVERSE_FUNDING'?'wallet.reverse':['NONCASH_CREDIT','ADMIN_DEBIT'].includes(v.action)?'wallet.correct':'cash.movement.record'
+ if(!s.permissions.includes(permission))throw new ApiError(403,'FORBIDDEN','This funding operation is not assigned')
+ enabled()
  const payload:Record<string,unknown>={source_reference:v.sourceReference,notes:v.notes}
  if('denominations' in v)payload.denominations=v.denominations
  if(v.action==='CASH_DEPOSIT')payload.cash_received_won=v.cashReceivedWon

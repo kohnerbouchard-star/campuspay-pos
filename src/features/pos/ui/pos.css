@@ -76,3 +76,5 @@
 .coupon-applied > div { display: grid; gap: var(--space-1); min-width: 0; flex: 1; }
 .coupon-applied strong { overflow-wrap: anywhere; }
 .coupon-applied > button { flex-shrink: 0; }
+
+.pos-layout[data-read-only] { grid-template-columns: minmax(0, 1fr); }

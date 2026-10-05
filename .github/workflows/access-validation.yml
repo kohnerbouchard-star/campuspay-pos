@@ -34,3 +34,71 @@ jobs:
           name: access-validation-results
           path: .validation/access/
           include-hidden-files: true
+
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: management-security
+            scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-complete-enrollment.mjs
+          - group: navigation-administration
+            scripts: scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs
+          - group: refunds-operations
+            scripts: scripts/verify-sale-refunds.mjs scripts/verify-operations.mjs scripts/verify-refund-preview.mjs scripts/verify-partial-refunds.mjs
+          - group: funding-history
+            scripts: scripts/verify-funding.mjs scripts/verify-history.mjs scripts/verify-reconciliation.mjs
+          - group: integration-recovery
+            scripts: scripts/verify-receipt-policy-recovery.mjs scripts/integration-test.mjs scripts/verify-backup-restore.mjs
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+      CAMPUSPAY_LOCAL_HTTP: 'true'
+      APP_ORIGIN: http://localhost:3000
+      PG_TOOL_CONTAINER: ${{ job.services.postgres.id }}
+      PG_DUMP_BIN: ./scripts/ci/pg-dump
+      PG_RESTORE_BIN: ./scripts/ci/pg-restore
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npm run db:migrate
+      - run: npx playwright install --with-deps chromium
+      - name: Verify every regression in this group
+        env:
+          CHECK_SCRIPTS: ${{ matrix.scripts }}
+        run: |
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+          failed=0
+          for script in $CHECK_SCRIPTS; do
+            if node --experimental-strip-types --no-warnings "$script"; then
+              echo "PASS $script"
+            else
+              failed=1
+              echo "FAIL $script"
+            fi
+          done
+          exit "$failed"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: regression-${{ matrix.group }}
+          path: .validation/
+          include-hidden-files: true

@@ -18,7 +18,7 @@ import { forgetPendingPayment, readPendingPayment } from '@/features/pos/pending
 import { ErrorState, LoadingState } from '@/components/ui/Feedback'
 import { Icon } from '@/components/ui/Icon'
 
-export function POSScreen({ cashierName }: { cashierName: string }) {
+export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: string;canCheckout:boolean;canRedeem:boolean }) {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [cart, setCart] = useState<CartState>({})
   const [coupon, setCoupon] = useState<{ code: string; quote: CouponQuote } | null>(null)
@@ -41,6 +41,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
   const total = coupon?.quote.total_won ?? subtotal
 
   const recoverPending = useCallback(async () => {
+    if(!canCheckout)return
     const id = readPendingPayment()
     if (!id) return
     try {
@@ -51,7 +52,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
       setRecoveryBlocked(true)
       throw new Error('A previous payment still needs a confirmed result. Sign in again on this register or retry recovery before starting another sale.')
     }
-  }, [])
+  }, [canCheckout])
 
   async function load() {
     setLoading(true)
@@ -73,7 +74,7 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
     checkoutKey.current = null; setCoupon(null); setCart(update)
   }
   async function checkout() {
-    if (pending.current || !cartLines.length) return
+    if (!canCheckout || pending.current || !cartLines.length) return
     pending.current = true; setBusy(true)
     checkoutKey.current ??= crypto.randomUUID()
     try {
@@ -109,14 +110,14 @@ export function POSScreen({ cashierName }: { cashierName: string }) {
     {recoveryBlocked && <p className="error-message"><a href="/login?next=%2Fpos&amp;expired=1">Sign in again to recover the previous payment</a></p>}
     {policy && <PaymentStatus policy={policy} />}
     {loading && <LoadingState label="Loading register…" />}
-    <div className="pos-layout" aria-busy={busy} inert={busy || loading || recoveryBlocked || !!error || undefined}>
-      <a className="pos-cart-link" href="#pos-cart"><Icon name="bag" size={18} />View cart · {itemCount} {itemCount === 1 ? 'item' : 'items'}</a>
-      <ProductGrid products={products} onSelect={product => mutateCart(current => addProduct(current, product))} />
-      <CartPanel cart={cart} products={products} subtotal={subtotal} discount={discount} total={total} coupon={coupon} cartLines={cartLines}
+    <div className="pos-layout" data-read-only={!canCheckout||undefined} aria-busy={busy} inert={busy || loading || recoveryBlocked || !!error || undefined}>
+      {canCheckout&&<a className="pos-cart-link" href="#pos-cart"><Icon name="bag" size={18} />View cart · {itemCount} {itemCount === 1 ? 'item' : 'items'}</a>}
+      <ProductGrid canSelect={canCheckout} products={products} onSelect={product => mutateCart(current => addProduct(current, product))} />
+      {canCheckout&&<CartPanel canRedeem={canRedeem} cart={cart} products={products} subtotal={subtotal} discount={discount} total={total} coupon={coupon} cartLines={cartLines}
         onCouponApplied={(code, quote) => { checkoutKey.current = null; setCoupon({ code, quote }) }} onCouponRemoved={() => { checkoutKey.current = null; setCoupon(null) }}
         onChange={(id, delta, max) => mutateCart(current => changeQuantity(current, id, delta, max))} onCheckout={() => void checkout()}
         tenderMode={tenderMode} cashEnabled={policy?.cash_enabled ?? false} busy={busy || loading || recoveryBlocked}
-        onTenderChange={mode => { setTenderMode(mode); checkoutKey.current = null }} />
+        onTenderChange={mode => { setTenderMode(mode); checkoutKey.current = null }} />}
     </div>
     {intent && <PaymentDialog intent={intent} onClose={() => { setIntent(null); checkoutKey.current = null }} onComplete={completed} />}
     {receipt && <ReceiptDialog receipt={receipt} items={receiptItems} onClose={() => setReceipt(null)} />}
