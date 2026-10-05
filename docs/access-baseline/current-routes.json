@@ -1,0 +1,748 @@
+[
+  {
+    "path": "src/app/access-unavailable/page.tsx",
+    "guards": [
+      "authorizeAnyRequest()"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/accounting/page.tsx",
+    "guards": [
+      "requirePagePermission('wallet.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/admin/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(ADMIN_PERMISSIONS, '/admin')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/administration/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['staff.read','terminals.read'],'/administration')"
+    ],
+    "role_checks": [
+      "export default async function Page(){const s=await requireAnyPagePermission(['staff.read','terminals.read'],'/administration');return <WorkspaceFrame session={s} title=\"Staff and terminals\"><AdministrationScreen enabled={administrationEnabled()} userId={s.user_id} permissions={s.permissions} preset={s.preset}/></WorkspaceFrame>}"
+    ]
+  },
+  {
+    "path": "src/app/cash/history/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['cash.history.all'],'/cash/history')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/cash/movements/page.tsx",
+    "guards": [
+      "requirePagePermission('cash.movement.record')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/cash/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['cash.read'],'/cash')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/coupons/page.tsx",
+    "guards": [
+      "requirePagePermission('coupons.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/finance/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(FINANCE_PERMISSIONS, '/finance')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/funding/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['wallet.read'],'/funding')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/inventory/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['inventory.read','coupons.read'],'/inventory')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/login/page.tsx",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/orders/page.tsx",
+    "guards": [
+      "requirePagePermission('orders.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/page.tsx",
+    "guards": [
+      "authorizeAnyRequest() }"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/pos/page.tsx",
+    "guards": [
+      "requirePagePermission('pos.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/reconciliation/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['reconciliation.read'],'/reconciliation')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/refunds/items/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['refunds.read'],'/refunds/items')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/refunds/page.tsx",
+    "guards": [
+      "requirePagePermission('refunds.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/register/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(REGISTER_PERMISSIONS, '/register')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/reports/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(REPORT_PERMISSIONS, '/reports')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/security/page.tsx",
+    "guards": [
+      "requireAnyPagePermission(['credentials.reset','credentials.card.replace'],'/security')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/settings/payments/page.tsx",
+    "guards": [
+      "requirePagePermission('settings.payments.manage')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/store/account/page.tsx",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/store/login/page.tsx",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/store/orders/page.tsx",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/store/page.tsx",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/students/[studentId]/complete/page.tsx",
+    "guards": [
+      "requirePagePermission('students.enroll')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/students/page.tsx",
+    "guards": [
+      "requirePagePermission('students.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/intents/[intentId]/card/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.adjust')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/intents/[intentId]/confirm/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.adjust')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/intents/[intentId]/recover/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/intents/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.adjust')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/students/[studentId]/history/export/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.read'),{studentId}=await context.params"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/students/[studentId]/history/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.read'),{studentId}=await context.params"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/students/[studentId]/transactions/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/accounting/students/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/administration/access/[userId]/route.ts",
+    "guards": [
+      "accessSession()",
+      "accessSession(),target=id((await c.params).userId),v=await parseJson(r,AccessChangeSchema)"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/administration/access/defaults/route.ts",
+    "guards": [
+      "accessSession())))"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/administration/access/recover/route.ts",
+    "guards": [
+      "accessSession()"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/administration/recover/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/administration/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/auth/activity/route.ts",
+    "guards": [
+      "authorizeAnyRequest()"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/auth/login/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/auth/logout/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/auth/session/route.ts",
+    "guards": [
+      "authorizeAnyRequest()) }"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/close/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/history/export/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/history/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/open/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/recover/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/review/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/cash/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/coupons/[couponId]/deactivate/route.ts",
+    "guards": [
+      "authorizeRequest('coupons.manage')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/coupons/route.ts",
+    "guards": [
+      "authorizeRequest('coupons.read')",
+      "authorizeRequest('coupons.manage')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/funding/card/route.ts",
+    "guards": [
+      "fundingSession(),v=await parseJson(request,ScanFundingSchema)"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/funding/confirm/route.ts",
+    "guards": [
+      "fundingSession()"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/funding/export/route.ts",
+    "guards": [
+      "fundingSession(),q=new URL(request.url).searchParams,range=fundingRange(q.get('from'),q.get('to'))"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/funding/prepare/route.ts",
+    "guards": [
+      "fundingSession()"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/funding/recover/route.ts",
+    "guards": [
+      "fundingSession(),v=await parseJson(request,FundingKeySchema)"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/funding/route.ts",
+    "guards": [
+      "fundingSession(),q=new URL(request.url).searchParams,range=fundingRange(q.get('from'),q.get('to'))"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/inventory/adjustments/route.ts",
+    "guards": [
+      "authorizeRequest('inventory.adjust')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/inventory/lots/route.ts",
+    "guards": [
+      "authorizeRequest('inventory.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/inventory/products/[productId]/price/route.ts",
+    "guards": [
+      "authorizeRequest('inventory.price.manage')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/inventory/products/route.ts",
+    "guards": [
+      "authorizeRequest('inventory.read')",
+      "authorizeRequest('inventory.product.manage')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/inventory/receipts/recover/route.ts",
+    "guards": [
+      "authorizeRequest('inventory.receive')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/inventory/receipts/route.ts",
+    "guards": [
+      "authorizeRequest('inventory.receive')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/management/recover/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/management/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/orders/[orderId]/status/route.ts",
+    "guards": [
+      "authorizeRequest('orders.fulfill')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/orders/route.ts",
+    "guards": [
+      "authorizeRequest('orders.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/catalog/route.ts",
+    "guards": [
+      "authorizeRequest('pos.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/coupons/quote/route.ts",
+    "guards": [
+      "authorizeRequest('coupons.redeem')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/intents/[intentId]/cancel/route.ts",
+    "guards": [
+      "authorizeRequest('pos.checkout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/intents/[intentId]/card/route.ts",
+    "guards": [
+      "authorizeRequest('pos.checkout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/intents/[intentId]/confirm/route.ts",
+    "guards": [
+      "authorizeRequest('pos.checkout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/intents/[intentId]/recover/route.ts",
+    "guards": [
+      "authorizeRequest('pos.checkout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/intents/[intentId]/tender/route.ts",
+    "guards": [
+      "authorizeRequest('pos.checkout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/intents/route.ts",
+    "guards": [
+      "authorizeRequest('pos.checkout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/pos/payment-policy/route.ts",
+    "guards": [
+      "authorizeAnyRequest()",
+      "authorizeRequest('settings.payments.manage')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/reconciliation/export/route.ts",
+    "guards": [
+      "authorizeRequest('reconciliation.read'),data=await dailyReconciliation(session,new URL(request.url).searchParams.get('day'))"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/reconciliation/route.ts",
+    "guards": [
+      "authorizeRequest('reconciliation.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/items/quote/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/items/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.read'), q = new URL(request.url).searchParams",
+      "authorizeRequest('refunds.issue')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/payout/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.cash_payout')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/preview/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/record/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/recover/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.issue')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/return/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.issue')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.issue')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/sale/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/refunds/summary/route.ts",
+    "guards": [
+      "authorizeRequest('refunds.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/reports/coupons/route.ts",
+    "guards": [
+      "authorizeRequest('reports.coupons')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/reports/inventory/route.ts",
+    "guards": [
+      "authorizeRequest('reports.inventory')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/reports/sales/route.ts",
+    "guards": [
+      "authorizeRequest('reports.sales')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/reports/wallets/route.ts",
+    "guards": [
+      "authorizeRequest('reports.wallets')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/security/step-up/route.ts",
+    "guards": [
+      "authorizeRequest('credentials.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/security/students/[studentId]/card-reset/route.ts",
+    "guards": [
+      "authorizeRequest('credentials.card.replace')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/security/students/[studentId]/pin-reset/route.ts",
+    "guards": [
+      "authorizeRequest('credentials.reset')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/security/students/route.ts",
+    "guards": [
+      "authorizeRequest('credentials.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/catalog/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/locations/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/login/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/logout/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/orders/[orderId]/refunds/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/orders/recover/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/orders/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/quote/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/store/session/route.ts",
+    "guards": [],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/students/[studentId]/complete-enrollment/route.ts",
+    "guards": [
+      "authorizeRequest('students.enroll')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/students/[studentId]/funding/route.ts",
+    "guards": [
+      "authorizeRequest('wallet.fund'),id=routeUuid((await c.params).studentId)",
+      "authorizeRequest('wallet.fund'),id=routeUuid((await c.params).studentId)"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/students/[studentId]/recover-completion/route.ts",
+    "guards": [
+      "authorizeRequest('students.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/students/roster/route.ts",
+    "guards": [
+      "authorizeRequest('students.read')"
+    ],
+    "role_checks": []
+  },
+  {
+    "path": "src/app/api/students/route.ts",
+    "guards": [
+      "authorizeRequest('students.read')",
+      "authorizeRequest('students.enroll')"
+    ],
+    "role_checks": []
+  }
+]

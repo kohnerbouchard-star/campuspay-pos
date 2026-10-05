@@ -33,6 +33,7 @@ try {
   {code:'ACCESS-ALEX',preset:'staff',permissions:['pos.read','pos.checkout','coupons.redeem','orders.read','orders.fulfill','inventory.read'],workspaces:['/register','/inventory']},
   {code:'ACCESS-FINANCE',preset:'accountant',permissions:[...PRESET_DEFAULTS.accountant,'wallet.approve'],workspaces:['/register','/students','/finance']},
   {code:'ACCESS-STATUS',preset:'manager',permissions:[...PRESET_DEFAULTS.manager,'students.status.manage'],workspaces:['/register','/students','/inventory','/finance']},
+  {code:'ACCESS-ADMIN-VIEW',preset:'staff',permissions:['staff.read','terminals.read'],workspaces:['/admin']},
   {code:'ACCESS-VIEW',preset:'staff',permissions:['pos.read','students.read','inventory.read','coupons.read','orders.read'],workspaces:['/register','/students','/inventory']},
  ]
  const footprint=async()=>JSON.stringify((await owner.query(`select
@@ -89,7 +90,7 @@ try {
  for(const test of cases){
   phase=`browser ${test.code}`
   const {context,page}=await newPage(test.cookies)
-  const start=test.permissions.includes('pos.read')?'/pos':'/students'
+  const start=test.permissions.includes('pos.read')?'/pos':test.permissions.includes('students.read')?'/students':'/administration'
   await page.goto(base+start,{waitUntil:'networkidle'})
   const nav=page.getByRole('complementary',{name:'Staff navigation',exact:true}).getByRole('navigation',{name:'Permitted workspaces'})
   assert.deepEqual((await nav.locator('a').evaluateAll(a=>a.map(x=>x.getAttribute('href')))).sort(),[...test.workspaces].sort())
@@ -121,6 +122,15 @@ try {
     await page.getByRole('button',{name:'Close dialog',exact:true}).click()
    }
   }
+  if(test.code==='ACCESS-ADMIN-VIEW'){
+   await page.goto(base+'/administration',{waitUntil:'networkidle'})
+   await page.getByRole('row').filter({hasText:'ACCESS-STAFF'}).getByRole('button',{name:'Open employee',exact:true}).click()
+   await expect(page.getByText('Take payments',{exact:true})).toBeVisible()
+   assert.equal(await page.getByRole('button',{name:'Access',exact:true}).count(),0)
+   assert.equal(await page.getByRole('button',{name:'Create employee',exact:true}).count(),0)
+   assert.equal(await page.getByRole('button',{name:'Manage terminal',exact:true}).count(),0)
+   assert.equal(await page.getByRole('button',{name:'Apply verified change',exact:true}).count(),0)
+  }
   if(test.code==='ACCESS-VIEW'){
    await page.goto(base+'/pos',{waitUntil:'networkidle'});assert.equal(await page.getByRole('button',{name:/Take payment/}).count(),0);assert.equal(await page.locator('.cart-panel').count(),0)
    await page.goto(base+'/orders',{waitUntil:'networkidle'});assert.equal(await page.getByRole('button',{name:'Start picking',exact:true}).count(),0)
@@ -131,7 +141,7 @@ try {
   await page.goto(base+start,{waitUntil:'networkidle'});await page.screenshot({path:`${dir}/${test.code}-1440.png`,fullPage:true})
   await context.close()
  }
- checks.push('Eight effective-access profiles verify visible/hidden workspaces, direct-route denial without protected fetches, contextual actions and read-only POS/inventory/orders/coupons')
+ checks.push('Nine effective-access profiles verify visible/hidden workspaces, direct-route denial without protected fetches, contextual actions and read-only POS/inventory/orders/coupons')
  phase='access editor dependency, reviewed save and session revocation'
  const {context,page}=await newPage(admin)
  await page.goto(base+'/administration',{waitUntil:'networkidle'})

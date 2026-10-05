@@ -12,6 +12,11 @@ Scope: only `kohnerbouchard-star/campuspay-pos`. Deployment is limited to Vercel
 - `routes.json`: every page/API route and its authorization guard.
 - `database-boundaries.json`: database function authorization inventory.
 - `legacy-mapping.json`: exact explicitly stored migration assignments per old role.
+- `capabilities.json`: all 47 capability definitions, prerequisites and exact four preset defaults.
+- `current-routes.json` and `current-database-boundaries.json`: installed candidate guard inventories.
+- `route-mapping.md`: five workspaces, contextual actions and nine tested access examples.
+- `security-review.md`: security boundary decisions and remaining role invariants.
+- `release-cutover.md`: required matching database/app release and observed authorization blocker.
 
 Baseline roles: cashier, inventory_admin, accountant, super_admin. Baseline capability names are retained only as legacy contract metadata; they no longer resolve runtime authority from a role.
 
@@ -39,7 +44,11 @@ The legacy adjustment component is unmounted from the primary UX. New legacy pos
 
 ## Validation status
 
-This branch is implementation in progress. Initial local results: 449 unit tests pass; navigation tests pass; typecheck, lint, static/import/security checks pass; all migrations apply in an isolated PostgreSQL-compatible runtime. Native PostgreSQL 17 CI, full browser regression, exact-candidate security review and actual-main validation are still required. The draft PR must not be merged until these pass.
+Local results: 452 unit tests pass; navigation, typecheck, lint, static/import/security checks pass. Native PostgreSQL 17 access tests and management/security, refunds/operations, navigation/administration, integration/recovery, complete history/reconciliation and synthetic encrypted backup/restore regression groups have passed. The scanner regression exposed duplicate React keys in the new contextual funding screen; unique keys correct stale readiness reconciliation and the exact frame/rerender/recovery assertions are retained.
+
+Two workflows validate each candidate: the original full validation job and native access plus five independent regression groups. Nine preset/custom profiles test API/RPC denial, visible/hidden workspaces and sections, record actions, a responsive dependency matrix, reviewed access save, immutable audit and revoked sessions. Funding tests include selected identity, closed drawer, inactive student, missing first PIN, another valid card, wrong PIN, feature gates, duplicate/concurrent requests, opaque recovery after committed response loss/reload and no double credit. All financial tests use disposable localhost databases and synthetic data.
+
+PR 42 contains the definitive exact candidate/main hashes, test run URLs, artifact screenshots and current release status. The candidate must pass both workflows; the PR remains unmerged until the exact CampusPay project/database cutover is accessible. Actual merged-main validation is required if merge proceeds. No production migration has been applied.
 
 ## Explicitly unresolved scope
 
