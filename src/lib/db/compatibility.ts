@@ -5,6 +5,16 @@ import { ApiError, DATABASE_UPGRADE_MESSAGE } from '@/lib/api/errors'
 const requiredColumns = new Set(['cash_ends_at', 'cash_enabled', 'cash_event_name', 'tender_mode', 'wallet_amount_won', 'student_card_id'])
 const requiredRelations = new Set(['private.sale_tenders', 'private.student_enrollments', 'private.wallet_adjustment_intents'])
 
+// An older database can return valid legacy role sessions while lacking stored
+// effective access. Never turn those roles into authority in this application.
+export function requireEffectiveAccessResult(rows: unknown, rpc: string): void {
+  if (!['create_staff_session', 'authorize_session'].includes(rpc) || !Array.isArray(rows)) return
+  if (rows.some(row => row && typeof row === 'object' &&
+    (!Object.hasOwn(row, 'preset') || !Object.hasOwn(row, 'access_revision')))) {
+    throw new ApiError(503, 'DATABASE_UPGRADE_REQUIRED', DATABASE_UPGRADE_MESSAGE)
+  }
+}
+
 export function compatibilityError(error: unknown, requiredRpc: string): ApiError | null {
   const seen = new Set<unknown>()
   while (error && typeof error === 'object' && !seen.has(error)) {

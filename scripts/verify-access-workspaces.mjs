@@ -109,6 +109,7 @@ try {
    const record=page.locator('section[aria-labelledby="student-detail-heading"]')
    assert.equal(await record.getByRole('button',{name:'Add Funds',exact:true}).count(),Number(test.permissions.includes('wallet.fund')))
    assert.equal(await record.getByRole('button',{name:'Wallet History',exact:true}).count(),Number(test.permissions.includes('wallet.read')))
+   if(await record.locator('details.record-more').count())await record.getByText('More student actions',{exact:true}).click()
    assert.equal(await record.getByRole('link',{name:'Reset PIN',exact:true}).count(),Number(test.permissions.includes('credentials.reset')))
    assert.equal(await record.getByRole('button',{name:'Manage Status',exact:true}).count(),Number(test.permissions.includes('students.status.manage')))
    assert.equal(await page.getByRole('button',{name:'+ Enroll student',exact:true}).count(),Number(test.permissions.includes('students.enroll')))

@@ -24,6 +24,9 @@ export async function fundingBrowser(ctx,cookies,card){
   await page.goto(ctx.base+'/students');await openStudent();await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${dir}/funding-${width}.png`})}
   await prepare()
+  const readiness=page.locator('section[aria-label="Student funding readiness"]')
+  await readiness.locator('summary').click()
+  await expect(readiness.getByRole('button',{name:'Refresh funding readiness',exact:true})).toBeEnabled()
   // Reproduce callback churn between the prefix and suffix of one frame. The
   // timestamps model a continuous device frame independently of CI scheduling.
   const refreshedScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card').catch(e=>({error:e.message}))
@@ -32,7 +35,7 @@ export async function fundingBrowser(ctx,cookies,card){
    const emit=key=>{const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:tick++});window.dispatchEvent(event)}
    const journal=document.querySelector('section[aria-label="Student funding readiness"]')
    const refresh=[...document.querySelectorAll('button')].find(e=>e.textContent==='Refresh funding readiness')
-   if(!journal||!refresh)throw new Error('Funding journal unavailable for the reader regression')
+   if(!journal||!refresh||refresh.disabled)throw new Error('Funding readiness refresh unavailable for the reader regression')
    for(const char of value.slice(0,8))emit(char)
    await new Promise((resolve,reject)=>{
     const observer=new MutationObserver(()=>{if(!journal.isConnected){observer.disconnect();clearTimeout(timer);resolve()}})

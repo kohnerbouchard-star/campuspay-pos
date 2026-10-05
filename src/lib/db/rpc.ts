@@ -5,7 +5,7 @@ import { sql } from 'drizzle-orm'
 import { database } from '@/lib/db/client'
 import { normalizeDatabaseValue } from '@/lib/db/normalize'
 import { toApiError } from '@/lib/api/errors'
-import { compatibilityError } from '@/lib/db/compatibility'
+import { compatibilityError, requireEffectiveAccessResult } from '@/lib/db/compatibility'
 
 type RpcArgument = { readonly name: string; readonly cast: string }
 
@@ -138,7 +138,9 @@ export async function callApiRpc<T>(
 
     const result = await database().execute(statementFor(name, args))
     const rows = result.rows
-    return schema.parse(normalizeDatabaseValue(rows))
+    const normalized = normalizeDatabaseValue(rows)
+    requireEffectiveAccessResult(normalized, name)
+    return schema.parse(normalized)
   } catch (error) {
     throw receiptConflict(error, name) ?? compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
   }
