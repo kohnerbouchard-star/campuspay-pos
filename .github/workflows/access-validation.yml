@@ -67,7 +67,6 @@ jobs:
       CI_BROWSER: '1'
       CAMPUSPAY_LOCAL_HTTP: 'true'
       APP_ORIGIN: http://localhost:3000
-      PG_TOOL_CONTAINER: ${{ job.services.postgres.id }}
       PG_DUMP_BIN: ./scripts/ci/pg-dump
       PG_RESTORE_BIN: ./scripts/ci/pg-restore
     steps:
@@ -82,6 +81,7 @@ jobs:
       - name: Verify every regression in this group
         env:
           CHECK_SCRIPTS: ${{ matrix.scripts }}
+          PG_TOOL_CONTAINER: ${{ job.services.postgres.id }}
         run: |
           mkdir -p .validation
           git rev-parse HEAD > .validation/tested-commit.txt
