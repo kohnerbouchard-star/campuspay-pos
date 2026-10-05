@@ -41,7 +41,7 @@ try {
   page.on('pageerror',error=>errors.push(error.message))
   await context.addCookies([...inventory].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
   const key=`mica-money:pending-stock-receipt:${session.user_id}`
-  const receive=async()=>{await page.goto(ctx.base+'/inventory');await page.getByRole('button',{name:'Receive stock',exact:true}).click()}
+  const receive=async()=>{await page.goto(ctx.base+'/inventory');await page.getByRole('row').filter({hasText:'WATER-001'}).getByRole('button').click();await page.getByRole('button',{name:'Receive Stock',exact:true}).click()}
   await receive()
   let postCount=0
   page.on('request',r=>{if(new URL(r.url()).pathname==='/api/inventory/receipts'&&r.method()==='POST')postCount++})

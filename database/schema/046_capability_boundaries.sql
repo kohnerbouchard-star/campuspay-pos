@@ -122,7 +122,7 @@ select pg_temp.replace_access_boundary('api.scan_funding_card(uuid,uuid,text)','
 
 select pg_temp.replace_access_boundary('private.confirm_funding_legacy(uuid,uuid,text,text,text,boolean)','if v_intent.wallet_delta_won<>0 and v_session.role_snapshot not in (''accountant'',''super_admin'') then raise exception ''FORBIDDEN''; end if;','perform private.assert_session(p_session_id,private.funding_capability(v_intent.action));',1);
 
-select pg_temp.replace_access_boundary('api.recover_funding(uuid,uuid)','if v_intent.wallet_delta_won<>0 and v_session.role_snapshot not in (''accountant'',''super_admin'') then raise exception ''FORBIDDEN''; end if;','perform private.assert_session(p_session_id,private.funding_capability(v_intent.action));',1);
+select pg_temp.replace_access_boundary('api.recover_funding(uuid,uuid)','if v_intent.wallet_delta_won<>0 and v_session.role_snapshot not in (''accountant'',''super_admin'') then raise exception ''FORBIDDEN''; end if;','if v_intent.request_key is not null then perform private.assert_session(p_session_id,private.funding_capability(v_intent.action)); end if;',1);
 
 select pg_temp.replace_access_boundary('api.prepare_funding(uuid,uuid,text,jsonb)','v_session.role_snapshot<>''super_admin''','not private.has_capability(v_session.auth_user_id,''cash.drawer.override'')',1);
 

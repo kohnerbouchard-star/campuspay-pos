@@ -13,13 +13,13 @@ export async function partialRefundSnapshot(s: SessionContext, reference: string
   return rows[0]?.result ?? null
 }
 export function quoteInspectedRefund(s: SessionContext, input: z.infer<typeof PartialQuoteInputSchema>) {
-  if (!partialRefundsEnabled()) throw new ApiError(403,'FORBIDDEN','Item-level refunds are disabled for this installation')
+  if (!partialRefundsEnabled()) throw new ApiError(409,'CONFLICT','Item-level refunds are disabled for this installation')
   const v = PartialQuoteInputSchema.parse(input)
   return callApiRpc('quote_partial_refund', { p_session_id: s.session_id, p_sale_id: v.saleId, p_items: v.items }, z.array(z.object({ result: PartialQuoteDecisionSchema })).length(1).transform(([r]) => r.result))
 }
 export function postPartialRefund(s: SessionContext, input: PostPartialRefundInput) {
   if (!s.permissions.includes('refunds.issue')) throw new ApiError(403,'FORBIDDEN','Assigned employees can authorize item-level refunds')
-  if (!partialRefundsEnabled() || (input.returnReason && !returnsEnabled())) throw new ApiError(403,'FORBIDDEN','Item-level refund or return posting is disabled')
+  if (!partialRefundsEnabled() || (input.returnReason && !returnsEnabled())) throw new ApiError(409,'CONFLICT','Item-level refund or return posting is disabled')
   const v = PostPartialRefundSchema.parse(input)
   return callApiRpc('post_partial_refund', { p_session_id: s.session_id, p_sale_id: v.saleId, p_key: v.idempotencyKey, p_items: v.items,
     p_expected_count: v.expectedRefundCount, p_reason_code: v.reasonCode, p_notes: v.notes, p_verified: v.verified, p_return_reason: v.returnReason ?? null },

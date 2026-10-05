@@ -17,7 +17,7 @@ const decision = z.array(CompletionDecisionSchema).length(1).transform(([row]) =
 
 export function completeRosterEnrollment(session: SessionContext, studentId: string, input: CompleteEnrollmentInput) {
   requireIssuer(session)
-  if (!isRosterIssuanceEnabled()) throw new ApiError(403, 'FORBIDDEN', 'Initial roster card issuance is disabled for this installation')
+  if (!isRosterIssuanceEnabled()) throw new ApiError(409, 'CONFLICT', 'Initial roster card issuance is disabled for this installation')
   const parsed = CompleteEnrollmentSchema.parse(input)
   return callApiRpc('complete_student_enrollment', {
     p_session_id: session.session_id, p_student_id: studentId,

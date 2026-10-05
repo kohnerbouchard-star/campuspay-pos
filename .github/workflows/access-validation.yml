@@ -45,7 +45,7 @@ jobs:
           - group: management-security
             scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-complete-enrollment.mjs
           - group: navigation-administration
-            scripts: scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs
+            scripts: scripts/verify-access-workspaces.mjs scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs
           - group: refunds-operations
             scripts: scripts/verify-sale-refunds.mjs scripts/verify-operations.mjs scripts/verify-refund-preview.mjs scripts/verify-partial-refunds.mjs
           - group: funding-history

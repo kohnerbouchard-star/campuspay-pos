@@ -19,8 +19,8 @@ export function cashSnapshot(s: SessionContext, offset: number) {
 }
 export function openCash(s: SessionContext, input: z.infer<typeof CashOpenSchema>) {
  writer(s)
- if (!s.permissions.includes('pos.checkout') && process.env.FUNDING_ENABLED !== 'true') throw new ApiError(403,'FORBIDDEN','Funding drawers are not activated')
- if (!cashEnabled()) throw new ApiError(403,'FORBIDDEN','New cash shifts are disabled for this installation')
+ if (!s.permissions.includes('pos.checkout') && process.env.FUNDING_ENABLED !== 'true') throw new ApiError(409,'CONFLICT','Funding drawers are not activated')
+ if (!cashEnabled()) throw new ApiError(409,'CONFLICT','New cash shifts are disabled for this installation')
  const v = CashOpenSchema.parse(input)
  return callApiRpc('open_cash_shift',{p_session_id:s.session_id,p_key:v.requestKey,p_counts:v.counts,p_verified:v.verified},shiftResult)
 }

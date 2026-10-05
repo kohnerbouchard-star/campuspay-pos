@@ -17,10 +17,12 @@ export async function runAdministrationLocking(ctx,admin){
  const actor=await request(admin,'/api/auth/session')
  const proof=ctx.staffPinProof(staffPin)
  const original=(await owner.query('select pg_get_functiondef($1::regprocedure) definition',[signature])).rows[0].definition
- const originalLogin=(await owner.query("select pg_get_functiondef('api.create_staff_session(text,text,text,text)'::regprocedure) definition")).rows[0].definition
+ const originalLogin=(await owner.query("select pg_get_functiondef('private.create_staff_session_access_legacy(text,text,text,text)'::regprocedure) definition")).rows[0].definition
  async function fixture(){
   const code='LOCK-'+randomUUID().slice(0,8)
   const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Synthetic lock fixture',role:'cashier',preset:'staff',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Isolated lock-order regression fixture',verified:true})
+  const access=await request(admin,`/api/administration/access/${created.target_id}`)
+  await request(admin,`/api/administration/access/${created.target_id}`,{requestKey:randomUUID(),targetId:created.target_id,expectedRevision:access.revision,previousPreset:access.preset,previousPermissions:access.permissions,newPreset:access.preset,permissions:[...new Set([...access.permissions,'cash.read','cash.shift.manage'])],adminPin:staffPin,reason:'Explicit isolated drawer-operation test assignment',confirmed:true})
   const cookies=await ctx.login(code),session=await request(cookies,'/api/auth/session')
   const terminal=(await owner.query('select t.* from private.terminals t join private.staff_sessions s on s.terminal_id=t.id where s.id=$1',[session.session_id])).rows[0]
   const profile=(await owner.query('select updated_at::text from public.staff_profiles where auth_user_id=$1',[created.target_id])).rows[0]
@@ -113,7 +115,7 @@ export async function runAdministrationLocking(ctx,admin){
  // in this disposable database only, proving these tests detect the defect.
  try{
   const source=fs.readFileSync('database/schema/028_staff_administration.sql','utf8')
-  const old=source.slice(source.indexOf('create function api.change_administration('),source.indexOf('\ncreate function api.recover_administration(')).replace('create function','create or replace function')
+  const old=source.slice(source.indexOf('create function api.change_administration('),source.indexOf('\ncreate function api.recover_administration(')).replace('create function','create or replace function').replaceAll("'security.staff.manage'","'staff.manage'")
   await owner.query(old)
   await runCase('UPDATE_STAFF',{baseline:true})
  }finally{await owner.query(original)}

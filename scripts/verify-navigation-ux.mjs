@@ -83,7 +83,7 @@ try {
     await menu.click()
     const destination = routes.find(route => route !== parent(start))??routes[0]
     await page.getByRole('dialog', { name: 'Workspaces' }).locator(`a[href="${destination}"]`).click()
-    assert.equal(parent(new URL(page.url()).pathname),destination)
+    await expect.poll(()=>parent(new URL(page.url()).pathname)).toBe(destination)
     await expect(page.getByRole('dialog', { name: 'Workspaces' })).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
     await context.close()

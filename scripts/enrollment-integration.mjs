@@ -15,7 +15,8 @@ export async function runEnrollmentChecks({ owner, request, login, jar, catalog,
   await request(jar(), '/api/students', input, 401)
   for (const code of ['1001', '2001', '3001']) {
     const denied = await login(code)
-    await request(denied, '/api/students', undefined, 403)
+    if(code==='1001')await request(denied, '/api/students', undefined, 403)
+    else{const viewed=await request(denied,'/api/students');if(code==='2001')assert.ok(viewed.every(s=>s.balance_won===null))}
     await request(denied, '/api/students', input, 403)
   }
   let admin = await login('9001')

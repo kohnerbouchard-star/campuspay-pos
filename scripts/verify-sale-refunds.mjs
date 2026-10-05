@@ -39,7 +39,7 @@ try {
   const original = async id => (await owner.query("select row_to_json(s) as sale,(select jsonb_agg(i order by id) from private.sale_items i where sale_id=s.id) as items,(select jsonb_agg(t order by id) from private.sale_tenders t where sale_id=s.id) as tenders,(select jsonb_agg(c order by c.id) from private.sale_cost_allocations c join private.sale_items i on i.id=c.sale_item_id where i.sale_id=s.id) as costs,(select row_to_json(w) from private.wallet_ledger w where id=s.wallet_ledger_id) as payment from private.sales s where id=$1", [id])).rows[0]
   phase = 'disabled-defaults'
   const first = await sale(), firstInput = input(first.detail), before = await original(first.detail.sale_id)
-  await post(admin, firstInput, 403)
+  await post(admin, firstInput, 409)
   await ctx.start(true); admin = await login(); other = await login('9101')
   assert.equal((await post(admin, firstInput)).outcome, 'DISABLED'); assert.equal(await refunds(first.detail.sale_id), 0)
   await owner.query('update private.system_settings set refunds_enabled=true where singleton')
@@ -167,7 +167,7 @@ try {
   const pendingCash = await sale({ mode: 'CASH' }), pendingRefund = (await post(admin, input(pendingCash.detail))).refund
   await owner.query('update private.system_settings set refunds_enabled=false where singleton'); await ctx.start(false)
   assert.equal((await recover(admin, firstInput)).outcome, 'COMPLETED')
-  await post(admin, input(fenced.detail), 403)
+  await post(admin, input(fenced.detail), 409)
   const shutdownPayout = await request(admin, '/api/refunds/payout', { refundId: pendingRefund.refund_id, idempotencyKey: randomUUID(), amountWon: pendingRefund.cash_due_won, handoverReference: 'QA shutdown handover', confirmed: true })
   assert.equal(shutdownPayout.refund.cash_paid_won, pendingRefund.cash_due_won)
   checks.push('posting shutdown preserves refund recovery and outstanding cash recording')

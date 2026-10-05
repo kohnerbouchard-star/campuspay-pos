@@ -5,10 +5,11 @@ import { getRosterStudents } from '@/features/students/client'
 import type { ManagedStudent } from '@/features/students/domain'
 import { formatWon } from '@/lib/format/currency'
 
-export function StudentDirectory({ onSelect, selectedId, refreshKey }: {
+export function StudentDirectory({ onSelect, selectedId, refreshKey, canViewWallet }: {
   onSelect(student: ManagedStudent): void
   selectedId?: string
   refreshKey: number
+  canViewWallet: boolean
 }) {
   const [query, setQuery] = useState('')
   const [yearGroup, setYearGroup] = useState<number | null>(null)
@@ -37,12 +38,12 @@ export function StudentDirectory({ onSelect, selectedId, refreshKey }: {
       <option value="">All years</option>{Array.from({ length: 13 }, (_, index) => index + 1).map(year => <option value={year} key={year}>Y{year}</option>)}
     </select></label>
     {error ? <div role="alert" className="error-message">{error}<button className="secondary-action" onClick={() => setRetry((value) => value + 1)}>Retry</button></div> :
-      <div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Year</th><th scope="col">Wallet</th><th scope="col">Access</th></tr></thead>
-        <tbody>{loading ? <tr><td colSpan={4} role="status">Loading students…</td></tr> : rows.length ? rows.map((student) => <tr key={student.student_id} className={selectedId === student.student_id ? 'selected-row' : undefined}>
+      <div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Year</th>{canViewWallet&&<th scope="col">Wallet</th>}<th scope="col">Access</th></tr></thead>
+        <tbody>{loading ? <tr><td colSpan={canViewWallet?4:3} role="status">Loading students…</td></tr> : rows.length ? rows.map((student) => <tr key={student.student_id} className={selectedId === student.student_id ? 'selected-row' : undefined}>
           <td><button className="table-link" aria-pressed={selectedId === student.student_id} onClick={() => onSelect(student)}><strong>{student.display_name}</strong><small>{student.student_code}</small></button></td>
           <td>{student.year_group ? `Y${student.year_group}` : 'Unassigned'}</td>
-          <td className="money">{student.balance_won===null?'Not assigned':formatWon(student.balance_won)}</td><td><span className="status-pill">{!student.active ? 'Inactive' : !student.card_active ? 'No card issued' : student.pin_set === false ? 'PIN not set' : 'Active'}</span></td>
-        </tr>) : <tr><td colSpan={4}>No students found on this page. Try a different year, name, or ID.</td></tr>}</tbody>
+          {canViewWallet&&<td className="money">{student.balance_won===null?'Unavailable':formatWon(student.balance_won)}</td>}<td><span className="status-pill">{!student.active ? 'Inactive' : !student.card_active ? 'No card issued' : student.pin_set === false ? 'PIN not set' : 'Active'}</span></td>
+        </tr>) : <tr><td colSpan={canViewWallet?4:3}>No students found on this page. Try a different year, name, or ID.</td></tr>}</tbody>
       </table></div>}
     <div className="action-row" aria-label="Student directory pages">
       <button className="secondary-action" disabled={loading || offset === 0} onClick={() => setOffset(value => Math.max(0, value - 50))}>Previous</button>

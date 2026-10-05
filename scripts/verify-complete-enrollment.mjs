@@ -73,7 +73,7 @@ try{
  const originalState=await state(first)
  phase='default-disabled';await startServer(false)
  let admin=await login(),other=await login('9101')
- await complete(admin,first,inputFor(first),403)
+ await complete(admin,first,inputFor(first),409)
  assert.deepEqual(await state(first),originalState);checks.push('default-disabled no issuance')
  phase='authorization';await startServer(true);admin=await login();other=await login('9101')
  const payload=inputFor(first)
@@ -150,7 +150,7 @@ try{
  if(process.env.CI_BROWSER==='1')browserArtifacts=await runCompletionBrowser({base,login,makeRoster,state,newCard,studentPin,request,owner})
  phase='disabled-recovery';await startServer(false);admin=await login()
  assert.deepEqual(await recover(admin,first,payload.idempotencyKey),receipt)
- await complete(admin,second,inputFor(second),403);checks.push('disabling new issuance preserves recovery access')
+ await complete(admin,second,inputFor(second),409);checks.push('disabling new issuance preserves recovery access')
  phase='finish'
  fs.writeFileSync('.validation/completion/results.json',JSON.stringify({passed:true,checks,browserArtifacts,productionAccess:false},null,2))
  console.log(`Complete enrollment passed: ${checks.length} acceptance groups; synthetic localhost data only.`)

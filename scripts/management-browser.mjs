@@ -22,6 +22,7 @@ export async function runManagementBrowser(ctx,{admin,inventory,studentId,studen
   await expect(page.getByText(/Change recorded\. Reference:/)).toBeVisible();assert.equal(writes,1)
   const product=(await ctx.owner.query('select id from public.products where sku=$1',[sku])).rows[0]
   assert.ok(product)
+  await page.getByRole('button',{name:'Back to products',exact:true}).click()
   await page.getByText('More inventory actions',{exact:true}).click();await page.getByRole('button',{name:'Manage archived products',exact:true}).click()
   const row=page.getByRole('row').filter({hasText:sku})
   await row.getByRole('button',{name:'Archive product',exact:true}).click()

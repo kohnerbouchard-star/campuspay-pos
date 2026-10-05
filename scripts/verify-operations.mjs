@@ -21,7 +21,7 @@ try {
  const refundInput=(s,restock=true)=>({saleId:s.sale_id,idempotencyKey:randomUUID(),reasonCode:'CUSTOMER_RETURN',notes:'All goods returned and inspected by staff',verified:true,items:s.items.map(i=>({sale_item_id:i.sale_item_id,disposition:restock?'RESTOCK':'WRITE_OFF'}))})
  const balance=async()=>Number((await owner.query('select balance_won from private.wallets where student_id=$1',[person.student_id])).rows[0].balance_won)
  const o=await order();await dispatch(o,true);const input={...refundInput(o.detail),returnReason:'CUSTOMER_RETURN'}
- phase='return-gates';await request(admin,'/api/refunds/return',input,403)
+ phase='return-gates';await request(admin,'/api/refunds/return',input,409)
  await ctx.start(true,{returns:true,cash:true});admin=await login('9001',admin)
  await owner.query('update private.system_settings set refunds_enabled=true where singleton')
  assert.equal((await request(admin,'/api/refunds/return',input)).outcome,'DISABLED')
@@ -49,7 +49,7 @@ try {
  phase='cash-open-gates';await request(inventory,'/api/cash',undefined,403)
  const initial=await request(admin,'/api/cash');assert.equal(initial.enabled,false)
  const opening={requestKey:randomUUID(),counts:{'10000':1},verified:true}
- await request(admin,'/api/cash/open',opening,409);await request(accountant,'/api/cash/open',opening,403)
+ await request(admin,'/api/cash/open',opening,409);await request(accountant,'/api/cash/open',opening,409)
  await owner.query('update private.system_settings set cash_controls_enabled=true where singleton')
  async function cashSale(mode='CASH',expected=200){
   await request(admin,'/api/pos/payment-policy',{cashEnabled:true,eventName:'Operations cash test',endsAt:new Date(Date.now()+3600000).toISOString()})

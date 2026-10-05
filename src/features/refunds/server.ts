@@ -16,7 +16,7 @@ export async function refundSaleDetail(session: SessionContext, reference: strin
 }
 export function postRefund(session: SessionContext, input: PostRefundInput) {
   requireIssuer(session)
-  if (!refundsEnabled()) throw new ApiError(403, 'FORBIDDEN', 'Refund posting is disabled for this installation')
+  if (!refundsEnabled()) throw new ApiError(409, 'CONFLICT', 'Refund posting is disabled for this installation')
   const value = PostRefundSchema.parse(input)
   return callApiRpc('post_sale_refund', { p_session_id: session.session_id, p_sale_id: value.saleId, p_reason_code: value.reasonCode,
     p_notes: value.notes, p_items: value.items, p_verified: value.verified, p_idempotency_key: value.idempotencyKey }, decision)
@@ -39,7 +39,7 @@ export async function refundSummary(session: SessionContext, from: string, to: s
 export function returnsEnabled() { return refundsEnabled() && process.env.RETURNS_ENABLED === 'true' }
 export function postReturn(session: SessionContext, input: z.infer<typeof PostReturnSchema>) {
   requireIssuer(session)
-  if (!returnsEnabled()) throw new ApiError(403, 'FORBIDDEN', 'Post-dispatch returns are disabled for this installation')
+  if (!returnsEnabled()) throw new ApiError(409, 'CONFLICT', 'Post-dispatch returns are disabled for this installation')
   const value = PostReturnSchema.parse(input)
   return callApiRpc('post_online_return', { p_session_id: session.session_id, p_sale_id: value.saleId, p_reason_code: value.reasonCode,
     p_notes: value.notes, p_items: value.items, p_verified: value.verified, p_idempotency_key: value.idempotencyKey,
