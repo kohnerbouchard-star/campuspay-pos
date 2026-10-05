@@ -7,8 +7,14 @@ export function checkVercelState(project, deployment, deploymentId, completed = 
   requireThat(deployment.id === deploymentId && deployment.projectId === policy.vercelProject &&
     deployment.team?.id === policy.vercelTeam && deployment.readyState === 'READY' && deployment.target === 'production' &&
     deployment.gitSource?.sha === policy.candidate && deployment.gitSource?.type === 'github', 'MATCHING_STAGED_APP_NOT_VERIFIED')
-  if (completed) requireThat(project.targets?.production?.id === deploymentId &&
-    policy.origins.every(origin => deployment.alias?.includes(new URL(origin).hostname)), 'MATCHING_PRODUCTION_ALIAS_NOT_VERIFIED')
+  if (completed) requireThat(project.targets?.production?.id === deploymentId, 'MATCHING_PRODUCTION_TARGET_NOT_VERIFIED')
+}
+
+export function checkCurrentAlias(alias, hostname, deploymentId, completed = false) {
+  requireThat(alias.alias === hostname && alias.projectId === policy.vercelProject &&
+    !alias.deletedAt && !alias.redirect && !alias.microfrontends && /^dpl_[A-Za-z0-9]+$/.test(alias.deploymentId ?? ''),
+  'CAMPUSPAY_ALIAS_OWNERSHIP_NOT_VERIFIED')
+  if (completed) requireThat(alias.deploymentId === deploymentId, 'MATCHING_PRODUCTION_ALIAS_NOT_VERIFIED')
 }
 
 // Read-only, exact project/team only. No fallback when access is denied, no
@@ -25,6 +31,9 @@ export async function verifyVercelHold({ token, deploymentId, completed = false,
   const deployment = await get(`/v13/deployments/${deploymentId}?teamId=${policy.vercelTeam}&withGitRepoInfo=true`)
   checkVercelState(project, deployment, deploymentId, completed)
   for (const origin of policy.origins) {
+    const hostname = new URL(origin).hostname
+    const alias = await get(`/v4/aliases/${hostname}?teamId=${policy.vercelTeam}`)
+    checkCurrentAlias(alias, hostname, deploymentId, completed)
     const response = await request(origin, { redirect: 'manual', cache: 'no-store', signal: AbortSignal.timeout(20000) })
     requireThat(response.status === 503 && response.headers.get('x-vercel-error') === 'DEPLOYMENT_PAUSED', 'PUBLIC_TRAFFIC_HOLD_NOT_VERIFIED')
     await response.body?.cancel()

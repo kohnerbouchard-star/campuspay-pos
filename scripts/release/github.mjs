@@ -1,4 +1,4 @@
-import { checkApproval, checkEnvironment, checkInvocation, environments, policy, requireThat } from './policy.mjs'
+import { checkApproval, checkEnvironment, checkInvocation, checkPriorEvidence, environments, policy, requireThat } from './policy.mjs'
 
 export async function githubGet(suffix, env = process.env) {
   requireThat(Boolean(env.GITHUB_TOKEN), 'GITHUB_READ_TOKEN_REQUIRED')
@@ -28,13 +28,8 @@ export async function githubGate({ env = process.env, get = suffix => githubGet(
   }
   if (env.RELEASE_MODE !== 'preflight') {
     const previous = await get(`/actions/runs/${env.EVIDENCE_RUN_ID}`)
-    const age = Date.now() - Date.parse(previous.updated_at)
-    requireThat(previous.head_sha === env.GITHUB_SHA && previous.head_branch === 'main' && previous.run_attempt === 1 &&
-      previous.event === 'workflow_dispatch' && previous.path === '.github/workflows/campuspay-release.yml' &&
-      previous.conclusion === 'success' && age >= 0 && age < 24 * 3600000, 'PRIOR_RUN_NOT_QUALIFIED')
     const artifacts = await get(`/actions/runs/${env.EVIDENCE_RUN_ID}/artifacts?per_page=100`)
-    const name = `${env.RELEASE_MODE === 'release' ? 'preflight-passed' : 'release-passed'}-${env.EVIDENCE_RUN_ID}`
-    requireThat(artifacts.artifacts?.some(a => a.name === name && !a.expired), 'PRIOR_RUN_EVIDENCE_MISSING')
+    checkPriorEvidence(previous, artifacts, env)
   }
   const reviews = approved.length ? await get(`/actions/runs/${env.GITHUB_RUN_ID}/approvals`) : []
   for (const name of environments) {

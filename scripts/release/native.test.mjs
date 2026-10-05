@@ -42,7 +42,9 @@ test('native release rehearsal: backup restore, grants, drift, lock, exact five 
     const baselineHistory = await history(), beforeMoney = await monetary()
     assert.deepEqual(baselineHistory, versions(policy.baseline))
     const runner = options => runMigrations(client, { directory: candidate, report, ...options })
+    await client.query('set default_transaction_read_only=on')
     await runner({ preflight: true, beforeApply: releaseGuard })
+    await client.query('set default_transaction_read_only=off')
     assert.deepEqual(await history(), baselineHistory)
 
     await client.query('grant select on private.release_test_fixture to campuspay_runtime_login')
@@ -113,6 +115,7 @@ test('native release rehearsal: backup restore, grants, drift, lock, exact five 
     assert.equal((await client.query("select to_regclass('private.synthetic_committed') a,to_regclass('private.synthetic_rolled_back') b")).rows[0].b, null)
     assert.equal((await history()).at(-1), '20990101000100_synthetic_first')
     assert.equal((await client.query("select count(*)::integer n from private.schema_migrations where version='20990101000200_synthetic_failure'")).rows[0].n, 0)
+    await assert.rejects(releaseGuard({ client, applied: versions([...policy.baseline, ...policy.pending]), pending: [] }, { completed: true }), /EXACT_RELEASE_HISTORY_REQUIRED/)
     assert.throws(() => checkHistory([...versions(policy.baseline), policy.pending[0].version], versions(policy.pending).slice(1)))
     console.log('PASS: native PostgreSQL release guards, restored retained-copy fixture, unchanged wallet ledger, exact five migrations, original lock and per-file rollback. No production access.')
   } finally {

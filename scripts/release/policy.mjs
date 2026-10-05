@@ -26,7 +26,7 @@ export function checkInvocation(env) {
 
 export function checkEnvironment(environment, branchPolicies, name) {
   const reviewers = environment.protection_rules?.find(rule => rule.type === 'required_reviewers')?.reviewers
-  requireThat(environment.name === name && environment.can_admins_bypass === false &&
+  requireThat(Number.isSafeInteger(environment.id) && environment.id > 0 && environment.name === name && environment.can_admins_bypass === false &&
     Array.isArray(reviewers) && reviewers.length === 1 && reviewers[0].type === 'User' &&
     reviewers[0].reviewer?.id === policy.reviewerId && reviewers[0].reviewer?.login === policy.reviewerLogin,
   'REQUIRED_REVIEWER_PROTECTION_MISSING')
@@ -41,6 +41,19 @@ export function checkApproval(reviews, environment) {
   requireThat(relevant.length === 1 && relevant[0].state === 'approved' &&
     relevant[0].user?.id === policy.reviewerId && relevant[0].user?.login === policy.reviewerLogin,
   'ACTION_TIME_APPROVAL_MISSING')
+}
+
+export function checkPriorEvidence(previous, artifacts, env, now = Date.now()) {
+  const age = now - Date.parse(previous.updated_at)
+  requireThat(previous.head_sha === env.GITHUB_SHA && previous.head_branch === 'main' && previous.run_attempt === 1 &&
+    previous.event === 'workflow_dispatch' && previous.path === '.github/workflows/campuspay-release.yml' &&
+    previous.status === 'completed' && previous.conclusion === 'success' && age >= 0 && age < 24 * 3600000,
+  'PRIOR_RUN_NOT_QUALIFIED')
+  // The successful migration job publishes this exact deployment-bound name.
+  // A different build of the same commit cannot inherit its cutover evidence.
+  const name = env.RELEASE_MODE === 'release' ? `preflight-passed-${env.EVIDENCE_RUN_ID}` :
+    `release-passed-${env.EVIDENCE_RUN_ID}-${env.DEPLOYMENT_ID}`
+  requireThat(artifacts.artifacts?.some(a => a.name === name && a.expired === false), 'PRIOR_RUN_EVIDENCE_MISSING')
 }
 
 export function checkDatabaseUrl(value) {

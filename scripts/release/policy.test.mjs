@@ -3,9 +3,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { checkInvocation, checkEnvironment, checkApproval, checkDatabaseUrl, checkHistory, checkFiles, checkArtifact, checkBackupPolicy, policy, versions } from './policy.mjs'
+import { spawnSync } from 'node:child_process'
+import { checkInvocation, checkEnvironment, checkApproval, checkPriorEvidence, checkDatabaseUrl, checkHistory, checkFiles, checkArtifact, checkBackupPolicy, policy, versions } from './policy.mjs'
 import { githubGate } from './github.mjs'
-import { checkVercelState, verifyVercelHold } from './vercel.mjs'
+import { checkVercelState, checkCurrentAlias, verifyVercelHold } from './vercel.mjs'
 
 const env = { GITHUB_ACTIONS: 'true', GITHUB_REPOSITORY: policy.repository, GITHUB_EVENT_NAME: 'workflow_dispatch', GITHUB_REF: 'refs/heads/main',
   GITHUB_WORKFLOW_REF: `${policy.repository}/.github/workflows/campuspay-release.yml@refs/heads/main`, GITHUB_SHA: 'a'.repeat(40), GITHUB_WORKFLOW_SHA: 'a'.repeat(40),
@@ -28,10 +29,31 @@ test('manual main only; refuses forks, arbitrary refs, workflow code and reruns'
   assert.throws(() => checkInvocation({ ...release, EVIDENCE_RUN_ID: '123' }))
 })
 
+test('actual CLI refuses an untrusted ref before network/DB work without leaking step secrets', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cp-cli-boundary-'))
+  const sentinel = 'SYNTHETIC_SECRET_MUST_NEVER_APPEAR'
+  const attempted = path.join(directory, 'attempted')
+  const preload = path.join(directory, 'boundary.mjs')
+  try {
+    fs.writeFileSync(preload, `import fs from 'node:fs'; import net from 'node:net';
+      const refused = () => { fs.writeFileSync(${JSON.stringify(attempted)}, 'network'); throw new Error('forbidden'); };
+      globalThis.fetch = refused; net.Socket.prototype.connect = refused;`)
+    const result = spawnSync(process.execPath, ['--import', preload, 'scripts/release/cli.mjs', 'gate'], {
+      encoding: 'utf8', env: { ...process.env, ...env, GITHUB_REF: 'refs/heads/untrusted', GITHUB_TOKEN: sentinel,
+        CAMPUSPAY_OWNER_URL: sentinel, CAMPUSPAY_BACKUP_KEY: sentinel, VERCEL_READ_TOKEN: sentinel,
+        GITHUB_STEP_SUMMARY: path.join(directory, 'summary') },
+    })
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /UNTRUSTED_WORKFLOW_INVOCATION/)
+    assert.equal(fs.existsSync(attempted), false)
+    assert.equal((result.stdout + result.stderr + fs.readFileSync(path.join(directory, 'summary'), 'utf8')).includes(sentinel), false)
+  } finally { fs.rmSync(directory, { recursive: true, force: true }) }
+})
+
 test('requires exact reviewer, no admin bypass and exactly main branch (not tag)', () => {
   const environment = protectedEnvironment('campuspay-production')
   checkEnvironment(environment, branches, environment.name)
-  for (const patch of [{ can_admins_bypass: true }, { can_admins_bypass: undefined }, { protection_rules: [] }, { deployment_branch_policy: null },
+  for (const patch of [{ id: undefined }, { id: 0 }, { can_admins_bypass: true }, { can_admins_bypass: undefined }, { protection_rules: [] }, { deployment_branch_policy: null },
     { protection_rules: [{ type: 'required_reviewers', reviewers: [{ type: 'User', reviewer: { id: 2, login: 'stranger' } }] }] }]) {
     assert.throws(() => checkEnvironment({ ...environment, ...patch }, branches, environment.name))
   }
@@ -55,6 +77,26 @@ test('database URL enforces owner, direct host, database, verified TLS and no ov
     db.replace('campuspay_owner:', 'campuspay_runtime_login:'), db.replace('verify-full', 'require'), db + '&host=evil',
     db + '&sslmode=disable', db + '#fragment', db.replace('.c-3.', '-pooler.c-3.'), db.replace('/campuspay?', ':6432/campuspay?'),
     db.replace(':synthetic@', '@')]) assert.throws(() => checkDatabaseUrl(invalid))
+})
+
+test('cutover evidence is bound to the successful release run, tooling SHA, age and exact deployment', () => {
+  const now = Date.now()
+  const invocation = { ...env, RELEASE_MODE: 'verify-cutover', EVIDENCE_RUN_ID: '122', DEPLOYMENT_ID: 'dpl_abc' }
+  const previous = { head_sha: env.GITHUB_SHA, head_branch: 'main', run_attempt: 1, event: 'workflow_dispatch',
+    path: '.github/workflows/campuspay-release.yml', status: 'completed', conclusion: 'success', updated_at: new Date(now - 60000).toISOString() }
+  const artifacts = { artifacts: [{ name: 'release-passed-122-dpl_abc', expired: false }] }
+  checkPriorEvidence(previous, artifacts, invocation, now)
+  for (const patch of [{ head_sha: 'b'.repeat(40) }, { head_branch: 'attacker' }, { run_attempt: 2 }, { event: 'push' },
+    { path: '.github/workflows/other.yml' }, { status: 'in_progress' }, { conclusion: 'failure' },
+    { updated_at: new Date(now - 86400001).toISOString() }, { updated_at: new Date(now + 1).toISOString() }]) {
+    assert.throws(() => checkPriorEvidence({ ...previous, ...patch }, artifacts, invocation, now))
+  }
+  for (const patch of [{ EVIDENCE_RUN_ID: '121' }, { DEPLOYMENT_ID: 'dpl_differentBuildOfSameCommit' }, { RELEASE_MODE: 'release' }]) {
+    assert.throws(() => checkPriorEvidence(previous, artifacts, { ...invocation, ...patch }, now))
+  }
+  assert.throws(() => checkPriorEvidence(previous, { artifacts: [{ ...artifacts.artifacts[0], expired: true }] }, invocation, now))
+  assert.throws(() => checkPriorEvidence(previous, { artifacts: [{ name: 'release-passed-122', expired: false }] }, invocation, now))
+  checkPriorEvidence(previous, { artifacts: [{ name: 'preflight-passed-122', expired: false }] }, { ...invocation, RELEASE_MODE: 'release' }, now)
 })
 
 test('history must be exact 32 + five: no gaps, unknown/reserved044, partial resumption or duplicate apply', () => {
@@ -91,12 +133,21 @@ test('backup destination requires explicit policy; retained artifact bound to ru
 const project = { id: policy.vercelProject, accountId: policy.vercelTeam, name: 'campuspay-pos', paused: true, autoAssignCustomDomains: false, targets: { production: { id: 'dpl_abc' } } }
 const deployment = { id: 'dpl_abc', projectId: policy.vercelProject, team: { id: policy.vercelTeam }, readyState: 'READY', target: 'production',
   gitSource: { sha: policy.candidate, type: 'github' }, alias: policy.origins.map(o => new URL(o).hostname) }
-test('only paused exact project, production build and qualified SHA; verification requires exact aliases', () => {
+test('only paused exact project, production build and qualified SHA; verification requires exact target', () => {
   checkVercelState(project, deployment, 'dpl_abc', true)
   for (const patch of [{ id: 'other' }, { accountId: 'other' }, { paused: false }, { autoAssignCustomDomains: true }]) assert.throws(() => checkVercelState({ ...project, ...patch }, deployment, 'dpl_abc'))
   for (const patch of [{ projectId: 'other' }, { team: { id: 'other' } }, { target: 'preview' }, { readyState: 'BUILDING' }, { gitSource: { sha: 'new', type: 'github' } }]) assert.throws(() => checkVercelState(project, { ...deployment, ...patch }, 'dpl_abc'))
-  assert.throws(() => checkVercelState(project, { ...deployment, alias: [] }, 'dpl_abc', true))
   assert.throws(() => checkVercelState({ ...project, targets: {} }, deployment, 'dpl_abc', true))
+})
+
+test('current alias ownership and targets required; a historical deployment alias list is insufficient', () => {
+  const hostname = new URL(policy.origins[0]).hostname
+  const alias = { alias: hostname, projectId: policy.vercelProject, deploymentId: 'dpl_abc', deletedAt: null, redirect: null }
+  checkCurrentAlias(alias, hostname, 'dpl_abc', true)
+  checkCurrentAlias({ ...alias, deploymentId: 'dpl_old' }, hostname, 'dpl_abc', false)
+  assert.throws(() => checkCurrentAlias({ ...alias, deploymentId: 'dpl_old' }, hostname, 'dpl_abc', true))
+  for (const patch of [{ alias: 'another.vercel.app' }, { projectId: 'prj_another' }, { deploymentId: null }, { deletedAt: 1 },
+    { redirect: 'https://other.invalid' }, { microfrontends: { applications: [] } }]) assert.throws(() => checkCurrentAlias({ ...alias, ...patch }, hostname, 'dpl_abc'))
 })
 
 test('Vercel denial stops immediately; origin probes carry no token and no redirects', async () => {
@@ -106,11 +157,15 @@ test('Vercel denial stops immediately; origin probes carry no token and no redir
   const request = async (url, options) => {
     if (url.includes('/projects/')) return Response.json(project)
     if (url.includes('/deployments/')) return Response.json(deployment)
+    if (url.includes('/aliases/')) return Response.json({ alias: new URL(url).pathname.split('/').at(-1), projectId: policy.vercelProject, deploymentId: 'dpl_abc' })
     assert.equal(options.headers, undefined)
     assert.equal(options.redirect, 'manual')
     return new Response(null, { status: 503, headers: { 'x-vercel-error': 'DEPLOYMENT_PAUSED' } })
   }
   await verifyVercelHold({ token: 'synthetic', deploymentId: 'dpl_abc', request })
+  await assert.rejects(verifyVercelHold({ token: 'synthetic', deploymentId: 'dpl_abc', completed: true,
+    request: (url, options) => url.includes('/aliases/') ? Promise.resolve(Response.json({ alias: new URL(url).pathname.split('/').at(-1),
+      projectId: policy.vercelProject, deploymentId: 'dpl_old' })) : request(url, options) }), /MATCHING_PRODUCTION_ALIAS/)
   await assert.rejects(verifyVercelHold({ token: 'synthetic', deploymentId: 'dpl_abc', request: (url, options) => url.startsWith('https://api.vercel.com') ? request(url, options) : Promise.resolve(new Response(null, { status: 302 })) }))
 })
 

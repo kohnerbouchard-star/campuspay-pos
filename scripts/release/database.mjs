@@ -47,7 +47,10 @@ export async function checkBackupMatchesLive(client, bytes, key, now = Date.now(
 // The shared runner invokes this before its first DDL, under advisory lock
 // 84632291. A failed/partial earlier attempt is deliberately not auto-resumed.
 export async function releaseGuard(state, { completed = false, beforeMigration = async () => {} } = {}) {
-  checkHistory(state.applied, state.pending, completed)
+  // The runner's intended result is not completion evidence. Re-read committed
+  // history while the same lock is held, including after the final migration.
+  const applied = completed ? (await state.client.query('select version from private.schema_migrations order by version')).rows.map(row => row.version) : state.applied
+  checkHistory(applied, state.pending, completed)
   await checkRuntime(state.client)
   if (!completed) await beforeMigration(state.client)
 }

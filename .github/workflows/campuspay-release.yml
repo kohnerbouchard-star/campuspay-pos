@@ -1,5 +1,5 @@
 name: CampusPay protected manual release
-run-name: CampusPay ${{ inputs.mode }} — app 4e55ece — ${{ github.actor }}
+run-name: CampusPay ${{ inputs.mode }} — app 4e55ece — ${{ inputs.deployment_id || 'no deployment' }} — ${{ github.actor }}
 on:
   workflow_dispatch:
     inputs:
@@ -197,7 +197,7 @@ jobs:
         run: node scripts/release/cli.mjs migrate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-passed-${{ github.run_id }}
+          name: release-passed-${{ github.run_id }}-${{ inputs.deployment_id }}
           path: ${{ runner.temp }}/campuspay-release/receipt/result.json
           if-no-files-found: error
           retention-days: 90
