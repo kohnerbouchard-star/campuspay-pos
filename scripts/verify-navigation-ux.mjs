@@ -124,7 +124,7 @@ try {
   await page.goto(ctx.base + '/inventory', { waitUntil: 'networkidle' })
   await page.getByRole('row').filter({hasText:'WATER-001'}).getByRole('button').click()
   await page.getByRole('button',{name:'Receive Stock',exact:true}).click()
-  await expect(page.getByLabel('Product',{exact:true})).not.toHaveValue('')
+  await expect(page.getByRole('combobox',{name:'Product',exact:true})).not.toHaveValue('')
   checks.push('Report jump links move focus; receiving begins on the selected product without searching again')
 
   phase = 'short desktop and resize menu'

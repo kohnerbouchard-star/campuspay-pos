@@ -27,7 +27,7 @@ export function AccessEditor({targetId,currentUserId,enabled,canReadAudit,onClos
   try{await accept(await apiFetch<unknown>(`/api/administration/access/${v.targetId}`,{method:'POST',body:JSON.stringify(v)}))}catch(e){if(e instanceof ClientApiError&&e.status<500){try{clear()}catch{setReady(false)}setError(e.message)}else{setReview(null);setError('Access result is unconfirmed. Recover the original request before any further change.')}}finally{flight.current=false;setBusy(false)}
  }
  async function recover(){if(!pending||flight.current)return;flight.current=true;setBusy(true);setError('');try{await accept(await apiFetch<unknown>('/api/administration/access/recover',{method:'POST',body:JSON.stringify({requestKey:pending})}))}catch(e){setError(e instanceof Error?e.message:'Recovery unconfirmed')}finally{flight.current=false;setBusy(false)}}
- return <Dialog title="Employee Access" busy={busy} onClose={onClose}>
+ return <Dialog title="Employee Access" className="access-dialog" busy={busy} onClose={onClose}>
   {snapshot&&<><h2>{snapshot.display_name} · {snapshot.employee_code}</h2><p>Preset: <strong>{PRESET_LABELS[preset]}</strong> · {customized.added.length||customized.removed.length?'Customized':'Preset defaults'}</p></>}
   {error&&<p role="alert" className="error-message">{error}</p>}{notice&&<p role="status">{notice}</p>}
   {pending&&<section className="uncertain-result"><h3>Access result needs confirmation</h3><button className="primary-action" disabled={busy} onClick={()=>void recover()}>Recover access result</button></section>}

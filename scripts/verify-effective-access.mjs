@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {randomBytes,randomUUID} from 'node:crypto'
 import pg from 'pg'
-import {CAPABILITY_NAMES,PRESET_DEFAULTS,setCapability} from '../src/features/auth/capabilities.ts'
+import {PRESET_DEFAULTS,setCapability} from '../src/features/auth/capabilities.ts'
 assert.equal(process.env.CI,'true');const url=new URL(process.env.DATABASE_URL_UNPOOLED);assert.ok(['localhost','127.0.0.1','[::1]'].includes(url.hostname))
 const name='campuspay_access_'+randomBytes(6).toString('hex'),control=new pg.Client({connectionString:url.href}),checks=[]
 let db,created=false

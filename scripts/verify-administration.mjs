@@ -9,7 +9,7 @@ import { runAdministrationBrowser } from './administration-browser.mjs'
 let ctx,phase='setup';const checks=[]
 try{
  ctx=await refundTestContext();await ctx.start(false)
- const {owner,request,raw,login,staffPin}=ctx
+ const {owner,request,login,staffPin}=ctx
  let admin=await login();let cashier=await login('1001');const accountant=await login('3001'),other=await login('9101'),inventory=await login('2001')
  const readonly=async()=>JSON.stringify((await owner.query("select (select count(*) from private.students) students,(select count(*) from private.wallets) wallets,(select sum(balance_won) from private.wallets) balance,(select count(*) from private.student_cards) cards,(select count(*) from private.student_credentials) pins")).rows[0])
  const before=await readonly(),newPin=String(randomInt(10000000,100000000))

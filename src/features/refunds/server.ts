@@ -7,7 +7,7 @@ import { PostReturnSchema, CashPayoutSchema, PostRefundSchema, RefundDecisionSch
 
 export function refundsEnabled() { return process.env.REFUNDS_ENABLED === 'true' }
 function requireIssuer(session: SessionContext) {
-  if (!session.permissions.includes('refunds.issue')) throw new ApiError(403, 'FORBIDDEN', 'Assigned employees can authorize refunds and record cash payouts')
+  if (!session.permissions.includes('refunds.issue')) throw new ApiError(403, 'FORBIDDEN', 'Refund issue access is required')
 }
 const decision = z.array(z.object({ result: RefundDecisionSchema })).length(1).transform(([row]) => row.result)
 export async function refundSaleDetail(session: SessionContext, reference: string) {

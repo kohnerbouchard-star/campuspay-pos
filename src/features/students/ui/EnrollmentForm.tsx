@@ -69,7 +69,7 @@ export function EnrollmentForm({ onCancel, onComplete }: {
 
   return <section className="panel" aria-labelledby="enrollment-heading">
     <CardReaderCapture active={reader} onRead={captureCard} />
-    <div className="panel-heading"><div><p className="eyebrow">E202 · Super Admin</p><h2 id="enrollment-heading">Enroll new student</h2></div></div>
+    <div className="panel-heading"><div><p className="eyebrow">E202 · Student enrollment</p><h2 id="enrollment-heading">Enroll new student</h2></div></div>
     <p className="muted">Create the student’s MICA Money account and activate their physical card.</p>
     <form ref={formRef} className="form-stack" onSubmit={submit} aria-busy={busy}>
       <fieldset disabled={busy || reader || uncertain} className="form-fields">

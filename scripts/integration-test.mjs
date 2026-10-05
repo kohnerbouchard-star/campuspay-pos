@@ -20,7 +20,7 @@ await owner.connect()
 const env = { ...process.env, DATABASE_URL_UNPOOLED: '', COOKIE_SECURE:'false', APP_ORIGIN:'http://127.0.0.1:3100', NODE_ENV:'production', NEXT_TELEMETRY_DISABLED:'1', FUNDING_ENABLED:'true' }
 for (const key of ['CARD_HMAC_SECRET','COUPON_HMAC_SECRET','STAFF_PIN_PEPPER','STUDENT_PIN_PEPPER','SESSION_HMAC_SECRET','TERMINAL_COOKIE_SECRET']) env[key] = randomBytes(32).toString('hex')
 const h=(key,s)=>createHmac('sha256',env[key]).update(s).digest('hex')
-const staff=[['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin']].map(([employeeCode,role])=>({employeeCode,role,displayName:`Test ${role}`,pinProof:h('STAFF_PIN_PEPPER','staff-pin:12345678')}))
+const staff=[['1001','cashier'],['2001','inventory_admin'],['3001','accountant'],['9001','super_admin'],['9002','super_admin']].map(([employeeCode,role])=>({employeeCode,role,displayName:`Test ${role}`,pinProof:h('STAFF_PIN_PEPPER','staff-pin:12345678')}))
 await owner.query('select * from api.bootstrap_demo($1::jsonb,$2,$3,$4)',[JSON.stringify(staff),h('STUDENT_PIN_PEPPER','student-pin:112233'),h('CARD_HMAC_SECRET','04A81F92C73180'),h('COUPON_HMAC_SECRET','WELCOME10')])
 await owner.query("do $$ begin if not exists(select 1 from pg_roles where rolname='campuspay_ci_runtime') then create role campuspay_ci_runtime login password 'ci-isolated-only'; end if; end $$; grant campuspay_runtime to campuspay_ci_runtime")
 const runtimeUrl=new URL(ownerUrl);runtimeUrl.username='campuspay_ci_runtime';runtimeUrl.password='ci-isolated-only';env.DATABASE_URL=runtimeUrl.toString()

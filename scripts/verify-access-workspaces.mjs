@@ -2,7 +2,7 @@
 // Disposable localhost PostgreSQL, synthetic people, and a local production build only.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { randomUUID, randomBytes } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { chromium, expect } from '@playwright/test'
 import { refundTestContext } from './refund-test-context.mjs'
 import { PRESET_DEFAULTS } from '../src/features/auth/capabilities.ts'
@@ -15,7 +15,7 @@ try {
  ctx=await refundTestContext();await ctx.start(false,{administration:true,funding:true})
  const {owner,request,login,staffPin,base}=ctx
  await owner.query('update private.system_settings set administration_enabled=true where singleton')
- const admin=await login(),adminSession=await request(admin,'/api/auth/session')
+ const admin=await login()
  const roles={staff:'cashier',manager:'inventory_admin',accountant:'accountant',super_admin:'super_admin'}
  const create=async(preset,code)=>{
   const r=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:`Access ${code}`,role:roles[preset],preset,newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Synthetic access acceptance employee identity verified',verified:true})
@@ -63,7 +63,7 @@ try {
   if(!test.permissions.includes('pos.checkout'))await request(test.cookies,'/api/pos/intents',{},403)
   if(!test.permissions.includes('staff.access.manage'))await request(test.cookies,`/api/administration/access/${cases[0].id}`,undefined,403)
   if(!test.permissions.includes('wallet.correct'))await request(test.cookies,'/api/funding/prepare',{requestKey:randomUUID(),action:'NONCASH_CREDIT',denominations:[1000],sourceReference:'Synthetic source',notes:'Forged unassigned wallet correction'},403)
-  if(!test.permissions.includes('inventory.product.manage'))await request(test.cookies,'/api/management',{kind:'PRODUCT',action:'CREATE_PRODUCT',requestKey:randomUUID(),sku:'DENIED-'+randomUUID(),name:'Denied',category:'QA',sellingPriceWon:1,reorderLevel:0,reason:'Unauthorized synthetic creation request',verified:true},403)
+  if(!test.permissions.includes('inventory.product.manage'))await request(test.cookies,'/api/management',{kind:'PRODUCT',action:'CREATE_PRODUCT',requestKey:randomUUID(),sku:'DENIED-'+randomUUID().slice(0,8),name:'Denied',category:'QA',sellingPriceWon:1,reorderLevel:0,reason:'Unauthorized synthetic creation request',verified:true},403)
   if(!test.permissions.includes('wallet.read')){
    if(test.permissions.includes('students.read'))assert.ok((await request(test.cookies,'/api/students')).every(s=>s.balance_won===null))
    await assert.rejects(owner.query('select * from api.student_wallet_history($1,$2)',[test.session.session_id,sample]),/FORBIDDEN/)

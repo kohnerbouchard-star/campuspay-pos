@@ -1,0 +1,541 @@
+{
+  "capabilities": [
+    {
+      "name": "pos.read",
+      "workspace": "Register",
+      "area": "Point of sale",
+      "column": "View",
+      "label": "View the register",
+      "requires": []
+    },
+    {
+      "name": "pos.checkout",
+      "workspace": "Register",
+      "area": "Point of sale",
+      "column": "Operate",
+      "label": "Take payments",
+      "requires": [
+        "pos.read"
+      ]
+    },
+    {
+      "name": "coupons.redeem",
+      "workspace": "Register",
+      "area": "Sale coupons",
+      "column": "Operate",
+      "label": "Apply a sale coupon",
+      "requires": [
+        "pos.checkout"
+      ]
+    },
+    {
+      "name": "orders.read",
+      "workspace": "Register",
+      "area": "Online orders",
+      "column": "View",
+      "label": "View online orders",
+      "requires": []
+    },
+    {
+      "name": "orders.fulfill",
+      "workspace": "Register",
+      "area": "Online orders",
+      "column": "Operate",
+      "label": "Fulfill online orders",
+      "requires": [
+        "orders.read"
+      ]
+    },
+    {
+      "name": "cash.read",
+      "workspace": "Register",
+      "area": "Cash drawer",
+      "column": "View",
+      "label": "View this register’s cash records",
+      "requires": []
+    },
+    {
+      "name": "cash.shift.manage",
+      "workspace": "Register",
+      "area": "Cash drawer",
+      "column": "Operate",
+      "label": "Open and close an assigned drawer",
+      "requires": [
+        "cash.read"
+      ]
+    },
+    {
+      "name": "cash.drawer.override",
+      "workspace": "Register",
+      "area": "Cash drawer",
+      "column": "Manage",
+      "label": "Operate another employee’s drawer on this terminal",
+      "requires": [
+        "cash.shift.manage"
+      ]
+    },
+    {
+      "name": "cash.movement.record",
+      "workspace": "Register",
+      "area": "Cash movements",
+      "column": "Operate",
+      "label": "Record cash paid in, paid out and drops",
+      "requires": [
+        "cash.read"
+      ]
+    },
+    {
+      "name": "cash.movement.approve",
+      "workspace": "Register",
+      "area": "Cash movements",
+      "column": "Approve",
+      "label": "Independently approve cash movements",
+      "requires": [
+        "cash.read"
+      ]
+    },
+    {
+      "name": "students.read",
+      "workspace": "Students",
+      "area": "Student accounts",
+      "column": "View",
+      "label": "Find and view student identity and account readiness",
+      "requires": []
+    },
+    {
+      "name": "students.enroll",
+      "workspace": "Students",
+      "area": "Enrollment",
+      "column": "Operate",
+      "label": "Enroll a student or complete roster enrollment",
+      "requires": [
+        "students.read",
+        "credentials.issue"
+      ]
+    },
+    {
+      "name": "students.status.manage",
+      "workspace": "Students",
+      "area": "Student accounts",
+      "column": "Manage",
+      "label": "Deactivate and reactivate student accounts",
+      "requires": [
+        "students.read"
+      ]
+    },
+    {
+      "name": "credentials.read",
+      "workspace": "Students",
+      "area": "Credentials",
+      "column": "View",
+      "label": "View card and PIN readiness",
+      "requires": [
+        "students.read"
+      ]
+    },
+    {
+      "name": "credentials.issue",
+      "workspace": "Students",
+      "area": "Initial credentials",
+      "column": "Operate",
+      "label": "Issue initial card and PIN during enrollment",
+      "requires": [
+        "credentials.read"
+      ]
+    },
+    {
+      "name": "credentials.reset",
+      "workspace": "Students",
+      "area": "PIN reset",
+      "column": "Manage",
+      "label": "Reset an existing PIN with independent approval",
+      "requires": [
+        "credentials.read"
+      ]
+    },
+    {
+      "name": "credentials.card.replace",
+      "workspace": "Students",
+      "area": "Card replacement",
+      "column": "Manage",
+      "label": "Replace an existing card with independent approval",
+      "requires": [
+        "credentials.read"
+      ]
+    },
+    {
+      "name": "credentials.approve",
+      "workspace": "Students",
+      "area": "Credentials",
+      "column": "Approve",
+      "label": "Independently approve credential changes",
+      "requires": [
+        "credentials.read"
+      ]
+    },
+    {
+      "name": "wallet.read",
+      "workspace": "Students",
+      "area": "Wallets",
+      "column": "View",
+      "label": "View student balances and wallet history",
+      "requires": [
+        "students.read"
+      ]
+    },
+    {
+      "name": "wallet.fund",
+      "workspace": "Students",
+      "area": "Wallets",
+      "column": "Operate",
+      "label": "Accept a normal cash student deposit",
+      "requires": [
+        "wallet.read"
+      ]
+    },
+    {
+      "name": "wallet.correct",
+      "workspace": "Students",
+      "area": "Wallet corrections",
+      "column": "Manage",
+      "label": "Initiate an independently approved wallet credit or debit",
+      "requires": [
+        "wallet.read"
+      ]
+    },
+    {
+      "name": "wallet.reverse",
+      "workspace": "Students",
+      "area": "Funding reversals",
+      "column": "Manage",
+      "label": "Reverse an exact funding receipt with independent approval",
+      "requires": [
+        "wallet.read"
+      ]
+    },
+    {
+      "name": "wallet.approve",
+      "workspace": "Students",
+      "area": "Wallet corrections",
+      "column": "Approve",
+      "label": "Independently approve wallet corrections and reversals",
+      "requires": [
+        "wallet.read"
+      ]
+    },
+    {
+      "name": "inventory.read",
+      "workspace": "Inventory",
+      "area": "Products and stock",
+      "column": "View",
+      "label": "View products, stock and lots",
+      "requires": []
+    },
+    {
+      "name": "inventory.receive",
+      "workspace": "Inventory",
+      "area": "Stock receiving",
+      "column": "Operate",
+      "label": "Receive stock",
+      "requires": [
+        "inventory.read"
+      ]
+    },
+    {
+      "name": "inventory.adjust",
+      "workspace": "Inventory",
+      "area": "Stock removal",
+      "column": "Operate",
+      "label": "Record documented stock removal",
+      "requires": [
+        "inventory.read"
+      ]
+    },
+    {
+      "name": "inventory.product.manage",
+      "workspace": "Inventory",
+      "area": "Products and stock",
+      "column": "Manage",
+      "label": "Create, edit, archive and restore products",
+      "requires": [
+        "inventory.read"
+      ]
+    },
+    {
+      "name": "inventory.price.manage",
+      "workspace": "Inventory",
+      "area": "Product pricing",
+      "column": "Manage",
+      "label": "Change product prices",
+      "requires": [
+        "inventory.read"
+      ]
+    },
+    {
+      "name": "coupons.read",
+      "workspace": "Inventory",
+      "area": "Coupons",
+      "column": "View",
+      "label": "View coupon definitions",
+      "requires": []
+    },
+    {
+      "name": "coupons.manage",
+      "workspace": "Inventory",
+      "area": "Coupons",
+      "column": "Manage",
+      "label": "Create and deactivate coupons",
+      "requires": [
+        "coupons.read"
+      ]
+    },
+    {
+      "name": "refunds.read",
+      "workspace": "Finance",
+      "area": "Refunds",
+      "column": "View",
+      "label": "View original sales and refund receipts",
+      "requires": []
+    },
+    {
+      "name": "refunds.issue",
+      "workspace": "Finance",
+      "area": "Refunds",
+      "column": "Operate",
+      "label": "Issue verified refunds within installed policy",
+      "requires": [
+        "refunds.read"
+      ]
+    },
+    {
+      "name": "refunds.cash_payout",
+      "workspace": "Finance",
+      "area": "Refund cash handover",
+      "column": "Operate",
+      "label": "Record an authorized refund cash handover",
+      "requires": [
+        "refunds.read"
+      ]
+    },
+    {
+      "name": "reports.sales",
+      "workspace": "Finance",
+      "area": "Sales reports",
+      "column": "View",
+      "label": "View sales reports",
+      "requires": []
+    },
+    {
+      "name": "reports.inventory",
+      "workspace": "Finance",
+      "area": "Inventory reports",
+      "column": "View",
+      "label": "View inventory reports",
+      "requires": []
+    },
+    {
+      "name": "reports.wallets",
+      "workspace": "Finance",
+      "area": "Wallet reports",
+      "column": "View",
+      "label": "View wallet reports",
+      "requires": []
+    },
+    {
+      "name": "reports.coupons",
+      "workspace": "Finance",
+      "area": "Coupon reports",
+      "column": "View",
+      "label": "View coupon reports",
+      "requires": []
+    },
+    {
+      "name": "reconciliation.read",
+      "workspace": "Finance",
+      "area": "Reconciliation",
+      "column": "View",
+      "label": "Review and export daily reconciliation",
+      "requires": []
+    },
+    {
+      "name": "cash.history.all",
+      "workspace": "Finance",
+      "area": "Cash history",
+      "column": "View",
+      "label": "View cash history across registers",
+      "requires": [
+        "cash.read"
+      ]
+    },
+    {
+      "name": "cash.variance.review",
+      "workspace": "Finance",
+      "area": "Cash variances",
+      "column": "Approve",
+      "label": "Independently review cash count variances",
+      "requires": [
+        "cash.history.all"
+      ]
+    },
+    {
+      "name": "staff.read",
+      "workspace": "Admin",
+      "area": "Staff",
+      "column": "View",
+      "label": "View staff profiles",
+      "requires": []
+    },
+    {
+      "name": "staff.manage",
+      "workspace": "Admin",
+      "area": "Staff",
+      "column": "Manage",
+      "label": "Manage staff profiles, credentials and sessions",
+      "requires": [
+        "staff.read"
+      ]
+    },
+    {
+      "name": "staff.access.manage",
+      "workspace": "Admin",
+      "area": "Employee access",
+      "column": "Manage",
+      "label": "Assign exact employee access; Super Admin only",
+      "requires": [
+        "staff.manage"
+      ]
+    },
+    {
+      "name": "terminals.read",
+      "workspace": "Admin",
+      "area": "Registers",
+      "column": "View",
+      "label": "View registered terminals",
+      "requires": []
+    },
+    {
+      "name": "terminals.manage",
+      "workspace": "Admin",
+      "area": "Registers",
+      "column": "Manage",
+      "label": "Rename, deactivate and revoke terminal sessions",
+      "requires": [
+        "terminals.read"
+      ]
+    },
+    {
+      "name": "settings.payments.manage",
+      "workspace": "Admin",
+      "area": "Payment settings",
+      "column": "Manage",
+      "label": "Configure this register’s payment policy",
+      "requires": []
+    },
+    {
+      "name": "audit.read",
+      "workspace": "Admin",
+      "area": "Access audit",
+      "column": "View",
+      "label": "View immutable employee access history",
+      "requires": [
+        "staff.read"
+      ]
+    }
+  ],
+  "presets": {
+    "staff": [
+      "pos.read",
+      "pos.checkout",
+      "coupons.redeem"
+    ],
+    "manager": [
+      "pos.read",
+      "pos.checkout",
+      "coupons.redeem",
+      "orders.read",
+      "orders.fulfill",
+      "cash.read",
+      "cash.shift.manage",
+      "cash.movement.record",
+      "students.read",
+      "inventory.read",
+      "inventory.receive",
+      "inventory.adjust",
+      "inventory.product.manage",
+      "inventory.price.manage",
+      "coupons.read",
+      "coupons.manage",
+      "refunds.read",
+      "refunds.issue",
+      "reports.sales",
+      "reports.inventory",
+      "reports.coupons"
+    ],
+    "accountant": [
+      "students.read",
+      "wallet.read",
+      "wallet.fund",
+      "cash.read",
+      "cash.shift.manage",
+      "cash.movement.record",
+      "cash.movement.approve",
+      "cash.history.all",
+      "cash.variance.review",
+      "refunds.read",
+      "reports.sales",
+      "reports.inventory",
+      "reports.wallets",
+      "reports.coupons",
+      "reconciliation.read"
+    ],
+    "super_admin": [
+      "pos.read",
+      "pos.checkout",
+      "coupons.redeem",
+      "orders.read",
+      "orders.fulfill",
+      "cash.read",
+      "cash.shift.manage",
+      "cash.drawer.override",
+      "cash.movement.record",
+      "cash.movement.approve",
+      "students.read",
+      "students.enroll",
+      "students.status.manage",
+      "credentials.read",
+      "credentials.issue",
+      "credentials.reset",
+      "credentials.card.replace",
+      "credentials.approve",
+      "wallet.read",
+      "wallet.fund",
+      "wallet.correct",
+      "wallet.reverse",
+      "wallet.approve",
+      "inventory.read",
+      "inventory.receive",
+      "inventory.adjust",
+      "inventory.product.manage",
+      "inventory.price.manage",
+      "coupons.read",
+      "coupons.manage",
+      "refunds.read",
+      "refunds.issue",
+      "refunds.cash_payout",
+      "reports.sales",
+      "reports.inventory",
+      "reports.wallets",
+      "reports.coupons",
+      "reconciliation.read",
+      "cash.history.all",
+      "cash.variance.review",
+      "staff.read",
+      "staff.manage",
+      "staff.access.manage",
+      "terminals.read",
+      "terminals.manage",
+      "settings.payments.manage",
+      "audit.read"
+    ]
+  }
+}

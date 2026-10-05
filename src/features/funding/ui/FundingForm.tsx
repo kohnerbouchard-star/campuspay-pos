@@ -15,7 +15,7 @@ export function FundingForm({actions,busy,available=true,onPrepare}:{actions:rea
   const v=PrepareFundingSchema.safeParse(input);if(!v.success){setError('Check the amount, cash received, source reference and a reason of at least 10 characters.');return}
   setError('');onPrepare(v.data)
  }}>
- <h2>Record funds or a cash movement</h2><p>Prepare the exact amount first. No money or stock changes until final confirmation.</p>
+ <h2>{actions.length===1&&actions[0]==='CASH_DEPOSIT'?'Enter the student deposit':'Record funds or a cash movement'}</h2><p>Prepare the exact amount first. No money or stock changes until final confirmation.</p>
  {error&&<p role="alert" className="error-message">{error}</p>}
  <fieldset disabled={busy||!available} className="form-fields"><legend>Choose the operation</legend>
  <label htmlFor={`${id}-kind`}>Operation</label><select id={`${id}-kind`} value={action} onChange={e=>{setAction(e.target.value as FundingAction);setUnits([])}}>

@@ -26,11 +26,11 @@ export async function fundingBrowser(ctx,cookies,card){
   await prepare()
   // Reproduce callback churn between the prefix and suffix of one frame. The
   // timestamps model a continuous device frame independently of CI scheduling.
-  const refreshedScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card')
+  const refreshedScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card').catch(e=>({error:e.message}))
   await page.evaluate(async value=>{
    let tick=performance.now()
    const emit=key=>{const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:tick++});window.dispatchEvent(event)}
-   const journal=[...document.querySelectorAll('h2')].find(e=>e.textContent==='Funding readiness')
+   const journal=document.querySelector('section[aria-label="Student funding readiness"]')
    const refresh=[...document.querySelectorAll('button')].find(e=>e.textContent==='Refresh funding readiness')
    if(!journal||!refresh)throw new Error('Funding journal unavailable for the reader regression')
    for(const char of value.slice(0,8))emit(char)
@@ -49,7 +49,7 @@ export async function fundingBrowser(ctx,cookies,card){
   await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   // Separately exercise native keyboard input, actual posting and lost response.
   await prepare()
-  const nativeScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card')
+  const nativeScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card').catch(e=>({error:e.message}))
   await page.keyboard.type(card,{delay:5});await page.keyboard.press('Enter')
   assert.equal((await nativeScan).status(),200,'Native reader frame must reach the matching student')
   await expect(page.getByLabel('Student PIN',{exact:true})).toBeVisible();await page.getByLabel('Student PIN',{exact:true}).fill(ctx.pin)

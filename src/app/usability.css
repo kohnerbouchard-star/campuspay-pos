@@ -20,3 +20,5 @@
 .record-more {margin-top:1rem;}.record-more summary {cursor:pointer;font-weight:600;}.record-more .action-row {margin-top:.8rem;}
 .access-matrix details {margin:1rem 0;border:1px solid var(--border,#d9dfeb);border-radius:.7rem;padding:.8rem;}.access-matrix summary{font-weight:700;cursor:pointer;}.matrix-table{overflow:auto;}.access-matrix th,.access-matrix td{padding:.8rem;text-align:left;}.access-matrix label{display:flex;align-items:center;gap:.6rem;}.matrix-cell-label{font-size:.8rem;max-width:11rem;}.effective-access{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;}
 @media(max-width:650px){.matrix-table table,.matrix-table tbody,.matrix-table tr,.matrix-table td,.matrix-table th{display:block;}.matrix-table thead{display:none;}.matrix-table caption{display:none;}.matrix-table tr{border-bottom:1px solid var(--border,#ddd);padding:.7rem 0;}.matrix-table td{padding:.3rem;}.matrix-table td:has(span[aria-label="Not applicable"]){display:none;}.matrix-cell-label{max-width:none;}}
+
+.dialog.access-dialog{width:min(100% - 32px,960px);}

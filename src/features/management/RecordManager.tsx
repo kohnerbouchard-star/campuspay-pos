@@ -18,7 +18,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
   const operation=useRecordOperation(kind,userId,refresh)
   useEffect(()=>{
     if(kind!=='STUDENT'||!confirm||operation.busy)return
-    const expire=()=>{setPin('');setConfirm(false);setError('Student status review expired. Review the record again and enter the current Super Admin PIN.')}
+    const expire=()=>{setPin('');setConfirm(false);setError('Student status review expired. Review the record again and enter your current PIN.')}
     const timer=setTimeout(expire,Math.max(0,reviewDeadline.current-Date.now()))
     const hide=()=>{if(document.visibilityState!=='visible')expire()}
     document.addEventListener('visibilitychange',hide)
