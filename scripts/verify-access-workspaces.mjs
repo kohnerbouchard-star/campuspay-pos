@@ -149,6 +149,17 @@ try {
  await page.getByRole('row').filter({hasText:alex.code}).getByRole('button',{name:'Open employee',exact:true}).click()
  await page.getByRole('button',{name:'Access',exact:true}).click()
  const editor=page.getByRole('dialog',{name:'Employee Access',exact:true})
+ const capture=async(state,dialog=editor)=>{
+  for(const width of [1440,768,390]){
+   await page.setViewportSize({width,height:900})
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+   assert.ok(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'Dialog content stays within its viewport')
+   if(state==='customize')assert.ok(await editor.locator('.matrix-table').evaluateAll(tables=>tables.every(el=>el.scrollWidth<=el.clientWidth+1)),'Permission descriptions wrap without horizontal clipping')
+   await dialog.evaluate(el=>{el.scrollTop=0})
+   await page.screenshot({path:`${dir}/access-${state}-${width}.png`})
+  }
+  await page.setViewportSize({width:1440,height:1000})
+ }
  await expect(editor.getByText(/Customized/)).toBeVisible()
  await editor.getByRole('button',{name:'Customize Access',exact:true}).click()
  await editor.getByRole('checkbox',{name:'Wallets → Operate',exact:true}).check()
@@ -158,6 +169,15 @@ try {
  await editor.getByRole('checkbox',{name:'Wallets → View',exact:true}).uncheck()
  await expect(editor.getByRole('checkbox',{name:'Wallets → Operate',exact:true})).not.toBeChecked()
  await editor.getByRole('checkbox',{name:'Wallets → Operate',exact:true}).check()
+ await capture('customize')
+ // Keep each matrix section reviewable at phone width, including later areas
+ // below the dialog's initial scroll position.
+ await page.setViewportSize({width:390,height:900})
+ for(const workspace of ['Register','Students','Inventory','Finance','Admin']){
+  await editor.locator('.access-matrix').getByText(workspace,{exact:true}).scrollIntoViewIfNeeded()
+  await page.screenshot({path:`${dir}/access-customize-${workspace.toLowerCase()}-390.png`})
+ }
+ await page.setViewportSize({width:1440,height:1000})
  await editor.getByRole('button',{name:'Effective Access',exact:true}).click()
  await expect(editor.getByText('Accept a normal cash student deposit',{exact:true})).toBeVisible()
  await editor.getByLabel('Reason for access change',{exact:true}).fill('Synthetic reviewed funding responsibility for Alex')
@@ -165,18 +185,39 @@ try {
  await editor.getByRole('button',{name:'Review access changes',exact:true}).click()
  const review=page.getByRole('dialog',{name:'Save employee access?',exact:true})
  await expect(review.getByText(/Active sessions will be revoked/)).toBeVisible()
+ await expect(review.getByRole('heading',{name:'Added',exact:true})).toBeVisible()
+ await expect(review.getByText('Accept a normal cash student deposit',{exact:true})).toBeVisible()
+ await capture('review',review)
  await review.locator('input[data-confirmation-text]').fill(alex.code)
+ let savedAccess
+ await page.route(`**/api/administration/access/${alex.id}`,async route=>{
+  if(route.request().method()!=='POST'){await route.continue();return}
+  const response=await route.fetch();assert.equal(response.status(),200)
+  savedAccess={requestKey:route.request().postDataJSON().requestKey,...(await response.json()).data}
+  await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,error:{code:'INTERNAL_ERROR',message:'Synthetic committed response loss'}})})
+ },{times:1})
  const posted=page.waitForResponse(r=>r.url().endsWith(`/api/administration/access/${alex.id}`)&&r.request().method()==='POST')
  await review.getByRole('button',{name:'Save exact access',exact:true}).click()
- assert.equal((await posted).status(),200)
- await expect(editor.getByText(/Access updated/)).toBeVisible()
+ assert.equal((await posted).status(),503)
+ await expect(editor.getByRole('button',{name:'Recover access result',exact:true})).toBeEnabled()
+ assert.equal(savedAccess.outcome,'COMPLETED')
+ const recovery=JSON.parse(await page.evaluate(()=>sessionStorage.getItem('campuspay:access-change:v1')))
+ assert.deepEqual(recovery,{requestKey:savedAccess.requestKey},'Persist only the opaque request key, never PINs or access snapshots')
  await request(alex.cookies,'/api/auth/session',undefined,401)
+ await page.reload({waitUntil:'networkidle'})
+ await page.getByRole('row').filter({hasText:alex.code}).getByRole('button',{name:'Open employee',exact:true}).click()
+ await page.getByRole('button',{name:'Access',exact:true}).click()
+ await editor.getByRole('button',{name:'Recover access result',exact:true}).click()
+ await expect(editor.getByText(/Access updated/)).toBeVisible()
+ assert.equal(await page.evaluate(()=>sessionStorage.getItem('campuspay:access-change:v1')),null)
+ assert.equal(Number((await owner.query('select count(*) from private.staff_access_events where request_key=$1',[savedAccess.requestKey])).rows[0].count),1)
  const newAlex=await login(alex.code),newSession=await request(newAlex,'/api/auth/session')
  assert.ok(newSession.permissions.includes('wallet.fund'));assert.ok(!newSession.permissions.includes('cash.shift.manage'));assert.ok(!newSession.permissions.includes('staff.manage'))
  const audit=await request(admin,`/api/administration/access/${alex.id}`);assert.equal(audit.history[0].reason,'Synthetic reviewed funding responsibility for Alex')
- for(const width of [1440,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${dir}/access-editor-${width}.png`,fullPage:true})}
+ await editor.getByRole('button',{name:'Effective Access',exact:true}).click()
+ for(const width of [1440,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await editor.evaluate(el=>{el.scrollTop=0});await page.screenshot({path:`${dir}/access-editor-${width}.png`})}
  await context.close()
- checks.push('Responsive matrix adds prerequisites, removes dependents, derives Effective Access, reviews before/after, audits exact change and revokes Alex’s old session without unrelated grants')
+ checks.push('Responsive matrix adds prerequisites, removes dependents, derives Effective Access and reviews before/after; committed response loss recovers after reload with one audit event and immediate session revocation, without unrelated grants')
  assert.equal(await footprint(),moneyBefore,'Access and navigation tests never change balances, stock or sales')
  assert.deepEqual(errors,[])
  fs.writeFileSync(`${dir}/results.json`,JSON.stringify({checks,profiles:cases.map(({code,preset,permissions,workspaces})=>({code,preset,permissions,workspaces})),liveDataUsed:false},null,2))

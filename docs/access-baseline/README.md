@@ -17,6 +17,7 @@ Scope: only `kohnerbouchard-star/campuspay-pos`. Deployment is limited to Vercel
 - `route-mapping.md`: five workspaces, contextual actions and nine tested access examples.
 - `security-review.md`: security boundary decisions and remaining role invariants.
 - `release-cutover.md`: required matching database/app release and observed authorization blocker.
+- `VALIDATION_DOT.md`: bounded handoff continuation, additional acceptance coverage, installed-function security review and artifact access limits. PR 42 holds final exact-head CI evidence.
 
 Baseline roles: cashier, inventory_admin, accountant, super_admin. Baseline capability names are retained only as legacy contract metadata; they no longer resolve runtime authority from a role.
 
