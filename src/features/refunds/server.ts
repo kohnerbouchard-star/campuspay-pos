@@ -7,7 +7,7 @@ import { PostReturnSchema, CashPayoutSchema, PostRefundSchema, RefundDecisionSch
 
 export function refundsEnabled() { return process.env.REFUNDS_ENABLED === 'true' }
 function requireIssuer(session: SessionContext) {
-  if (session.role !== 'super_admin') throw new ApiError(403, 'FORBIDDEN', 'Only Super Admin can authorize refunds and record cash payouts')
+  if (!session.permissions.includes('refunds.issue')) throw new ApiError(403, 'FORBIDDEN', 'Assigned employees can authorize refunds and record cash payouts')
 }
 const decision = z.array(z.object({ result: RefundDecisionSchema })).length(1).transform(([row]) => row.result)
 export async function refundSaleDetail(session: SessionContext, reference: string) {
@@ -26,7 +26,7 @@ export function recoverRefund(session: SessionContext, saleId: string, key: stri
   return callApiRpc('recover_sale_refund', { p_session_id: session.session_id, p_sale_id: saleId, p_idempotency_key: key }, decision)
 }
 export function recordCashPayout(session: SessionContext, input: z.infer<typeof CashPayoutSchema>) {
-  requireIssuer(session)
+  if (!session.permissions.includes('refunds.cash_payout')) throw new ApiError(403,'FORBIDDEN','Cash handover access is required')
   const value = CashPayoutSchema.parse(input)
   // Recording an already-authorized cash handover remains possible during a posting shutdown.
   return callApiRpc('record_refund_cash_payout', { p_session_id: session.session_id, p_refund_id: value.refundId,

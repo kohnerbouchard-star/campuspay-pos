@@ -28,13 +28,13 @@ describe('Narrow record lifecycle contracts',()=>{
  })
 })
 describe('Staff role review language',()=>{
- const previous:StaffRecord={user_id:target,employee_code:'QA-1',display_name:'Named operator',role:'cashier',active:true,updated_at:existing.expectedUpdatedAt,has_pin:true}
+ const previous:StaffRecord={user_id:target,employee_code:'QA-1',display_name:'Named operator',role:'cashier',preset:'staff',permissions:['pos.read','pos.checkout','coupons.redeem'],revision:1,active:true,updated_at:existing.expectedUpdatedAt,has_pin:true}
  const change={action:'UPDATE_STAFF' as const,requestKey:key,adminPin:'12345678',targetId:target,displayName:previous.display_name,role:previous.role,active:false,expectedUpdatedAt:previous.updated_at,notes:'Identity and access verified',verified:true as const}
  it('names the affected account, preserves its identity and warns about sign-out',()=>{
   const review=administrationReview(change,previous);expect(review.destructive).toBe(true);expect(review.token).toBe('QA-1');expect(review.description).toContain('sessions will end');expect(review.description).toContain('transaction history remain');expect(JSON.stringify(review)).not.toContain(change.adminPin)
  })
  it('marks a role change as sensitive even while the account remains active',()=>expect(administrationReview({...change,active:true,role:'super_admin'},previous).destructive).toBe(true))
- it('separates staff and student identities at creation',()=>expect(administrationReview({action:'CREATE_STAFF',requestKey:key,adminPin:'12345678',employeeCode:'NEW-STAFF',displayName:'New person',role:'accountant',newPin:'1234',confirmationPin:'1234',notes:'New staff verified',verified:true}).description).toContain('not a student wallet'))
+ it('separates staff and student identities at creation',()=>expect(administrationReview({action:'CREATE_STAFF',requestKey:key,adminPin:'12345678',employeeCode:'NEW-STAFF',displayName:'New person',role:'accountant',preset:'accountant',newPin:'1234',confirmationPin:'1234',notes:'New staff verified',verified:true}).description).toContain('not a student wallet'))
  it('requires the terminal identifier for both deactivation and reactivation',()=>{
   const terminal:TerminalRecord={terminal_id:target,label:'QA terminal',active:false,has_open_shift:false,created_at:'2026-10-04T01:00:00.000Z',last_seen_at:'2026-10-04T01:30:00.000Z'}
   const reactivate={action:'UPDATE_TERMINAL' as const,requestKey:key,adminPin:'12345678',targetId:target,label:'QA terminal',active:true,expectedActive:false,expectedLabel:'QA terminal',notes:'Verified terminal status change',verified:true as const}

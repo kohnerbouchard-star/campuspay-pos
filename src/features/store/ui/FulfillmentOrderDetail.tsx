@@ -7,10 +7,10 @@ import { formatWon } from '@/lib/format/currency'
 import { OrderTimeline } from './OrderTimeline'
 import styles from './store.module.css'
 
-export function FulfillmentOrderDetail({ order, busy, onAdvance }: { order: StaffOnlineOrder; busy: boolean; onAdvance: () => void }) {
+export function FulfillmentOrderDetail({ order, busy, canOperate, onAdvance }: { order: StaffOnlineOrder; busy: boolean; canOperate:boolean; onAdvance: () => void }) {
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const next = NEXT_ORDER_STATUS[order.status]
-  const picking = order.status === 'PICKING'
+  const picking = canOperate && order.status === 'PICKING'
   const allPicked = order.items.every((item) => picked.has(item.product_id))
   return <section className={styles.fulfillmentDetail} aria-labelledby="fulfillment-detail-title">
     <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>Order detail</p><h2 id="fulfillment-detail-title">{order.order_number}</h2></div><span className={styles.status}>{orderStatusLabel(order.status)}</span></div>
@@ -24,7 +24,7 @@ export function FulfillmentOrderDetail({ order, busy, onAdvance }: { order: Staf
     {order.delivery_note && <div className={styles.notice}><strong>Delivery note</strong><p>{order.delivery_note}</p></div>}
     <dl className={styles.totals}><div className={styles.finalTotal}><dt>Paid · MICA Money</dt><dd>{formatWon(order.total_won)}</dd></div></dl>
     {picking && !allPicked && <p className={styles.muted}>Check each item when its full quantity has been picked.</p>}
-    {next && <button className={styles.primary} disabled={busy || (picking && !allPicked)} onClick={onAdvance}>{busy ? 'Updating order…' : next.label}</button>}
+    {canOperate && next && <button className={styles.primary} disabled={busy || (picking && !allPicked)} onClick={onAdvance}>{busy ? 'Updating order…' : next.label}</button>}
     <h3>Fulfillment timeline</h3><OrderTimeline status={order.status} events={order.timeline} />
   </section>
 }

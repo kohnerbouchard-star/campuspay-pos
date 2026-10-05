@@ -18,7 +18,7 @@ export function quoteInspectedRefund(s: SessionContext, input: z.infer<typeof Pa
   return callApiRpc('quote_partial_refund', { p_session_id: s.session_id, p_sale_id: v.saleId, p_items: v.items }, z.array(z.object({ result: PartialQuoteDecisionSchema })).length(1).transform(([r]) => r.result))
 }
 export function postPartialRefund(s: SessionContext, input: PostPartialRefundInput) {
-  if (s.role !== 'super_admin') throw new ApiError(403,'FORBIDDEN','Only Super Admin can authorize item-level refunds')
+  if (!s.permissions.includes('refunds.issue')) throw new ApiError(403,'FORBIDDEN','Assigned employees can authorize item-level refunds')
   if (!partialRefundsEnabled() || (input.returnReason && !returnsEnabled())) throw new ApiError(403,'FORBIDDEN','Item-level refund or return posting is disabled')
   const v = PostPartialRefundSchema.parse(input)
   return callApiRpc('post_partial_refund', { p_session_id: s.session_id, p_sale_id: v.saleId, p_key: v.idempotencyKey, p_items: v.items,

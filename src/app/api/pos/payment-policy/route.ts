@@ -12,7 +12,7 @@ export const GET = withApiRoute('/api/pos/payment-policy', async () => {
 })
 export const POST = withApiRoute('/api/pos/payment-policy', async (request: Request) => {
   try {
-    const session = await authorizeRequest('security.staff.manage')
+    const session = await authorizeRequest('settings.payments.manage')
     const input = await parseJson(request, UpdatePaymentPolicySchema, { allowedCustomMessages: Object.values(EVENT_PAYMENT_MESSAGES) })
     try { return ok(await updatePaymentPolicy(session, input.cashEnabled, input.eventName, input.endsAt ?? null)) }
     catch (error) {

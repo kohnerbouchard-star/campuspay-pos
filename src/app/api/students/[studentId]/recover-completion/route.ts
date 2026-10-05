@@ -9,7 +9,7 @@ import { failure, ok, parseJson } from '@/lib/api/response'
 export const dynamic = 'force-dynamic'
 export const POST = withApiRoute('/api/students/[studentId]/recover-completion', async (request: Request, context: { params: Promise<{ studentId: string }> }) => {
   try {
-    const session = await authorizeRequest('students.manage')
+    const session = await authorizeRequest('students.read')
     const { studentId } = await context.params
     if (!z.string().uuid().safeParse(studentId).success) throw new ApiError(400, 'BAD_REQUEST', 'Choose a valid student account')
     const input = await parseJson(request, RecoverCompletionSchema)

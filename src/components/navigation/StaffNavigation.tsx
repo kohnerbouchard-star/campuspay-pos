@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import type { StaffRole } from '@/features/auth/domain'
+import { PRESET_LABELS, type AccessPreset } from '@/features/auth/capabilities'
 import type { WorkspaceLink } from '@/features/auth/navigation'
 import { Dialog } from '@/components/ui/Dialog'
 import { Icon } from '@/components/ui/Icon'
@@ -11,23 +11,20 @@ import { LogoutButton } from '@/components/LogoutButton'
 import { WorkspaceLinks } from './WorkspaceLinks'
 import styles from './navigation.module.css'
 
-const ROLE_LABELS: Record<StaffRole, string> = {
-  cashier: 'Cashier', inventory_admin: 'Inventory administrator', accountant: 'Accountant', super_admin: 'Super Admin',
-}
 function Brand() {
   return <Link href="/" className={styles.brand} aria-label="CampusPay · return to your starting workspace">
     <span aria-hidden="true"><Icon name="card" size={23} /></span><div><strong>CampusPay</strong><small>MICA staff operations</small></div>
   </Link>
 }
-function AccountIdentity({ displayName, role }: { displayName: string; role: StaffRole }) {
+function AccountIdentity({ displayName, role }: { displayName: string; role: AccessPreset }) {
   const initials = displayName.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toUpperCase()
   return <div className={styles.accountIdentity}>
     <span className={styles.avatar} aria-hidden="true">{initials || 'S'}</span>
-    <p><small>Signed in</small><strong>{displayName}</strong><small>{ROLE_LABELS[role]}</small></p>
+    <p><small>Signed in</small><strong>{displayName}</strong><small>{PRESET_LABELS[role]}</small></p>
   </div>
 }
 function MobileMenu({ links, pathname, onClose, displayName, role }: {
-  links: readonly WorkspaceLink[]; pathname: string; onClose(): void; displayName: string; role: StaffRole
+  links: readonly WorkspaceLink[]; pathname: string; onClose(): void; displayName: string; role: AccessPreset
 }) {
   useEffect(() => {
     const previous = document.body.style.overflow
@@ -42,7 +39,7 @@ function MobileMenu({ links, pathname, onClose, displayName, role }: {
 }
 
 export function StaffNavigation({ links, displayName, role }: {
-  links: readonly WorkspaceLink[]; displayName: string; role: StaffRole
+  links: readonly WorkspaceLink[]; displayName: string; role: AccessPreset
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)

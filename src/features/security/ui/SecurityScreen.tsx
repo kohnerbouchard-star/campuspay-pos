@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Permission } from '@/features/auth/domain'
 import type { SecurityStudent } from '@/features/security/domain'
 import { requestStepUp, postPinReset, postCardReset } from '@/features/security/client'
 import { SecurityStudentSearch } from '@/features/security/ui/SecurityStudentSearch'
@@ -11,9 +12,9 @@ import { authorizationRemainingMs, isStepUpAuthorization, isResetReceipt, securi
 type Purpose = 'RESET_STUDENT_PIN' | 'RESET_STUDENT_CARD'
 type Authorization = { authorizationToken: string; expiresAt: string }
 
-export function SecurityScreen({ initialStudent }: { initialStudent?: SecurityStudent }) {
+export function SecurityScreen({ initialStudent,permissions,initialPurpose }: { initialStudent?: SecurityStudent;permissions:readonly Permission[];initialPurpose?:Purpose }) {
   const [student, setStudent] = useState<SecurityStudent | null>(initialStudent ?? null)
-  const [purpose, setPurpose] = useState<Purpose>('RESET_STUDENT_PIN')
+  const [purpose, setPurpose] = useState<Purpose>(initialPurpose&&permissions.includes(initialPurpose==='RESET_STUDENT_PIN'?'credentials.reset':'credentials.card.replace')?initialPurpose:(permissions.includes('credentials.reset')?'RESET_STUDENT_PIN':'RESET_STUDENT_CARD'))
   const [adminCode, setAdminCode] = useState('')
   const [adminPin, setAdminPin] = useState('')
   const [authorization, setAuthorization] = useState<Authorization | null>(null)
@@ -108,7 +109,7 @@ export function SecurityScreen({ initialStudent }: { initialStudent?: SecuritySt
         <div className="panel-heading"><div><p className="eyebrow">One student · one action</p><h2 id="protected-action-heading">PIN and card replacement</h2></div></div>
         {student ? <>
           <div className="student-summary"><strong>{student.display_name}</strong><span>{student.student_code}</span></div>
-          <div className="segmented" aria-label="Protected action">{([['RESET_STUDENT_PIN', 'Reset PIN'], ['RESET_STUDENT_CARD', 'Replace card']] as const).map(([value, label]) => <button key={value} aria-pressed={purpose === value} className={purpose === value ? 'active' : ''} disabled={busy || reader || recoveryRequired} onClick={() => { clearProtectedState(); setPurpose(value); setMessage(null); setError(null) }}>{label}</button>)}</div>
+          <div className="segmented" aria-label="Protected action">{([['RESET_STUDENT_PIN', 'Reset PIN'], ['RESET_STUDENT_CARD', 'Replace card']] as const).filter(([value])=>permissions.includes(value==='RESET_STUDENT_PIN'?'credentials.reset':'credentials.card.replace')).map(([value, label]) => <button key={value} aria-pressed={purpose === value} className={purpose === value ? 'active' : ''} disabled={busy || reader || recoveryRequired} onClick={() => { clearProtectedState(); setPurpose(value); setMessage(null); setError(null) }}>{label}</button>)}</div>
           <p className="muted">{purpose === 'RESET_STUDENT_PIN' ? 'The student’s current PIN will stop working.' : 'The student’s current card will stop working when the replacement is activated.'} Active online store sessions will end.</p>
           {!authorization ? <form className="form-stack" onSubmit={authorize}>
             <label className="field"><span>Super Admin employee ID</span><input autoComplete="off" required minLength={2} maxLength={32} disabled={busy || recoveryRequired} value={adminCode} onChange={(event) => setAdminCode(event.target.value)} /></label>

@@ -5,6 +5,6 @@ import { CouponManagementScreen } from '@/features/coupons/ui/CouponManagementSc
 export const dynamic = 'force-dynamic'
 
 export default async function CouponsPage() {
-  const session = await requirePagePermission('coupons.manage')
-  return <WorkspaceFrame session={session} title="Coupons"><CouponManagementScreen /></WorkspaceFrame>
+  const session = await requirePagePermission('coupons.read')
+  return <WorkspaceFrame session={session} title="Coupons"><CouponManagementScreen canManage={session.permissions.includes('coupons.manage')} /></WorkspaceFrame>
 }

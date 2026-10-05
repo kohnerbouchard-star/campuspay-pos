@@ -1,5 +1,6 @@
 'use client'
 
+import type { Permission } from '@/features/auth/domain'
 import { useRef, useState } from 'react'
 import { getRosterStudents } from '@/features/students/client'
 import type { EnrollmentResult, ManagedStudent } from '@/features/students/domain'
@@ -9,7 +10,7 @@ import { StudentDetail } from '@/features/students/ui/StudentDetail'
 import { EnrollmentSuccess } from '@/features/students/ui/EnrollmentSuccess'
 import { formatWon } from '@/lib/format/currency'
 
-export function StudentsScreen({userId}:{userId:string}) {
+export function StudentsScreen({userId,permissions,fundingEnabled}:{userId:string;permissions:readonly Permission[];fundingEnabled:boolean}) {
   const [enrolling, setEnrolling] = useState(false)
   const [student, setStudent] = useState<ManagedStudent | null>(null)
   const [result, setResult] = useState<EnrollmentResult | null>(null)
@@ -36,7 +37,7 @@ export function StudentsScreen({userId}:{userId:string}) {
 
   return <main className="workspace">
     <header className="workspace-header"><div><p className="eyebrow">MICA Money · E202</p><h1>Students</h1><p className="muted">Enroll students, review their accounts, and manage card access.</p></div>
-      <button className="primary-action" disabled={enrolling} onClick={startEnrollment}>+ Enroll student</button>
+      {permissions.includes('students.enroll')&&<button className="primary-action" disabled={enrolling} onClick={startEnrollment}>+ Enroll student</button>}
     </header>
     {refreshError&&<section className="notice" role="alert"><p>{refreshError}</p><button className="secondary-action" onClick={()=>void refreshSelected().catch(()=>{})}>Refresh student details</button></section>}
     <div className="dashboard-grid">
@@ -44,7 +45,7 @@ export function StudentsScreen({userId}:{userId:string}) {
         <StudentDirectory selectedId={student?.student_id} refreshKey={refreshKey} onSelect={(value) => { refreshGeneration.current++;setRefreshError('');setStudent(value); setResult(null) }} />}
       {enrolling ? <EnrollmentForm onCancel={() => setEnrolling(false)} onComplete={(value) => { setResult(value); setStudent(null); setEnrolling(false); setRefreshKey((key) => key + 1) }} /> :
         result ? <EnrollmentSuccess result={result} onDone={() => setResult(null)} onAnother={startEnrollment} /> :
-          student ? <StudentDetail key={student.student_id} student={student} userId={userId} onChanged={refreshSelected} /> :
+          student ? <StudentDetail key={student.student_id} student={student} userId={userId} permissions={permissions} fundingEnabled={fundingEnabled} onChanged={refreshSelected} /> :
             <section className="panel empty-state"><h2>Select a student</h2><p className="muted">Review a student’s wallet and card status, or enroll a new student at E202.</p></section>}
     </div>
   </main>

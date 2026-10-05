@@ -1,12 +1,12 @@
 import 'server-only'
 import { z } from 'zod'
 import { ApiError } from '@/lib/api/errors'
-import { authorizeRequest } from '@/features/auth/server/session'
+import { authorizeRequest,authorizeAnyRequest } from '@/features/auth/server/session'
 import { staffPinProof } from '@/lib/crypto/staff-pin'
 import { callApiRpc } from '@/lib/db/rpc'
 import { RecordDirectorySchema, RecordOutcomeSchema, type RecordKind, type RecordChange, type RecordQuerySchema } from './domain'
 export function managementSession(kind:RecordKind, write=false) {
-  return authorizeRequest(kind==='STUDENT'?'students.manage':write?'inventory.product.manage':'inventory.read')
+  return authorizeRequest(kind==='STUDENT'?(write?'students.status.manage':'students.read'):write?'inventory.product.manage':'inventory.read')
 }
 export async function recordDirectory(input:z.infer<typeof RecordQuerySchema>) {
   const session=await managementSession(input.kind)
@@ -15,7 +15,7 @@ export async function recordDirectory(input:z.infer<typeof RecordQuerySchema>) {
 }
 const result=z.array(z.object({result:RecordOutcomeSchema})).length(1).transform(([r])=>r.result)
 export async function changeRecord(input:RecordChange) {
-  const session=await managementSession(input.kind,true)
+  const session=await authorizeRequest(input.kind==='STUDENT'?'students.status.manage':input.action==='CHANGE_PRODUCT_PRICE'?'inventory.price.manage':'inventory.product.manage')
   const payload:Record<string,unknown>={}
   if ('expectedUpdatedAt' in input) payload.expected_updated_at=input.expectedUpdatedAt
   if ('name' in input) Object.assign(payload,{name:input.name,category:input.category,reorder_level:input.reorderLevel})
@@ -28,6 +28,7 @@ export async function changeRecord(input:RecordChange) {
   return response
 }
 export async function recoverRecord(kind:RecordKind,requestKey:string) {
-  const session=await managementSession(kind,true)
+  const session=await authorizeAnyRequest()
+  if(!session.permissions.some(p=>(kind==='PRODUCT'?['inventory.product.manage','inventory.price.manage']:['students.status.manage']).includes(p)))throw new ApiError(403,'FORBIDDEN','Record recovery access is not assigned.')
   return callApiRpc('recover_record_operation',{p_session_id:session.session_id,p_key:requestKey,p_kind:kind},result)
 }

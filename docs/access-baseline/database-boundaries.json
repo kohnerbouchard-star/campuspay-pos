@@ -1,0 +1,763 @@
+{
+  "private.permissions_for_role": {
+    "source": "database/schema/014_student_enrollment.sql",
+    "authorization": [
+      "create or replace function private.permissions_for_role(p_role public.staff_role)"
+    ]
+  },
+  "private.role_has_permission": {
+    "source": "database/schema/002_auth_helpers.sql",
+    "authorization": [
+      "create or replace function private.role_has_permission(p_role public.staff_role, p_permission text)",
+      "select p_permission = any(private.permissions_for_role(p_role));"
+    ]
+  },
+  "private.session_timeout": {
+    "source": "database/schema/020_auth_session_hardening.sql",
+    "authorization": []
+  },
+  "private.verify_staff_pin": {
+    "source": "database/schema/020_auth_session_hardening.sql",
+    "authorization": [
+      "create or replace function private.verify_staff_pin(",
+      "if p_required_role is not null and v_profile.role <> p_required_role then"
+    ]
+  },
+  "private.assert_session": {
+    "source": "database/schema/020_auth_session_hardening.sql",
+    "authorization": [
+      "create or replace function private.assert_session(p_session_id uuid, p_permission text)",
+      "if not found or not v_profile.active or v_profile.role <> v_session.role_snapshot then",
+      "if p_permission is not null and not private.role_has_permission(v_profile.role, p_permission) then",
+      "set last_activity_at = v_now, expires_at = least(v_now + private.session_timeout(v_profile.role), v_session.created_at + interval '8 hours')"
+    ]
+  },
+  "private.assert_session_any": {
+    "source": "database/schema/002_auth_helpers.sql",
+    "authorization": [
+      "create or replace function private.assert_session_any(p_session_id uuid, p_permissions text[])",
+      "select role_snapshot into v_role from private.staff_sessions where id = p_session_id;",
+      "if private.role_has_permission(v_role, v_permission) then",
+      "return private.assert_session(p_session_id, v_permission);"
+    ]
+  },
+  "api.create_staff_session": {
+    "source": "database/schema/002_auth_helpers.sql",
+    "authorization": [
+      "v_profile := private.verify_staff_pin(p_employee_code, p_pin_proof, null);",
+      "auth_user_id, employee_code_snapshot, role_snapshot, terminal_id,",
+      "v_profile.auth_user_id, v_profile.employee_code, v_profile.role, v_terminal.id,",
+      "p_session_token_hash, now() + private.session_timeout(v_profile.role)",
+      "v_profile.role, private.permissions_for_role(v_profile.role), v_session.expires_at;"
+    ]
+  },
+  "api.authorize_session": {
+    "source": "database/schema/002_auth_helpers.sql",
+    "authorization": [
+      "v_session := private.assert_session(v_session.id, p_permission);",
+      "v_profile.role, private.permissions_for_role(v_profile.role), v_session.expires_at;"
+    ]
+  },
+  "api.revoke_staff_session": {
+    "source": "database/schema/002_auth_helpers.sql",
+    "authorization": []
+  },
+  "api.catalog": {
+    "source": "database/schema/003_pos_functions.sql",
+    "authorization": [
+      "perform private.assert_session_any(p_session_id, array['pos.read','inventory.read']);"
+    ]
+  },
+  "api.create_payment_intent": {
+    "source": "database/schema/019_register_remediation.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'pos.checkout');",
+      "and not private.role_has_permission(v_session.role_snapshot, 'coupons.redeem') then"
+    ]
+  },
+  "api.scan_payment_card": {
+    "source": "database/schema/019_register_remediation.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'pos.checkout');"
+    ]
+  },
+  "api.confirm_payment": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "v_session:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  "api.create_product": {
+    "source": "database/schema/004_inventory_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'inventory.product.manage');"
+    ]
+  },
+  "api.change_product_price": {
+    "source": "database/schema/004_inventory_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'inventory.price.manage');"
+    ]
+  },
+  "api.inventory_lots": {
+    "source": "database/schema/004_inventory_functions.sql",
+    "authorization": [
+      "perform private.assert_session_any(p_session_id, array['inventory.read','reports.inventory']);"
+    ]
+  },
+  "api.receive_stock": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'inventory.receive');"
+    ]
+  },
+  "api.remove_stock": {
+    "source": "database/schema/004_inventory_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'inventory.adjust');"
+    ]
+  },
+  "api.search_student_wallets": {
+    "source": "database/schema/005_wallet_functions.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'wallet.read');"
+    ]
+  },
+  "api.create_wallet_adjustment_intent": {
+    "source": "database/schema/005_wallet_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'wallet.adjust');"
+    ]
+  },
+  "api.scan_wallet_adjustment_card": {
+    "source": "database/schema/005_wallet_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'wallet.adjust');"
+    ]
+  },
+  "api.confirm_wallet_adjustment": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'wallet.adjust');"
+    ]
+  },
+  "api.create_elevation": {
+    "source": "database/schema/006_security_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'security.credentials.request');",
+      "v_approver := private.verify_staff_pin(p_approver_employee_code, p_approver_pin_proof, 'super_admin');"
+    ]
+  },
+  "private.consume_elevation": {
+    "source": "database/schema/006_security_functions.sql",
+    "authorization": []
+  },
+  "api.reset_student_pin": {
+    "source": "database/schema/006_security_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'security.credentials.request');"
+    ]
+  },
+  "api.reset_student_card": {
+    "source": "database/schema/006_security_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'security.credentials.request');"
+    ]
+  },
+  "api.report_sales": {
+    "source": "database/schema/021_business_settlement_hardening.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "api.report_inventory": {
+    "source": "database/schema/007_reports_and_grants.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'reports.inventory');"
+    ]
+  },
+  "api.report_wallets": {
+    "source": "database/schema/007_reports_and_grants.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'reports.wallets');"
+    ]
+  },
+  "private.price_cart": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": []
+  },
+  "private.calculate_coupon_discount": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": []
+  },
+  "private.assert_coupon_window": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": []
+  },
+  "api.create_coupon": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'coupons.manage');"
+    ]
+  },
+  "api.list_coupons": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'coupons.manage');"
+    ]
+  },
+  "api.deactivate_coupon": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'coupons.manage');"
+    ]
+  },
+  "api.quote_coupon": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'coupons.redeem');"
+    ]
+  },
+  "api.report_coupons": {
+    "source": "database/schema/008_coupon_functions.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'reports.coupons');"
+    ]
+  },
+  "api.bootstrap_demo": {
+    "source": "database/schema/010_demo_bootstrap.sql",
+    "authorization": [
+      "role = excluded.role,",
+      "auth_user_id, employee_code_snapshot, role_snapshot, terminal_id,",
+      "role_snapshot = excluded.role_snapshot,"
+    ]
+  },
+  "private.reject_journal_mutation": {
+    "source": "database/schema/011_finish_neon.sql",
+    "authorization": []
+  },
+  "api.search_student_wallets_v2": {
+    "source": "database/schema/011_finish_neon.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  "api.list_coupons_v2": {
+    "source": "database/schema/011_finish_neon.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'coupons.manage');"
+    ]
+  },
+  "private.assert_customer_session": {
+    "source": "database/schema/012_online_store.sql",
+    "authorization": []
+  },
+  "api.create_customer_session": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": []
+  },
+  "api.authorize_customer_session": {
+    "source": "database/schema/012_online_store.sql",
+    "authorization": []
+  },
+  "api.revoke_customer_session": {
+    "source": "database/schema/012_online_store.sql",
+    "authorization": []
+  },
+  "api.store_catalog": {
+    "source": "database/schema/015_store_experience.sql",
+    "authorization": []
+  },
+  "api.store_delivery_locations": {
+    "source": "database/schema/015_store_experience.sql",
+    "authorization": []
+  },
+  "api.create_online_order": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": []
+  },
+  "api.customer_orders": {
+    "source": "database/schema/015_store_experience.sql",
+    "authorization": []
+  },
+  "api.staff_online_orders": {
+    "source": "database/schema/021_business_settlement_hardening.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'orders.fulfill');"
+    ]
+  },
+  "api.update_online_order_status": {
+    "source": "database/schema/012_online_store.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'orders.fulfill');"
+    ]
+  },
+  "private.revoke_customer_sessions_on_card_change": {
+    "source": "database/schema/012_online_store.sql",
+    "authorization": []
+  },
+  "private.revoke_customer_sessions_on_pin_change": {
+    "source": "database/schema/012_online_store.sql",
+    "authorization": []
+  },
+  "private.post_sale_tenders": {
+    "source": "database/schema/019_register_remediation.sql",
+    "authorization": []
+  },
+  "private.assert_sale_tender_totals": {
+    "source": "database/schema/013_pos_tenders.sql",
+    "authorization": []
+  },
+  "api.terminal_payment_policy": {
+    "source": "database/schema/013_pos_tenders.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'pos.read');",
+      "return query select coalesce(t.label,'This register'),t.cash_enabled,t.cash_event_name,s.role_snapshot='super_admin'::public.staff_role"
+    ]
+  },
+  "api.set_terminal_payment_policy": {
+    "source": "database/schema/019_register_remediation.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'security.staff.manage');",
+      "if s.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.cancel_payment_intent": {
+    "source": "database/schema/013_pos_tenders.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  "api.recover_payment_intent": {
+    "source": "database/schema/013_pos_tenders.sql",
+    "authorization": [
+      "ss:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  "api.search_students": {
+    "source": "database/schema/014_student_enrollment.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'students.manage');",
+      "if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.search_security_students": {
+    "source": "database/schema/014_student_enrollment.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id, 'security.credentials.request');"
+    ]
+  },
+  "api.enroll_student": {
+    "source": "database/schema/014_student_enrollment.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'students.manage');",
+      "if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.quote_online_order": {
+    "source": "database/schema/015_store_experience.sql",
+    "authorization": []
+  },
+  "api.student_wallet_history": {
+    "source": "database/schema/016_wallet_history.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  "api.inventory_product_register": {
+    "source": "database/schema/016_wallet_history.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'inventory.read');"
+    ]
+  },
+  "api.recover_wallet_adjustment": {
+    "source": "database/schema/017_adjustment_recovery.sql",
+    "authorization": [
+      "ss:=private.assert_session(p_session_id,'wallet.adjust');"
+    ]
+  },
+  "api.recover_stock_receipt": {
+    "source": "database/schema/018_stock_receipt_recovery.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'inventory.receive');"
+    ]
+  },
+  "api.terminal_payment_policy_v2": {
+    "source": "database/schema/019_register_remediation.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'pos.read');",
+      "t.cash_enabled and coalesce(t.cash_ends_at>clock_timestamp(),false),t.cash_event_name,s.role_snapshot='super_admin'::public.staff_role,t.cash_ends_at,"
+    ]
+  },
+  "api.finalize_payment_tender": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "v_session:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  "private.dummy_pin_hash": {
+    "source": "database/schema/020_auth_session_hardening.sql",
+    "authorization": []
+  },
+  "private.verify_pin_proof": {
+    "source": "database/schema/020_auth_session_hardening.sql",
+    "authorization": []
+  },
+  "private.business_timezone": {
+    "source": "database/schema/021_business_settlement_hardening.sql",
+    "authorization": []
+  },
+  "private.business_date": {
+    "source": "database/schema/021_business_settlement_hardening.sql",
+    "authorization": []
+  },
+  "private.business_date_label": {
+    "source": "database/schema/021_business_settlement_hardening.sql",
+    "authorization": []
+  },
+  "api.recover_online_order": {
+    "source": "database/schema/021_business_settlement_hardening.sql",
+    "authorization": []
+  },
+  "api.search_students_v2": {
+    "source": "database/schema/022_student_roster_years.sql",
+    "authorization": [
+      "v_session := private.assert_session(p_session_id, 'students.manage');",
+      "if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.complete_student_enrollment": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'students.manage');"
+    ]
+  },
+  "api.recover_student_completion": {
+    "source": "database/schema/023_complete_roster_enrollment.sql",
+    "authorization": [
+      "v_session:=private.assert_session(p_session_id,'students.manage');",
+      "if v_session.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "private.refund_document": {
+    "source": "database/schema/033_partial_refund_read_models.sql",
+    "authorization": []
+  },
+  "private.assert_refund_integrity": {
+    "source": "database/schema/024_sale_refunds.sql",
+    "authorization": []
+  },
+  "api.refund_sale_detail": {
+    "source": "database/schema/024_sale_refunds.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "api.post_sale_refund": {
+    "source": "database/schema/026_online_returns.sql",
+    "authorization": []
+  },
+  "api.recover_sale_refund": {
+    "source": "database/schema/024_sale_refunds.sql",
+    "authorization": [
+      "ss:=private.assert_session(p_session_id,'reports.sales');",
+      "if ss.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.record_refund_cash_payout": {
+    "source": "database/schema/024_sale_refunds.sql",
+    "authorization": [
+      "ss:=private.assert_session(p_session_id,'reports.sales');",
+      "if ss.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.refund_day_summary": {
+    "source": "database/schema/024_sale_refunds.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "private.post_sale_reversal": {
+    "source": "database/schema/026_online_returns.sql",
+    "authorization": [
+      "ss:=private.assert_session(p_session_id,'reports.sales');",
+      "if ss.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.post_online_return": {
+    "source": "database/schema/026_online_returns.sql",
+    "authorization": []
+  },
+  "private.cash_denominations_total": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": []
+  },
+  "private.cash_session": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,case when (select role_snapshot from private.staff_sessions where id=p_session_id)='accountant' then 'reports.sales' else 'pos.checkout' end);"
+    ]
+  },
+  "private.cash_shift_document": {
+    "source": "database/schema/035_funding_ledger.sql",
+    "authorization": []
+  },
+  "api.cash_register_snapshot": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": [
+      "(select id,closed_at from private.cash_shifts where closed_at is not null and (s.role_snapshot in ('super_admin','accountant') or terminal_id=s.terminal_id) order by closed_at desc,id limit 50 offset p_offset) x),'[]'::jsonb),",
+      "'total_closed',(select count(*) from private.cash_shifts where closed_at is not null and (s.role_snapshot in ('super_admin','accountant') or terminal_id=s.terminal_id)));"
+    ]
+  },
+  "api.open_cash_shift": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": [
+      "if s.role_snapshot='accountant' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.close_cash_shift": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": [
+      "if s.role_snapshot='accountant' then raise exception 'FORBIDDEN'; end if;",
+      "if sh.terminal_id<>s.terminal_id or (sh.opened_by<>s.auth_user_id and s.role_snapshot<>'super_admin') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.recover_cash_operation": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": [
+      "if s.role_snapshot='accountant' then raise exception 'FORBIDDEN'; end if;",
+      "if p_shift_id is not null and not exists(select 1 from private.cash_shifts where id=p_shift_id and terminal_id=s.terminal_id and (opened_by=s.auth_user_id or s.role_snapshot='super_admin')) then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.approve_cash_variance": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'reports.sales');",
+      "if s.role_snapshot not in ('accountant','super_admin') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "private.capture_cash_shift_event": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": []
+  },
+  "private.verify_cash_event": {
+    "source": "database/schema/035_funding_ledger.sql",
+    "authorization": []
+  },
+  "private.guard_cash_shift": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": []
+  },
+  "private.guard_cash_control_setting": {
+    "source": "database/schema/027_cash_shifts.sql",
+    "authorization": []
+  },
+  "api.administration_snapshot": {
+    "source": "database/schema/028_staff_administration.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'security.staff.manage');",
+      "select sp.auth_user_id user_id,sp.employee_code,sp.display_name,sp.role,sp.active,sp.updated_at,"
+    ]
+  },
+  "api.change_administration": {
+    "source": "database/schema/029_administration_lock_order.sql",
+    "authorization": [
+      "if s.role_snapshot<>'super_admin'",
+      "-- assert_session updates the actor's terminal. Also covers same-terminal",
+      "s:=private.assert_session(p_session_id,'security.staff.manage');",
+      "actor:=private.verify_staff_pin(s.employee_code_snapshot,p_admin_pin_proof,'super_admin');",
+      "if target.active and target.role='super_admin' and (not active_value or role_value<>'super_admin') and",
+      "if (not active_value or role_value<>target.role) and exists(select 1 from private.cash_shifts where opened_by=target.auth_user_id and closed_at is null) then raise exception 'OPEN_CASH_SHIFT'; end if;"
+    ]
+  },
+  "api.recover_administration": {
+    "source": "database/schema/028_staff_administration.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,'security.staff.manage');"
+    ]
+  },
+  "private.refund_proportional_slice": {
+    "source": "database/schema/030_partial_refund_preview.sql",
+    "authorization": []
+  },
+  "private.partial_refund_preview_document": {
+    "source": "database/schema/030_partial_refund_preview.sql",
+    "authorization": []
+  },
+  "api.preview_partial_refund": {
+    "source": "database/schema/030_partial_refund_preview.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "private.refund_line_net": {
+    "source": "database/schema/031_partial_refund_ledger.sql",
+    "authorization": []
+  },
+  "private.lock_refund_sale": {
+    "source": "database/schema/031_partial_refund_ledger.sql",
+    "authorization": []
+  },
+  "private.assert_partial_refund_integrity": {
+    "source": "database/schema/031_partial_refund_ledger.sql",
+    "authorization": []
+  },
+  "private.assert_refund_cumulative": {
+    "source": "database/schema/031_partial_refund_ledger.sql",
+    "authorization": []
+  },
+  "private.normalize_partial_selection": {
+    "source": "database/schema/032_partial_refund_posting.sql",
+    "authorization": []
+  },
+  "private.partial_refund_plan": {
+    "source": "database/schema/032_partial_refund_posting.sql",
+    "authorization": []
+  },
+  "api.quote_partial_refund": {
+    "source": "database/schema/032_partial_refund_posting.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "api.post_partial_refund": {
+    "source": "database/schema/032_partial_refund_posting.sql",
+    "authorization": [
+      "ss:=private.assert_session(p_session_id,'reports.sales');",
+      "if ss.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.refund_record": {
+    "source": "database/schema/033_partial_refund_read_models.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "api.partial_refund_snapshot": {
+    "source": "database/schema/033_partial_refund_read_models.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "api.customer_order_refunds": {
+    "source": "database/schema/033_partial_refund_read_models.sql",
+    "authorization": []
+  },
+  "private.guard_funding_settings": {
+    "source": "database/schema/035_funding_ledger.sql",
+    "authorization": []
+  },
+  "private.verify_funding_operation": {
+    "source": "database/schema/035_funding_ledger.sql",
+    "authorization": []
+  },
+  "private.guard_legacy_wallet_adjustment": {
+    "source": "database/schema/035_funding_ledger.sql",
+    "authorization": []
+  },
+  "private.funding_session": {
+    "source": "database/schema/036_funding_api.sql",
+    "authorization": [
+      "if v_session.role_snapshot not in ('cashier','accountant','super_admin') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "private.funding_intent_document": {
+    "source": "database/schema/036_funding_api.sql",
+    "authorization": []
+  },
+  "private.funding_receipt_document": {
+    "source": "database/schema/036_funding_api.sql",
+    "authorization": []
+  },
+  "api.prepare_funding": {
+    "source": "database/schema/036_funding_api.sql",
+    "authorization": [
+      "if p_action in ('CASH_DEPOSIT','NONCASH_CREDIT','ADMIN_DEBIT','REVERSE_FUNDING') and v_session.role_snapshot not in ('accountant','super_admin') then raise exception 'FORBIDDEN'; end if;",
+      "if v_shift.opened_by<>v_session.auth_user_id and v_session.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "api.scan_funding_card": {
+    "source": "database/schema/036_funding_api.sql",
+    "authorization": [
+      "v_session:=private.assert_session(p_session_id,'wallet.adjust');"
+    ]
+  },
+  "api.confirm_funding": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": []
+  },
+  "api.recover_funding": {
+    "source": "database/schema/036_funding_api.sql",
+    "authorization": [
+      "if v_intent.wallet_delta_won<>0 and v_session.role_snapshot not in ('accountant','super_admin') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  "private.funding_date_bounds": {
+    "source": "database/schema/037_funding_reports.sql",
+    "authorization": []
+  },
+  "api.funding_history": {
+    "source": "database/schema/037_funding_reports.sql",
+    "authorization": [
+      "v_session:=private.funding_session(p_session_id); v_finance:=v_session.role_snapshot in ('accountant','super_admin');"
+    ]
+  },
+  "api.export_funding": {
+    "source": "database/schema/037_funding_reports.sql",
+    "authorization": [
+      "and (v_session.role_snapshot in ('accountant','super_admin') or (o.terminal_id=v_session.terminal_id and o.wallet_delta_won=0))"
+    ]
+  },
+  "private.validate_history_range": {
+    "source": "database/schema/038_complete_accounting_history.sql",
+    "authorization": []
+  },
+  "api.student_wallet_history_page": {
+    "source": "database/schema/038_complete_accounting_history.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  "api.cash_history_page": {
+    "source": "database/schema/038_complete_accounting_history.sql",
+    "authorization": [
+      "where sh.closed_at is not null and (v_session.role_snapshot in ('accountant','super_admin') or sh.terminal_id=v_session.terminal_id)",
+      "'scope',case when v_session.role_snapshot in ('accountant','super_admin') then 'ALL_TERMINALS' else 'CURRENT_TERMINAL' end,"
+    ]
+  },
+  "private.daily_reconciliation_document": {
+    "source": "database/schema/039_daily_reconciliation.sql",
+    "authorization": []
+  },
+  "api.daily_reconciliation": {
+    "source": "database/schema/039_daily_reconciliation.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  "api.record_directory": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "perform private.assert_session(p_session_id,case when p_kind='PRODUCT' then 'inventory.read' else 'students.manage' end);"
+    ]
+  },
+  "api.change_record": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,case when p_kind='PRODUCT' then 'inventory.product.manage' else 'students.manage' end);",
+      "if p_kind='STUDENT' and s.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;",
+      "actor:=private.verify_staff_pin(s.employee_code_snapshot,p_admin_pin_proof,'super_admin');",
+      "if not private.role_has_permission(s.role_snapshot,'inventory.price.manage') then raise exception 'FORBIDDEN';end if;"
+    ]
+  },
+  "api.recover_record_operation": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": [
+      "s:=private.assert_session(p_session_id,case when p_kind='PRODUCT' then 'inventory.product.manage' else 'students.manage' end);"
+    ]
+  },
+  "private.require_active_customer_session_insert": {
+    "source": "database/schema/043_record_management.sql",
+    "authorization": []
+  }
+}

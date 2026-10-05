@@ -5,11 +5,11 @@ import { partialRefundSnapshot, postPartialRefund } from '@/features/refunds/par
 import { PartialDirectoryQuerySchema, PostPartialRefundSchema } from '@/features/refunds/partial-domain'
 export const dynamic = 'force-dynamic'
 export const GET = withApiRoute('/api/refunds/items', async (request: Request) => {
-  const s = await authorizeRequest('reports.sales'), q = new URL(request.url).searchParams
+  const s = await authorizeRequest('refunds.read'), q = new URL(request.url).searchParams
   const v = PartialDirectoryQuerySchema.parse({ reference: q.get('reference'), offset: q.get('offset') ?? 0 })
   return ok(await partialRefundSnapshot(s,v.reference,v.offset))
 })
 export const POST = withApiRoute('/api/refunds/items', async (request: Request) => {
-  const s = await authorizeRequest('reports.sales')
+  const s = await authorizeRequest('refunds.issue')
   return ok(await postPartialRefund(s,await parseJson(request,PostPartialRefundSchema)))
 })

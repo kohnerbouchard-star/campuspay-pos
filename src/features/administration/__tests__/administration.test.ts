@@ -2,7 +2,7 @@ import { describe,it,expect } from 'vitest'
 import { AdministrationChangeSchema,AdministrationRecoverySchema } from '../domain'
 import { toApiError } from '@/lib/api/errors'
 const id='70000000-0000-4000-8000-000000000001'
-const v={requestKey:id,action:'CREATE_STAFF',employeeCode:'NAMED-12',displayName:'Named staff member',role:'cashier',newPin:'01729046',confirmationPin:'01729046',adminPin:'98765432',notes:'Identity and authorized role checked',verified:true}
+const v={requestKey:id,action:'CREATE_STAFF',employeeCode:'NAMED-12',displayName:'Named staff member',role:'cashier',preset:'staff',newPin:'01729046',confirmationPin:'01729046',adminPin:'98765432',notes:'Identity and authorized role checked',verified:true}
 describe('deliberate administrative actions',()=>{
  it('accepts a fully verified named account without altering PIN leading zeros',()=>expect(AdministrationChangeSchema.parse(v)).toEqual(v))
  it.each([{verified:false},{confirmationPin:'12345678'},{adminPin:'123'},{newPin:'1234x',confirmationPin:'1234x'},{employeeCode:' spaces '},{employeeCode:'a'},{role:'owner'},{notes:'short'},{notes:'a long note\nwith control'},{displayName:''},{targetId:id},{balance:20000}])('rejects incomplete, unsafe or unexpected input %#',x=>expect(AdministrationChangeSchema.safeParse({...v,...x}).success).toBe(false))

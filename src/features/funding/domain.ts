@@ -13,6 +13,8 @@ export const PrepareFundingSchema=z.discriminatedUnion('action',[
  z.object({...common,action:z.enum(['PAID_IN','PAID_OUT','CASH_DROP']),counts:CashCountsSchema.refine(c=>Object.entries(c).reduce((t,[d,n])=>t+Number(d)*n,0)>0)}).strict(),
 ]).refine(v=>v.action!=='CASH_DEPOSIT'||v.cashReceivedWon>=v.denominations.reduce((a,b)=>a+b,0),{message:'Cash received must cover the deposit'})
 export type PrepareFunding=z.infer<typeof PrepareFundingSchema>
+export const FundingReadinessSchema=z.object({database_enabled:z.boolean(),cash_enabled:z.boolean(),drawer_open:z.boolean(),drawer_assigned:z.boolean(),student_active:z.boolean(),card_ready:z.boolean(),pin_ready:z.boolean(),pin_locked:z.boolean()})
+export type FundingReadiness=z.infer<typeof FundingReadinessSchema>
 export const FundingKeySchema=z.object({requestKey:uuid}).strict()
 export const ScanFundingSchema=z.object({requestKey:uuid,cardRead:z.string().regex(/^[A-Za-z0-9:-]{6,64}$/)}).strict()
 const pin=z.string().regex(/^\d{4,12}$/)

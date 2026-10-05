@@ -2,7 +2,7 @@ const numericKeys = new Set([
   'stock_on_hand', 'quantity', 'quantity_received', 'quantity_remaining',
   'quantity_on_hand', 'reorder_level', 'redemption_count', 'discount_value',
   'percentage_bps', 'total_redemption_limit', 'per_student_limit', 'total_quantity',
-  'year_group', 'total_count', 'total_closed',
+  'year_group', 'total_count', 'total_closed', 'access_revision', 'revision',
 ])
 
 function shouldBeNumber(key: string): boolean {

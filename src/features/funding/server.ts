@@ -7,11 +7,17 @@ import { ApiError } from '@/lib/api/errors'
 import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { studentPinProof } from '@/lib/crypto/student-pin'
 import { staffPinProof } from '@/lib/crypto/staff-pin'
-import { ConfirmFundingSchema,PrepareFundingSchema,FundingIntentSchema,FundingResultSchema,FundingHistorySchema,FundingExportSchema,type PrepareFunding } from './domain'
+import { ConfirmFundingSchema,PrepareFundingSchema,FundingIntentSchema,FundingResultSchema,FundingHistorySchema,FundingExportSchema,FundingReadinessSchema,type PrepareFunding } from './domain'
 export const fundingEnabled=()=>process.env.FUNDING_ENABLED==='true'
-export async function fundingSession(){const s=await authorizeAnyRequest();if(!['cashier','accountant','super_admin'].includes(s.role))throw new ApiError(403,'FORBIDDEN','Funding access is not permitted');return s}
+export async function fundingSession(){const s=await authorizeAnyRequest();if(!['wallet.read','wallet.fund','wallet.correct','wallet.reverse','cash.movement.record'].some(p=>s.permissions.includes(p as import('@/features/auth/domain').Permission)))throw new ApiError(403,'FORBIDDEN','Funding access is not permitted');return s}
 const single=<T>(schema:z.ZodType<T>)=>z.array(z.object({result:schema})).length(1).transform(([r])=>r.result)
-function enabled(){if(!fundingEnabled())throw new ApiError(403,'FORBIDDEN','New funding and cash movements are disabled')}
+export function studentFundingReadiness(s:SessionContext,studentId:string){return callApiRpc('student_funding_readiness',{p_session_id:s.session_id,p_student_id:studentId},single(FundingReadinessSchema))}
+export function prepareStudentFunding(s:SessionContext,studentId:string,input:PrepareFunding){
+ enabled(); const v=PrepareFundingSchema.parse(input)
+ if(v.action!=='CASH_DEPOSIT')throw new ApiError(400,'BAD_REQUEST','Choose a normal student deposit')
+ return callApiRpc('prepare_student_funding',{p_session_id:s.session_id,p_student_id:studentId,p_key:v.requestKey,p_payload:{source_reference:v.sourceReference,notes:v.notes,denominations:v.denominations,cash_received_won:v.cashReceivedWon}},single(FundingIntentSchema))
+}
+function enabled(){if(!fundingEnabled())throw new ApiError(409,'CONFLICT','Wallet funding is not activated for this installation. No balance has changed')}
 export function prepareFunding(s:SessionContext,input:PrepareFunding){
  enabled();const v=PrepareFundingSchema.parse(input)
  const payload:Record<string,unknown>={source_reference:v.sourceReference,notes:v.notes}

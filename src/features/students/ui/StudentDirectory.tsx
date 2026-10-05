@@ -41,7 +41,7 @@ export function StudentDirectory({ onSelect, selectedId, refreshKey }: {
         <tbody>{loading ? <tr><td colSpan={4} role="status">Loading students…</td></tr> : rows.length ? rows.map((student) => <tr key={student.student_id} className={selectedId === student.student_id ? 'selected-row' : undefined}>
           <td><button className="table-link" aria-pressed={selectedId === student.student_id} onClick={() => onSelect(student)}><strong>{student.display_name}</strong><small>{student.student_code}</small></button></td>
           <td>{student.year_group ? `Y${student.year_group}` : 'Unassigned'}</td>
-          <td className="money">{formatWon(student.balance_won)}</td><td><span className="status-pill">{!student.active ? 'Inactive' : !student.card_active ? 'No card issued' : student.pin_set === false ? 'PIN not set' : 'Active'}</span></td>
+          <td className="money">{student.balance_won===null?'Not assigned':formatWon(student.balance_won)}</td><td><span className="status-pill">{!student.active ? 'Inactive' : !student.card_active ? 'No card issued' : student.pin_set === false ? 'PIN not set' : 'Active'}</span></td>
         </tr>) : <tr><td colSpan={4}>No students found on this page. Try a different year, name, or ID.</td></tr>}</tbody>
       </table></div>}
     <div className="action-row" aria-label="Student directory pages">

@@ -10,7 +10,7 @@ import { RefundReceipt } from './RefundReceipt'
 import { RefundSummary } from './RefundSummary'
 import { PartialRefundPreviewPanel } from './PartialRefundPreview'
 
-export function RefundScreen({ enabled, canPost, userId, allowReturns = false, previewEnabled = false }: { enabled: boolean; previewEnabled?: boolean; allowReturns?: boolean; canPost: boolean; userId: string }) {
+export function RefundScreen({ enabled, canPost, canPayout, userId, allowReturns = false, previewEnabled = false }: { enabled: boolean; previewEnabled?: boolean; allowReturns?: boolean; canPost: boolean; canPayout:boolean; userId: string }) {
   const [reference, setReference] = useState('')
   const [sale, setSale] = useState<RefundSale | null>(null)
   const [refund, setRefund] = useState<RefundRecord | null>(null)
@@ -65,7 +65,7 @@ export function RefundScreen({ enabled, canPost, userId, allowReturns = false, p
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Append-only financial corrections</p><h1>Refunds</h1><p>Full-sale refunds, pre-dispatch cancellation, and verified post-dispatch returns. Original receipts are preserved.</p></div></header>
     <p><Link href="/refunds/items">Item refunds and returns — remaining quantities and all refund receipts</Link></p>
     {!enabled && <p role="status">New refund posting is disabled for this installation. Existing records, recovery, and outstanding cash handover recording remain available after the migration is installed.</p>}
-    {!canPost && <p>Accountant read-only view. Only Super Admin can authorize a refund or record cash paid.</p>}
+    {!canPost && <p>Refund issue access is not assigned. Authorized refund records remain available.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}
     {pending && <section className="panel"><h2>Unresolved refund request</h2><p>Only opaque sale and request IDs were saved. Recover before creating a new refund.</p><button className="primary-action" disabled={busy || !canPost} onClick={() => void recover()}>Recover refund result</button></section>}
     <section className="panel"><h2>Find original sale</h2><form className="toolbar" onSubmit={event => { event.preventDefault(); void lookup() }}><label className="field"><span>Receipt or online order number</span><input required maxLength={100} value={reference} onChange={event => setReference(event.target.value)} disabled={busy || Boolean(pending)} /></label><button className="secondary-action" disabled={busy || Boolean(pending)}>Find sale</button></form>
@@ -73,7 +73,7 @@ export function RefundScreen({ enabled, canPost, userId, allowReturns = false, p
         {!refund && !pending && ready && enabled && canPost && <RefundForm key={sale.sale_id} sale={sale} busy={busy} allowReturns={allowReturns} onSubmit={draft => void post(draft)} />}</>}
     </section>
     {sale && !refund && !pending && previewEnabled && <PartialRefundPreviewPanel key={sale.sale_id} sale={sale} />}
-    {refund && <RefundReceipt key={refund.refund_id} refund={refund} userId={canPost ? userId : ''} onUpdate={setRefund} />}
+    {refund && <RefundReceipt key={refund.refund_id} refund={refund} userId={canPayout ? userId : ''} onUpdate={setRefund} />}
     <RefundSummary />
   </main>
 }

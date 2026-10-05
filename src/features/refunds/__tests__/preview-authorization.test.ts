@@ -15,10 +15,10 @@ describe('preview authorization precedes sale lookup', () => {
     mocks.authorize.mockRejectedValue(new ApiError(401, 'UNAUTHENTICATED', 'Authentication required'))
     expect((await POST(request())).status).toBe(401); expect(mocks.preview).not.toHaveBeenCalled()
   })
-  it('requires the existing financial reporting permission', async () => {
+  it('requires the explicit refund viewing permission', async () => {
     const s = { session_id: id }; mocks.authorize.mockResolvedValue(s); mocks.preview.mockResolvedValue({ outcome: 'DISABLED' })
     const response = await POST(request())
-    expect(mocks.authorize).toHaveBeenCalledWith('reports.sales'); expect(mocks.preview).toHaveBeenCalledWith(s, input)
+    expect(mocks.authorize).toHaveBeenCalledWith('refunds.read'); expect(mocks.preview).toHaveBeenCalledWith(s, input)
     expect(response.status).toBe(200); expect(response.headers.get('cache-control')).toBe('no-store')
   })
   it('rejects wrong-origin requests before authorization or calculation', async () => {

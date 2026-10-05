@@ -5,6 +5,6 @@ import { returnsEnabled } from '@/features/refunds/server'
 import { PartialRefundWorkspace } from '@/features/refunds/ui/PartialRefundWorkspace'
 export const dynamic = 'force-dynamic'
 export default async function Page() {
-  const s = await requireAnyPagePermission(['reports.sales'],'/refunds/items')
-  return <WorkspaceFrame session={s} title="Item refunds and returns"><PartialRefundWorkspace enabled={partialRefundsEnabled()} allowReturns={returnsEnabled()} canPost={s.role === 'super_admin'} userId={s.user_id} /></WorkspaceFrame>
+  const s = await requireAnyPagePermission(['refunds.read'],'/refunds/items')
+  return <WorkspaceFrame session={s} title="Item refunds and returns"><PartialRefundWorkspace enabled={partialRefundsEnabled()} allowReturns={returnsEnabled()} canPost={s.permissions.includes('refunds.issue')} canPayout={s.permissions.includes('refunds.cash_payout')} userId={s.user_id} /></WorkspaceFrame>
 }

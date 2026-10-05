@@ -6,7 +6,7 @@ import { failure, ok } from '@/lib/api/response'
 export const dynamic = 'force-dynamic'
 export const GET = withApiRoute('/api/orders', async () => {
   try {
-    const session = await authorizeRequest('orders.fulfill')
+    const session = await authorizeRequest('orders.read')
     return ok(await staffOnlineOrders(session))
   } catch (error) { return failure(error) }
 })

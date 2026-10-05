@@ -9,8 +9,8 @@ import { CompleteEnrollmentSchema, CompletionDecisionSchema, completionEnabled, 
 
 export function isRosterIssuanceEnabled() { return completionEnabled(process.env.ROSTER_ISSUANCE_ENABLED) }
 function requireIssuer(session: SessionContext) {
-  if (session.role !== 'super_admin' || !session.permissions.includes('students.manage')) {
-    throw new ApiError(403, 'FORBIDDEN', 'Only Super Admin can complete student enrollment')
+  if (!session.permissions.includes('students.enroll')) {
+    throw new ApiError(403, 'FORBIDDEN', 'Authorized enrollment staff can complete student enrollment')
   }
 }
 const decision = z.array(CompletionDecisionSchema).length(1).transform(([row]) => row)

@@ -1,0 +1,2 @@
+import { effectiveAccess,type Capability } from '@/features/auth/capabilities'
+export function EffectiveAccess({permissions}:{permissions:readonly Capability[]}){return <div className="effective-access">{effectiveAccess(permissions).map(g=><section key={g.workspace}><h3>{g.workspace}</h3>{g.actions.length?<ul>{g.actions.map(c=><li key={c.name}>{c.label}</li>)}</ul>:<p>No access</p>}</section>)}</div>}

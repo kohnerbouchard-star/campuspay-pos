@@ -16,7 +16,7 @@ export default async function ReportsPage() {
   return <WorkspaceFrame session={session} title="Reports"><main className="workspace">
     <header className="workspace-header"><div><p className="eyebrow">School operations</p><h1>Reports</h1><p>Jump to the report you need. Each report keeps its own filters and export options.</p></div><span className="status-pill">Authorized reports</span></header>
     <nav aria-label="Jump to report" className="report-shortcuts">{reports.map(report => <a key={report.id} className="secondary-action" href={`#${report.id}`}>{report.label}</a>)}</nav>
-    {session.permissions.includes('reports.sales') && <p><a className="secondary-action" href="/reconciliation">Open daily reconciliation</a></p>}
+    {session.permissions.includes('reconciliation.read') && <p><a className="secondary-action" href="/reconciliation">Open daily reconciliation</a></p>}
     {reports.map(report => <div className="report-section" key={report.id} id={report.id} tabIndex={-1} aria-label={`${report.label} report section`}>{report.panel}</div>)}
   </main></WorkspaceFrame>
 }

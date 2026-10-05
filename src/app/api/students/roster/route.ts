@@ -8,7 +8,7 @@ import { failure, ok } from '@/lib/api/response'
 export const dynamic = 'force-dynamic'
 export const GET = withApiRoute('/api/students/roster', async (request: Request) => {
   try {
-    const session = await authorizeRequest('students.manage')
+    const session = await authorizeRequest('students.read')
     const parameters = new URL(request.url).searchParams
     const rawYear = parameters.get('year')
     const rawOffset = parameters.get('offset') ?? '0'

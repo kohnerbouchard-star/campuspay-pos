@@ -1,4 +1,5 @@
  'use client'
+import type { Permission } from '@/features/auth/domain'
 import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
@@ -6,10 +7,10 @@ import { CashRecoverySchema, CashResultSchema, CashShiftSchema, CashSnapshotSche
 import { CashCountForm } from './CashCountForm'
 import { CashHistory } from './CashHistory'
 const storageKey='campuspay:cash-operation:v1'
-export function CashScreen({enabled,role,userId}:{enabled:boolean;role:string;userId:string}) {
+export function CashScreen({enabled,permissions,userId}:{enabled:boolean;permissions:readonly Permission[];userId:string}) {
  const [data,setData]=useState<CashSnapshot|null>(null),[pending,setPending]=useState<CashRecovery|null>(null),[ready,setReady]=useState(false)
  const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[offset,setOffset]=useState(0),[refresh,setRefresh]=useState(0)
- const flight=useRef(false),writer=role!=='accountant'||Boolean(data?.accountant_cash_enabled)
+ const flight=useRef(false),writer=permissions.includes('cash.shift.manage')
  useEffect(()=>{let current=true;const timer=setTimeout(()=>{
   try {const raw=sessionStorage.getItem(storageKey);setPending(raw===null?null:CashRecoverySchema.parse(JSON.parse(raw)));setReady(true)} catch {setError('Cash recovery storage is invalid or unavailable. Do not submit another count.')}
   void apiFetch<unknown>(`/api/cash?offset=${offset}`).then(v=>{if(current){setData(CashSnapshotSchema.parse(v));setError('')}}).catch(()=>{if(current)setError('Cash controls could not be loaded. Verify the migration and connection.')})
@@ -47,7 +48,7 @@ export function CashScreen({enabled,role,userId}:{enabled:boolean;role:string;us
    {!writer && <p>Accountant review view. Opening and counting drawers is performed by the terminal operator.</p>}
    <p className="muted">Use Funding and cash for wallet deposits, approved paid-in/out and cash drops. Do not move money between drawers through an unrecorded transfer.</p>
   </section>}
-  <CashHistory rows={data?.closed_shifts??[]} userId={userId} canReview={['accountant','super_admin'].includes(role)} busy={busy} onReview={(id,notes)=>void review(id,notes)} />
+  <CashHistory rows={data?.closed_shifts??[]} userId={userId} canReview={permissions.includes('cash.variance.review')} busy={busy} onReview={(id,notes)=>void review(id,notes)} />
   <div className="action-row"><button className="secondary-action" disabled={busy || offset===0} onClick={()=>setOffset(n=>Math.max(0,n-50))}>Previous closes</button><span>{offset+1}–{offset+(data?.closed_shifts.length??0)} of {data?.total_closed??0}</span><button className="secondary-action" disabled={busy || offset+50>=(data?.total_closed??0)} onClick={()=>setOffset(n=>n+50)}>Next closes</button></div>
  </main>
 }

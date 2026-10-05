@@ -4,8 +4,8 @@ import type { CatalogProduct } from '@/features/pos/domain'
 import type { InventoryLot } from '@/features/inventory/domain'
 import { apiFetch } from '@/lib/api/client'
 import { Dialog } from '@/components/ui/Dialog'
-export function StockAdjustmentForm({ products, lots, onSaved }: { products: CatalogProduct[]; lots: InventoryLot[]; onSaved(): void }) {
-  const [form, setForm] = useState({ productId: '', lotId: '', quantityToRemove: 1, reasonCode: 'DAMAGED', notes: '' })
+export function StockAdjustmentForm({ products, lots, onSaved,initialProductId='' }: { products: CatalogProduct[]; lots: InventoryLot[]; onSaved(): void;initialProductId?:string }) {
+  const [form, setForm] = useState({ productId: initialProductId, lotId: '', quantityToRemove: 1, reasonCode: 'DAMAGED', notes: '' })
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')

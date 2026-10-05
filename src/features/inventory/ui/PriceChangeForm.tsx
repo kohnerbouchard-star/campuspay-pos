@@ -7,8 +7,8 @@ import { formatWon } from '@/lib/format/currency'
 import { RecordDirectorySchema } from '@/features/management/domain'
 import { useRecordOperation } from '@/features/management/use-record-operation'
 import { OperationFeedback } from '@/features/management/OperationFeedback'
-export function PriceChangeForm({products,userId,onSaved}:{products:CatalogProduct[];userId:string;onSaved():void}) {
- const [productId,setProductId]=useState(''),[price,setPrice]=useState(1000),[reason,setReason]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false)
+export function PriceChangeForm({products,userId,onSaved,initialProductId=''}:{products:CatalogProduct[];userId:string;onSaved():void;initialProductId?:string}) {
+ const [productId,setProductId]=useState(initialProductId),[price,setPrice]=useState(products.find(p=>p.id===initialProductId)?.selling_price_won??1000),[reason,setReason]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(false)
  const [review,setReview]=useState<{id:string;name:string;oldPrice:number;price:number;version:string;reason:string}|null>(null)
  const reading=useRef(false),operation=useRecordOperation('PRODUCT',userId,onSaved)
  const locked=loading||!operation.ready||operation.busy||operation.blocked||!!operation.pending

@@ -1,0 +1,46 @@
+database/schema/020_auth_session_hardening.sql:210:  if not found or not v_profile.active or v_profile.role <> v_session.role_snapshot then
+database/schema/013_pos_tenders.sql:193:     and not private.role_has_permission(v_session.role_snapshot, 'coupons.redeem') then
+database/schema/002_auth_helpers.sql:1:create or replace function private.permissions_for_role(p_role public.staff_role)
+database/schema/002_auth_helpers.sql:33:  select p_permission = any(private.permissions_for_role(p_role));
+database/schema/002_auth_helpers.sql:125:  if not found or not v_profile.active or v_profile.role <> v_session.role_snapshot then
+database/schema/002_auth_helpers.sql:214:    v_profile.role, private.permissions_for_role(v_profile.role), v_session.expires_at;
+database/schema/002_auth_helpers.sql:218:create or replace function api.authorize_session(
+database/schema/002_auth_helpers.sql:257:    v_profile.role, private.permissions_for_role(v_profile.role), v_session.expires_at;
+database/schema/012_online_store.sql:135:create or replace function private.permissions_for_role(p_role public.staff_role)
+database/schema/023_complete_roster_enrollment.sql:32:  if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/023_complete_roster_enrollment.sql:128:  if v_session.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/014_student_enrollment.sql:3:create or replace function private.permissions_for_role(p_role public.staff_role)
+database/schema/014_student_enrollment.sql:49:  if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/014_student_enrollment.sql:99:  if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/014_student_enrollment.sql:185:revoke all on function private.permissions_for_role(public.staff_role) from public, campuspay_runtime;
+database/schema/022_student_roster_years.sql:25:  if v_session.role_snapshot <> 'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/036_funding_api.sql:6: if v_session.role_snapshot not in ('cashier','accountant','super_admin') then raise exception 'FORBIDDEN'; end if;
+database/schema/036_funding_api.sql:41: if p_action in ('CASH_DEPOSIT','NONCASH_CREDIT','ADMIN_DEBIT','REVERSE_FUNDING') and v_session.role_snapshot not in ('accountant','super_admin') then raise exception 'FORBIDDEN'; end if;
+database/schema/036_funding_api.sql:88:  if v_shift.opened_by<>v_session.auth_user_id and v_session.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/036_funding_api.sql:125: if v_intent.wallet_delta_won<>0 and v_session.role_snapshot not in ('accountant','super_admin') then raise exception 'FORBIDDEN'; end if;
+database/schema/036_funding_api.sql:156:  if v_shift.opened_by<>v_session.auth_user_id and v_session.role_snapshot<>'super_admin' then raise exception 'FORBIDDEN'; end if;
+database/schema/036_funding_api.sql:218: if v_intent.wallet_delta_won<>0 and v_session.role_snapshot not in ('accountant','super_admin') then raise exception 'FORBIDDEN'; end if;
+database/schema/037_funding_reports.sql:10: v_session:=private.funding_session(p_session_id); v_finance:=v_session.role_snapshot in ('accountant','super_admin');
+database/schema/037_funding_reports.sql:53:   and (v_session.role_snapshot in ('accountant','super_admin') or (o.terminal_id=v_session.terminal_id and o.wallet_delta_won=0))
+scripts/migrate.mjs:37:    const api = (await client.query("select has_schema_privilege('campuspay_runtime','api','USAGE') as usage,has_function_privilege('campuspay_runtime','api.authorize_session(text,text,text)','EXECUTE') as execute")).rows[0]
+scripts/lib/local-readiness.mjs:16:  'api.authorize_session(text,text,text)', 'api.catalog(uuid)',
+database/schema/008_coupon_functions.sql:464:     and not private.role_has_permission(v_session.role_snapshot, 'coupons.redeem') then
+scripts/neon-branch-check.mjs:59:  assert.equal(session.role, 'super_admin')
+database/schema/038_complete_accounting_history.sql:55:  where sh.closed_at is not null and (v_session.role_snapshot in ('accountant','super_admin') or sh.terminal_id=v_session.terminal_id)
+database/schema/038_complete_accounting_history.sql:63:  'scope',case when v_session.role_snapshot in ('accountant','super_admin') then 'ALL_TERMINALS' else 'CURRENT_TERMINAL' end,
+src/components/WorkspaceFrame.tsx:11:  const allowedLinks = WORKSPACE_LINKS.filter(link => canAccessWorkspace(session.permissions, link))
+src/components/WorkspaceFrame.tsx:14:    <StaffNavigation links={allowedLinks} displayName={session.display_name} role={session.role} />
+database/schema/019_register_remediation.sql:92:     and not private.role_has_permission(v_session.role_snapshot, 'coupons.redeem') then
+src/app/reports/page.tsx:15:  ].filter(report => session.permissions.includes(report.permission))
+src/app/reports/page.tsx:19:    {session.permissions.includes('reports.sales') && <p><a className="secondary-action" href="/reconciliation">Open daily reconciliation</a></p>}
+src/lib/db/rpc.ts:49:  authorize_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }, { name: 'p_permission', cast: 'text' }],
+src/app/refunds/page.tsx:9:  return <WorkspaceFrame session={session} title="Refunds"><RefundScreen previewEnabled={partialRefundPreviewEnabled()} enabled={refundsEnabled()} allowReturns={returnsEnabled()} canPost={session.role === 'super_admin'} userId={session.user_id} /></WorkspaceFrame>
+src/app/inventory/page.tsx:5:export default async function Page(){const session=await requirePagePermission('inventory.read');return <WorkspaceFrame session={session} title="Inventory"><InventoryScreen userId={session.user_id} permissions={session.permissions}/></WorkspaceFrame>}
+src/app/page.tsx:13:  redirect(defaultWorkspace(session.role))
+src/features/students/completion-server.ts:12:  if (session.role !== 'super_admin' || !session.permissions.includes('students.manage')) {
+src/features/students/server.ts:11:  if (session.role !== 'super_admin' || !session.permissions.includes('students.manage')) {
+src/features/auth/ui/LoginForm.tsx:21:      router.replace(safeStaffReturn(destination, session.permissions, session.workspace))
+src/features/auth/server/page-guard.ts:23:    if (!permissions.some(permission => session.permissions.includes(permission))) redirect('/')
+src/features/auth/server/session.ts:15:  const rows = await callApiRpc('authorize_session', {
+src/features/refunds/preview-server.ts:10:  if (!['super_admin', 'accountant'].includes(session.role)) throw new ApiError(403, 'FORBIDDEN', 'Financial report access is required')
+src/features/refunds/server.ts:10:  if (session.role !== 'super_admin') throw new ApiError(403, 'FORBIDDEN', 'Only Super Admin can authorize refunds and record cash payouts')

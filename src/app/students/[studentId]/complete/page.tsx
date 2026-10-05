@@ -8,7 +8,7 @@ import { CompletionScreen } from '@/features/students/ui/CompletionScreen'
 
 export const dynamic = 'force-dynamic'
 export default async function Page({ params }: { params: Promise<{ studentId: string }> }) {
-  const session = await requirePagePermission('students.manage')
+  const session = await requirePagePermission('students.enroll')
   const { studentId } = await params
   if (!z.string().uuid().safeParse(studentId).success) notFound()
   const [student] = await searchRosterStudents(session, { query: studentId, yearGroup: null, offset: 0 })

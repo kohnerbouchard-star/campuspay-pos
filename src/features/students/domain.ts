@@ -16,7 +16,7 @@ export const ManagedStudentSchema = z.object({
   student_code: z.string(),
   display_name: z.string(),
   active: z.boolean(),
-  balance_won: z.number().int(),
+  balance_won: z.number().int().nullable(),
   card_active: z.boolean(),
   pin_locked_until: z.string().nullable(),
   created_at: z.string(),

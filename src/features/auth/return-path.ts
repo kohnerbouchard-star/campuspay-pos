@@ -1,7 +1,9 @@
-import { WORKSPACE_LINKS } from '@/features/auth/navigation'
-import type { Permission } from '@/features/auth/domain'
+import { STAFF_SECTIONS, WORKSPACE_LINKS, canAccessWorkspace } from './navigation'
+import type { Permission } from './domain'
 export function safeStaffReturn(value: string | undefined, permissions: readonly Permission[], fallback: string): string {
   if (!value || /[\\\r\n]/.test(value)) return fallback
   const route = WORKSPACE_LINKS.find(link => link.href === value)
-  return route && permissions.includes(route.permission) ? route.href : fallback
+  if (route && canAccessWorkspace(permissions, route)) return route.href
+  const section = STAFF_SECTIONS.find(s => s.href === value)
+  return section && section.anyPermissions.some(p => permissions.includes(p)) ? section.href : fallback
 }
