@@ -11,11 +11,12 @@ fs.mkdirSync(dir, { recursive: true })
 let ctx, browser, phase = 'setup', page
 const checks = [], pages = [], pageErrors = []
 const matrix = [
-  ['1001', '/pos', ['/pos', '/orders', '/funding', '/cash']],
-  ['2001', '/inventory', ['/orders', '/inventory', '/coupons', '/reports', '/security']],
-  ['3001', '/accounting', ['/accounting', '/funding', '/cash', '/refunds', '/reconciliation', '/reports', '/security']],
-  ['9001', '/pos', ['/pos', '/orders', '/students', '/inventory', '/coupons', '/accounting', '/funding', '/cash', '/refunds', '/reconciliation', '/reports', '/security', '/administration', '/settings/payments']],
+ ['1001','/pos',['/register']],
+ ['2001','/inventory',['/register','/students','/inventory','/finance']],
+ ['3001','/students',['/register','/students','/finance']],
+ ['9001','/pos',['/register','/students','/inventory','/finance','/admin']],
 ]
+const parent=route=>route.startsWith('/cash/history')||['/refunds','/reconciliation','/reports'].some(p=>route===p||route.startsWith(p+'/'))?'/finance':['/pos','/orders','/cash'].some(p=>route===p||route.startsWith(p+'/'))?'/register':['/students','/security','/funding'].some(p=>route===p||route.startsWith(p+'/'))?'/students':['/inventory','/coupons'].some(p=>route===p||route.startsWith(p+'/'))?'/inventory':'/admin'
 const capture = async (name, width = 1440) => {
   await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 })
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -55,7 +56,7 @@ try {
     const nav = rail.getByRole('navigation', { name: 'Permitted workspaces' })
     assert.deepEqual((await nav.locator('a').evaluateAll(links => links.map(link => link.getAttribute('href')))).sort(), [...routes].sort())
     await expect(nav.locator('[data-active]')).toHaveCount(1)
-    await expect(nav.locator('[data-active]')).toHaveAttribute('href', start)
+    await expect(nav.locator('[data-active]')).toHaveAttribute('href', parent(start))
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
     await expect(rail.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible()
     await capture(`role-${code}`)
@@ -80,9 +81,9 @@ try {
     await expect(dialog).toHaveCount(0); await expect(menu).toBeFocused()
     assert.notEqual(await page.evaluate(() => document.body.style.overflow), 'hidden')
     await menu.click()
-    const destination = routes.find(route => route !== start)
+    const destination = routes.find(route => route !== parent(start))??routes[0]
     await page.getByRole('dialog', { name: 'Workspaces' }).locator(`a[href="${destination}"]`).click()
-    await expect(page).toHaveURL(ctx.base + destination)
+    assert.equal(parent(new URL(page.url()).pathname),destination)
     await expect(page.getByRole('dialog', { name: 'Workspaces' })).toHaveCount(0)
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible()
     await context.close()
@@ -91,7 +92,7 @@ try {
 
   phase = 'all staff screens and nested navigation'
   const adminContext = await newPage(admin)
-  const routes = [...matrix[3][2], '/cash/history', '/refunds/items', `/students/${roster}/complete`]
+  const routes = ['/pos','/orders','/students','/inventory','/coupons','/funding','/cash','/cash/movements','/refunds','/reconciliation','/reports','/security','/administration','/settings/payments','/cash/history','/refunds/items',`/students/${roster}/complete`]
   for (const route of routes) {
     phase = `route ${route}`
     const response = await page.goto(ctx.base + route, { waitUntil: 'networkidle' })
@@ -99,7 +100,7 @@ try {
     assert.equal(new URL(page.url()).pathname, route)
     await expect(page.getByRole('main')).toHaveCount(1)
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    const expected = matrix[3][2].find(path => route === path || route.startsWith(`${path}/`))
+    const expected = parent(route)
     const nav = page.getByRole('navigation', { name: 'Permitted workspaces' })
     await expect(nav.locator('[data-active]')).toHaveCount(1)
     await expect(nav.locator('[data-active]')).toHaveAttribute('href', expected)
@@ -121,11 +122,10 @@ try {
     await link.click(); await expect(page.locator(anchor)).toBeFocused()
   }
   await page.goto(ctx.base + '/inventory', { waitUntil: 'networkidle' })
-  await expect(page.getByRole('group', { name: 'Browse stock' }).getByRole('button')).toHaveCount(2)
-  await expect(page.getByRole('group', { name: 'Manage stock' }).getByRole('button')).toHaveCount(4)
-  await page.getByRole('button', { name: 'Receive stock', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Receive stock', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  checks.push('Report jump links move keyboard focus to their targets; browsing stock is separated from stock-changing actions')
+  await page.getByRole('row').filter({hasText:'WATER-001'}).getByRole('button').click()
+  await page.getByRole('button',{name:'Receive Stock',exact:true}).click()
+  await expect(page.getByLabel('Product',{exact:true})).not.toHaveValue('')
+  checks.push('Report jump links move focus; receiving begins on the selected product without searching again')
 
   phase = 'short desktop and resize menu'
   await page.goto(ctx.base + '/pos', { waitUntil: 'networkidle' })

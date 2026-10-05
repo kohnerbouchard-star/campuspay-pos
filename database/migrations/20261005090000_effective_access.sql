@@ -147,7 +147,7 @@ begin
     raise exception 'FORBIDDEN';
   end if;
 
-  if v_session.access_revision is distinct from (select revision from private.staff_access where user_id=v_profile.auth_user_id) then raise exception 'SESSION_EXPIRED'; end if;
+  if v_session.access_revision is distinct from (select a.revision from private.staff_access a where a.user_id=v_profile.auth_user_id) then raise exception 'SESSION_EXPIRED'; end if;
   if p_permission is not null and not private.has_capability(v_profile.auth_user_id, p_permission) then
     raise exception 'FORBIDDEN';
   end if;
@@ -175,7 +175,7 @@ do $$ declare definition text; begin
  definition:=replace(definition,'private.permissions_for_role(v_profile.role)','private.effective_permissions(v_profile.auth_user_id)');
  definition:=replace(definition,'session_token_hash, expires_at','session_token_hash, access_revision, expires_at');
  definition:=replace(definition,'p_session_token_hash, now() + private.session_timeout(v_profile.role)',
- 'p_session_token_hash, (select revision from private.staff_access where user_id=v_profile.auth_user_id), now() + private.session_timeout(v_profile.role)');
+ 'p_session_token_hash, (select a.revision from private.staff_access a where a.user_id=v_profile.auth_user_id), now() + private.session_timeout(v_profile.role)');
  execute definition;
  definition:=pg_get_functiondef('api.authorize_session(text,text,text)'::regprocedure);
  if position('private.permissions_for_role(v_profile.role)' in definition)=0 then raise exception 'ACCESS_AUTHORIZE_PRECONDITION';end if;

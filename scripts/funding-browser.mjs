@@ -9,6 +9,8 @@ export async function fundingBrowser(ctx,cookies,card){
  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/funding/card'){
   const value=request.postDataJSON()?.cardRead;frames.push({exact:value===card,length:typeof value==='string'?value.length:0})
  }})
+ const selected=(await ctx.owner.query("select student_code,display_name from private.students where display_name='Synthetic funding student'")).rows[0]
+ async function openStudent(){await page.getByLabel('Search students',{exact:true}).fill(selected.student_code);await page.getByRole('row').filter({hasText:selected.display_name}).getByRole('button').click();await page.getByRole('button',{name:'Add Funds',exact:true}).click()}
  async function prepare(){
   await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   await page.getByRole('button',{name:'+ ₩1,000',exact:true}).click()
@@ -19,7 +21,7 @@ export async function fundingBrowser(ctx,cookies,card){
   await expect(page.getByText('Reader ready. Scan the student card to verify the wallet.',{exact:true})).toBeVisible()
  }
  try{
-  await page.goto(ctx.base+'/funding');await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
+  await page.goto(ctx.base+'/students');await openStudent();await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${dir}/funding-${width}.png`})}
   await prepare()
   // Reproduce callback churn between the prefix and suffix of one frame. The
@@ -28,8 +30,8 @@ export async function fundingBrowser(ctx,cookies,card){
   await page.evaluate(async value=>{
    let tick=performance.now()
    const emit=key=>{const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:tick++});window.dispatchEvent(event)}
-   const journal=[...document.querySelectorAll('h2')].find(e=>e.textContent==='Funding and cash journal')
-   const refresh=[...document.querySelectorAll('button')].find(e=>e.textContent==='Refresh funding journal')
+   const journal=[...document.querySelectorAll('h2')].find(e=>e.textContent==='Funding readiness')
+   const refresh=[...document.querySelectorAll('button')].find(e=>e.textContent==='Refresh funding readiness')
    if(!journal||!refresh)throw new Error('Funding journal unavailable for the reader regression')
    for(const char of value.slice(0,8))emit(char)
    await new Promise((resolve,reject)=>{
@@ -58,13 +60,13 @@ export async function fundingBrowser(ctx,cookies,card){
   await page.getByRole('button',{name:'Record verified operation',exact:true}).click()
   const recover=page.getByRole('button',{name:'Recover funding result',exact:true});await expect(recover).toBeEnabled()
   const stored=JSON.parse(await page.evaluate(()=>sessionStorage.getItem('campuspay:funding-operation:v1')));assert.deepEqual(Object.keys(stored),['requestKey']);assert.equal(stored.requestKey,operation.request_key)
-  await page.reload({waitUntil:'domcontentloaded'});await expect(recover).toBeEnabled();await recover.click()
+  await page.reload({waitUntil:'domcontentloaded'});await openStudent();await expect(recover).toBeEnabled();await recover.click()
   await expect(page.getByRole('heading',{name:`Recorded receipt ${operation.reference_number}`,exact:true})).toBeVisible()
   await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('campuspay:funding-operation:v1')),null)
   const n=(await ctx.owner.query('select count(*) from private.funding_operations where request_key=$1',[operation.request_key])).rows[0].count;assert.equal(Number(n),1)
   await page.evaluate(()=>sessionStorage.setItem('campuspay:funding-operation:v1','bad recovery'))
-  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByText('Recovery storage is unavailable or corrupt. Do not start another operation; have the existing request checked.',{exact:true})).toBeVisible()
+  await page.reload({waitUntil:'domcontentloaded'});await openStudent();await expect(page.getByText('Recovery storage is unavailable or corrupt. Do not start another operation; have the existing request checked.',{exact:true})).toBeVisible()
   await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toHaveCount(0)
   assert.deepEqual(frames,[{exact:true,length:card.length},{exact:true,length:card.length}])
   assert.deepEqual(errors,[])

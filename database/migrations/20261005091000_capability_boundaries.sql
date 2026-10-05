@@ -169,4 +169,6 @@ select pg_temp.replace_access_boundary('api.change_record(uuid,uuid,text,text,uu
 
 select pg_temp.replace_access_boundary('api.recover_record_operation(uuid,uuid,text)','s:=private.assert_session(p_session_id,case when p_kind=''PRODUCT'' then ''inventory.product.manage'' else ''students.status.manage'' end);','s:=private.assert_session_any(p_session_id,case when p_kind=''PRODUCT'' then array[''inventory.product.manage'',''inventory.price.manage''] else array[''students.status.manage''] end);',1);
 
+select pg_temp.replace_access_boundary('api.record_directory(uuid,text,text,text,integer,uuid)','w.balance_won quantity_or_balance,','case when private.has_capability((select auth_user_id from private.staff_sessions where id=p_session_id),''wallet.read'') then w.balance_won else null end quantity_or_balance,',1);
+
 insert into private.schema_migrations(version) values('20261005091000_capability_boundaries') on conflict do nothing;

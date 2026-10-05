@@ -20,7 +20,7 @@ export async function runAdministrationLocking(ctx,admin){
  const originalLogin=(await owner.query("select pg_get_functiondef('api.create_staff_session(text,text,text,text)'::regprocedure) definition")).rows[0].definition
  async function fixture(){
   const code='LOCK-'+randomUUID().slice(0,8)
-  const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Synthetic lock fixture',role:'cashier',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Isolated lock-order regression fixture',verified:true})
+  const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Synthetic lock fixture',role:'cashier',preset:'staff',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Isolated lock-order regression fixture',verified:true})
   const cookies=await ctx.login(code),session=await request(cookies,'/api/auth/session')
   const terminal=(await owner.query('select t.* from private.terminals t join private.staff_sessions s on s.terminal_id=t.id where s.id=$1',[session.session_id])).rows[0]
   const profile=(await owner.query('select updated_at::text from public.staff_profiles where auth_user_id=$1',[created.target_id])).rows[0]

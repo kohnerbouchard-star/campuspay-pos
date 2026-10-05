@@ -64,7 +64,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
     <button className="secondary-action" type="button" disabled={operation.busy} onClick={()=>{setSelected(null);setRevision(n=>n+1)}}>Refresh managed records</button>
     {loading?<p role="status">Loading current record status…</p>:data&&<>
       <div className="table-scroll" role="region" tabIndex={0} aria-label="Managed records"><table><thead><tr><th>Record</th><th>Status</th><th>{kind==='PRODUCT'?'Remaining stock':'Wallet balance'}</th><th>Actions</th></tr></thead><tbody>
-      {data.records.map(row=><tr key={row.id}><td><strong>{row.name}</strong><small>{row.code}</small></td><td>{row.active?'Active':kind==='PRODUCT'?'Archived':'Inactive'}</td><td>{kind==='PRODUCT'?row.quantity_or_balance:formatWon(row.quantity_or_balance)}</td><td>
+      {data.records.map(row=><tr key={row.id}><td><strong>{row.name}</strong><small>{row.code}</small></td><td>{row.active?'Active':kind==='PRODUCT'?'Archived':'Inactive'}</td><td>{kind==='PRODUCT'?row.quantity_or_balance:row.quantity_or_balance===null?'Not assigned':formatWon(row.quantity_or_balance)}</td><td>
         {kind==='PRODUCT'&&row.active&&<button className="table-action" disabled={locked} onClick={()=>select(row,true)}>Edit product</button>}
         <button className="table-action" disabled={locked||!!row.blocker} onClick={()=>select(row)}>{kind==='PRODUCT'?(row.active?'Archive product':'Restore product'):(row.active?'Deactivate student':'Reactivate student')}</button>
         {row.blocker&&<small>{row.blocker}</small>}</td></tr>)}
@@ -81,7 +81,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
     {selected&&confirm&&<ConfirmationDialog title={`${label}?`} description={explanation} confirmLabel={label} cancelLabel="Go back"
       destructive={!editing&&selected.active} confirmationText={!editing?selected.code:undefined} confirmDisabled={locked||(kind==='STUDENT'&&!/^[0-9]{4,16}$/.test(pin))} onCancel={()=>{setConfirm(false);setPin('')}} onConfirm={apply}>
       <dl className="detail-list"><div><dt>Record</dt><dd>{selected.name} · {selected.code}</dd></div>{editing&&<><div><dt>New name</dt><dd>{name}</dd></div><div><dt>Category</dt><dd>{category}</dd></div><div><dt>Reorder at</dt><dd>{reorder}</dd></div></>}<div><dt>Reason</dt><dd>{reason}</dd></div></dl>
-      {kind==='STUDENT'&&<><p className="muted">Enter your PIN to approve this change. This review expires after one minute or when you leave this tab.</p><label className="field"><span>Current Super Admin PIN</span><input required type="password" autoComplete="off" inputMode="numeric" pattern="[0-9]{4,16}" value={pin} disabled={operation.busy} onChange={e=>setPin(e.target.value.replace(/\D/g,'').slice(0,16))}/></label></>}
+      {kind==='STUDENT'&&<><p className="muted">Enter your PIN to approve this change. This review expires after one minute or when you leave this tab.</p><label className="field"><span>Your current PIN</span><input required type="password" autoComplete="off" inputMode="numeric" pattern="[0-9]{4,16}" value={pin} disabled={operation.busy} onChange={e=>setPin(e.target.value.replace(/\D/g,'').slice(0,16))}/></label></>}
     </ConfirmationDialog>}
   </section>
 }

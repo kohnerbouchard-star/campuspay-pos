@@ -1,13 +1,13 @@
 import { ApiError } from '@/lib/api/errors'
 import { withApiRoute } from '@/lib/api/route'
-import { authorizeRequest } from '@/features/auth/server/session'
+import { authorizeRequest,authorizeAnyRequest } from '@/features/auth/server/session'
 import { UpdatePaymentPolicySchema } from '@/features/pos/domain'
 import { EVENT_PAYMENT_MESSAGES } from '@/features/pos/payment-policy-validation'
 import { getPaymentPolicy, updatePaymentPolicy } from '@/features/pos/server'
 import { failure, ok, parseJson } from '@/lib/api/response'
 export const dynamic = 'force-dynamic'
 export const GET = withApiRoute('/api/pos/payment-policy', async () => {
-  try { return ok(await getPaymentPolicy(await authorizeRequest('pos.read'))) }
+  try { const s=await authorizeAnyRequest();if(!s.permissions.some(p=>['pos.read','settings.payments.manage'].includes(p)))throw new ApiError(403,'FORBIDDEN','Payment policy access is not assigned');return ok(await getPaymentPolicy(s)) }
   catch (error) { return failure(error) }
 })
 export const POST = withApiRoute('/api/pos/payment-policy', async (request: Request) => {

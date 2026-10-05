@@ -8,13 +8,13 @@ export async function runAdministrationEditorBrowser(ctx,admin){
  const dir='.validation/administration-hardening';fs.mkdirSync(dir,{recursive:true})
  const {request,owner,staffPin}=ctx,other=await ctx.login('9101')
  const code='EDIT-'+randomUUID().slice(0,8)
- const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Two-operator editor fixture',role:'cashier',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Synthetic two-operator browser fixture',verified:true})
+ const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Two-operator editor fixture',role:'cashier',preset:'staff',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Synthetic two-operator browser fixture',verified:true})
  async function refresh(page){
   const response=page.waitForResponse(r=>r.url().includes('/api/administration?')&&r.request().method()==='GET')
   await page.getByRole('button',{name:'Refresh directory',exact:true}).click();assert.equal((await response).status(),200)
  }
  async function select(page,id,kind){
-  await page.getByRole('row').filter({hasText:id}).getByRole('button',{name:kind==='STAFF'?'Manage staff':'Manage terminal',exact:true}).click()
+  await page.getByRole('row').filter({hasText:id}).getByRole('button',{name:kind==='STAFF'?'Open employee':'Manage terminal',exact:true}).click()
   const form=page.getByRole('form'),heading=form.getByRole('heading',{level:2})
   await expect(heading).toBeFocused();await expect(heading).toBeInViewport()
   return form
@@ -42,31 +42,31 @@ export async function runAdministrationEditorBrowser(ctx,admin){
    const context=await browser.newContext({viewport:{width:390,height:900}});contexts.push(context)
    await context.addCookies([...cookies].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
    const page=await context.newPage();pages.push(page);page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message))
-   await page.goto(ctx.base+'/administration');await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeEnabled()
+   await page.goto(ctx.base+'/administration');await expect(page.getByRole('button',{name:'Create employee',exact:true})).toBeEnabled()
   }
   const [a,b]=pages
   let af=await select(a,code,'STAFF'),bf=await select(b,code,'STAFF')
-  await expect(af.getByLabel('Staff role',{exact:true})).toHaveValue('cashier')
-  await bf.getByLabel('Staff role',{exact:true}).selectOption('accountant')
+  await expect(af.getByLabel('Staff role',{exact:true})).toHaveCount(0)
+  await bf.getByLabel('Staff display name',{exact:true}).fill('Second operator profile')
   await bf.getByRole('checkbox',{name:/Active — allow/}).uncheck();await submit(b)
-  await refresh(a);await expect(a.getByRole('row').filter({hasText:code})).toContainText('accountant')
+  await refresh(a);await expect(a.getByRole('row').filter({hasText:code})).toContainText('Second operator profile')
   // Background refresh does not splice a fresh version into the existing draft.
-  await expect(af.getByLabel('Staff role',{exact:true})).toHaveValue('cashier')
+  await expect(af.getByLabel('Staff role',{exact:true})).toHaveCount(0)
   await expect(af.getByRole('checkbox',{name:/Active — allow/})).toBeChecked()
   await submit(a,409)
   let profile=(await owner.query('select role,active from public.staff_profiles where auth_user_id=$1',[created.target_id])).rows[0]
-  assert.deepEqual(profile,{role:'accountant',active:false})
+  assert.deepEqual(profile,{role:'cashier',active:false})
   checks.push('Existing draft retains its old optimistic version and a stale submission is rejected')
   // This is the audited regression: same record ID, newer record props. A
   // fresh editor must reset uncontrolled values AND their version together.
   af=await select(a,code,'STAFF')
-  await expect(af.getByLabel('Staff role',{exact:true})).toHaveValue('accountant')
+  await expect(af.getByLabel('Staff display name',{exact:true})).toHaveValue('Second operator profile')
   await expect(af.getByRole('checkbox',{name:/Active — allow/})).not.toBeChecked();await resetAssertions(af)
   await af.getByLabel('Staff display name',{exact:true}).fill('Updated name without reverting permissions')
   await submit(a)
   profile=(await owner.query('select role,active from public.staff_profiles where auth_user_id=$1',[created.target_id])).rows[0]
-  assert.deepEqual(profile,{role:'accountant',active:false})
-  checks.push('Reselecting refreshed staff resets fields and acknowledgment; accepted edits preserve the newer role and active status')
+  assert.deepEqual(profile,{role:'cashier',active:false})
+  checks.push('Reselecting refreshed staff resets fields and acknowledgment; accepted edits preserve the newer profile and active status')
   const idle=await ctx.login('1001'),idleSession=await request(idle,'/api/auth/session')
   const terminal=(await owner.query('select t.id,t.label,t.active from private.terminals t join private.staff_sessions s on s.terminal_id=t.id where s.id=$1',[idleSession.session_id])).rows[0]
   await request(admin,'/api/administration',{action:'UPDATE_TERMINAL',targetId:terminal.id,requestKey:randomUUID(),label:'Original editor terminal',active:true,expectedActive:terminal.active,expectedLabel:terminal.label,adminPin:staffPin,notes:'Synthetic terminal editor baseline',verified:true})
