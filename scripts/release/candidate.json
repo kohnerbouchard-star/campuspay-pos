@@ -1,0 +1,176 @@
+{
+  "repository": "kohnerbouchard-star/campuspay-pos",
+  "candidate": "4e55ece88cb0afcc3e85c8f0436f8d346f5c40a1",
+  "candidateTree": "25041b33225b68a95b8f54d8e59e23b0cd624e3e",
+  "databaseHost": "ep-broad-tooth-az9zz1z8.c-3.ap-southeast-1.aws.neon.tech",
+  "databaseName": "campuspay",
+  "ownerRole": "campuspay_owner",
+  "runtimeLogin": "campuspay_runtime_login",
+  "runtimeRole": "campuspay_runtime",
+  "baseline": [
+    {
+      "version": "20260904190000_initial_campuspay_neon",
+      "sha256": "f964cf5e1d7c4c2d357dc5a7829ac06b942d5bcc70761a4f7a7ebc1529211855"
+    },
+    {
+      "version": "20260905033000_demo_bootstrap",
+      "sha256": "214b31108e4c0cb887c0abc0950e487deee3c40ea7f0137f8045f0bca9ff1158"
+    },
+    {
+      "version": "20260905070000_finish_neon",
+      "sha256": "7e067125de3f1d1f5ea0c91f7a88c0a1e50747db6ba5732dc7008ee5f7699e26"
+    },
+    {
+      "version": "20260906160000_online_store",
+      "sha256": "40691f4b7f48591ec02eab9b98dc288034e79937cc7d1404d60e0469fcbd312f"
+    },
+    {
+      "version": "20260907090000_pos_tenders",
+      "sha256": "6a8456b4cf801550752e8c9cfba746edf5f9f72dfff47233876be8a04dbdd971"
+    },
+    {
+      "version": "20260907120000_student_enrollment",
+      "sha256": "f03ae5bad360b3008ae4bec9060dc44d14a92d0bf1eec809a96ef7718bf1bdbe"
+    },
+    {
+      "version": "20260907130000_store_experience",
+      "sha256": "6f83bc2136df6f38d49b902f55a3f48c7f9460d8c49c0144a9f5b07f30c97443"
+    },
+    {
+      "version": "20260907140000_wallet_history",
+      "sha256": "d51dc3d5f6fd3179982e3c90fc08f04e8e06e574c4d0c2571e10f89d3e73fc3a"
+    },
+    {
+      "version": "20260907150000_adjustment_recovery",
+      "sha256": "ace9206fbe524ecd98dd3c42f505ea80533b2eb05f00f2631a80acfc50d6e012"
+    },
+    {
+      "version": "20260907200000_stock_receipt_recovery",
+      "sha256": "902502f4dd0ff4b017779e8b1ae38b941c4fe71b4d74772290d03f3edc3e23f4"
+    },
+    {
+      "version": "20260908090000_register_remediation",
+      "sha256": "a6d7e0b301b402e46a665e739ab121ac5244e63ea29e61766c834684ef9b55ed"
+    },
+    {
+      "version": "20260908100000_auth_session_hardening",
+      "sha256": "3c8713f6d310f0e57412be64ce676320e32f38dc2fe441f0af67c25615f72f64"
+    },
+    {
+      "version": "20260908110000_business_settlement_hardening",
+      "sha256": "d4c42a6d4d518d9376309678c0db994a8a9fcb9b0b2ba68d9834e1915935955c"
+    },
+    {
+      "version": "20260918110000_student_roster_years",
+      "sha256": "02e44d1f377e39a083819d8f11eaf64939961ff9c73c34c330210b2fd89e3019"
+    },
+    {
+      "version": "20260918130000_complete_roster_enrollment",
+      "sha256": "c901cb9c1df899a7e06bf97643d726bbe0a137e510e17a04e68cb80f772e0647"
+    },
+    {
+      "version": "20260918150000_sale_refunds",
+      "sha256": "a6219574e1a2033850cc856519628ec84b79bed35caf9e8d119e5c71f95d13ea"
+    },
+    {
+      "version": "20260918170000_return_status",
+      "sha256": "d0424fb45042a524e030c5922157efcf43511ba2c55e47eda62a357994835969"
+    },
+    {
+      "version": "20260918171000_online_returns",
+      "sha256": "7e1f42cf61eb6ea44ffcc553c100265a9846c6e9c4159ec9270d88bda568edc8"
+    },
+    {
+      "version": "20260918180000_cash_shifts",
+      "sha256": "18775325eab82990d007a606cb6154b45c778fe5168fad93a2737e642e1cc408"
+    },
+    {
+      "version": "20260918190000_staff_administration",
+      "sha256": "7bcaaf164f438f8defbfa036ddb9992973cc1c19a257ce8a086414237230ccb7"
+    },
+    {
+      "version": "20260920100000_administration_lock_order",
+      "sha256": "fbc26e2e57280bfe064fb6724766e13ad92cf3398eea96d73e5e120ac9acc4c7"
+    },
+    {
+      "version": "20260920120000_partial_refund_preview",
+      "sha256": "94af936ba2bc0951967069c0144ca933d3da2bd038ce36fcf888ac21dd92bda7"
+    },
+    {
+      "version": "20260920130000_partial_refund_ledger",
+      "sha256": "d366ed9e8d29458e22ac391bbdc3fd5cca18fa459208e1ef4161e20a683c6a49"
+    },
+    {
+      "version": "20260920131000_partial_refund_posting",
+      "sha256": "78297f90f919310c56ee035b1f642943dae6fa2867b5dc747b48cffa3d2bf6f7"
+    },
+    {
+      "version": "20260920132000_partial_refund_read_models",
+      "sha256": "e13d22dc0075486e28059641f476cab738f58143fcfb8dbeedefab0a5477e487"
+    },
+    {
+      "version": "20260920133000_partial_refund_sql_names",
+      "sha256": "0261ac50e6912368b5acb76d09d8a9952559c857fba4150d40f998b37b78af69"
+    },
+    {
+      "version": "20260921090000_funding_ledger",
+      "sha256": "83e4a13eb5117d0b60f0b2d0210333e9d8b7f54e8d9f8a39f83255c718e12317"
+    },
+    {
+      "version": "20260921091000_funding_api",
+      "sha256": "f836e7e19e1f91e8ecdcd07c8644fb443cf1bad1dad683ae8fb506dae80d9e96"
+    },
+    {
+      "version": "20260921092000_funding_reports",
+      "sha256": "b38f068b3013aa95526531d2c8a9e1ce0e4404ac5420e6b238fd721d24bafc45"
+    },
+    {
+      "version": "20260921110000_complete_accounting_history",
+      "sha256": "af141aac3a7b88dccd9722ce72e1e4ab4c22fb77ba02693c8a76d4882fcc36ad"
+    },
+    {
+      "version": "20260921113000_daily_reconciliation",
+      "sha256": "79ec01b9761576772b263159c71a4333c81afedcb2f5f7abbd30ac38a2685e96"
+    },
+    {
+      "version": "20261004090000_record_management",
+      "sha256": "4f3ecaee8d8bf968743c540d02c742c33d2e4bf2bfcee7e8e3b7d57ccc5ff917"
+    }
+  ],
+  "pending": [
+    {
+      "version": "20261005090000_effective_access",
+      "sha256": "b83e73a0aa2a2649eb389fa703ac69c3499f91d9b89d34345f808960e18985b0"
+    },
+    {
+      "version": "20261005091000_capability_boundaries",
+      "sha256": "e6ffed5a0393b8df8a1f1e1d137a54a19928b7f6eb01b09c74bd9b9158394fae"
+    },
+    {
+      "version": "20261005092000_staff_access_management",
+      "sha256": "fd69e69a3831e7db7a2eeec1c611033d3c91e05760eb674cdd4a536c8b7d1ba1"
+    },
+    {
+      "version": "20261005093000_administration_capabilities",
+      "sha256": "2d5a1bdceaccbc540906a702e410a828150a20a545aac7aac761a036353e453c"
+    },
+    {
+      "version": "20261005094000_contextual_student_funding",
+      "sha256": "0404083b2c4fbb585f494923436c8de2549852accfa7c1b074758f2df45329d7"
+    }
+  ],
+  "ciRuns": [
+    37264187313,
+    37264187236
+  ],
+  "vercelProject": "prj_wXkpTGGYjL6emMhAX6RSwxkafkME",
+  "vercelTeam": "team_PRsNkw4DHrGsUHl6ikKw2XyJ",
+  "origins": [
+    "https://mica-pos.vercel.app",
+    "https://mica-store.vercel.app"
+  ],
+  "reviewerLogin": "kohnerbouchard-star",
+  "reviewerId": 287640607,
+  "backupPolicy": "github-artifact:kohnerbouchard-star/campuspay-pos:90-days:repository-readers-can-download-ciphertext:maintainers-can-delete",
+  "backupRetentionDays": 90
+}

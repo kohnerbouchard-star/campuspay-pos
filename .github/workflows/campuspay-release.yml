@@ -1,0 +1,206 @@
+name: CampusPay protected manual release
+run-name: CampusPay ${{ inputs.mode }} — app 4e55ece — ${{ github.actor }}
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Read-only preflight, approved migration, or held cutover verification
+        type: choice
+        options: [preflight, release, verify-cutover]
+        default: preflight
+        required: true
+      evidence_run_id:
+        description: Release needs successful preflight run ID; verify-cutover needs successful release run ID (within 24h, same tooling SHA)
+        type: string
+      deployment_id:
+        description: Exact staged production dpl_ ID for candidate 4e55ece; required for release and verify-cutover
+        type: string
+      maintenance_confirmation:
+        description: For release/verification type ALL_CAMPUSPAY_WRITERS_STOPPED_AND_RECOVERY_RESOLVED
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  deployments: read
+concurrency:
+  group: campuspay-production-release
+  cancel-in-progress: false
+env:
+  RELEASE_MODE: ${{ inputs.mode }}
+  EVIDENCE_RUN_ID: ${{ inputs.evidence_run_id }}
+  DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+  MAINTENANCE_CONFIRMATION: ${{ inputs.maintenance_confirmation }}
+
+jobs:
+  gate:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Verify main CI, candidate CI, private repository and all three protected environments
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/release/cli.mjs gate
+
+  preflight:
+    needs: gate
+    if: inputs.mode == 'preflight' || inputs.mode == 'verify-cutover'
+    environment: campuspay-preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: kohnerbouchard-star/campuspay-pos
+          ref: 4e55ece88cb0afcc3e85c8f0436f8d346f5c40a1
+          path: release-candidate
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Read-only preflight or held cutover verification
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CAMPUSPAY_OWNER_URL: ${{ secrets.CAMPUSPAY_OWNER_URL }}
+          VERCEL_READ_TOKEN: ${{ secrets.VERCEL_READ_TOKEN }}
+        run: |
+          if [ "$RELEASE_MODE" = preflight ]; then
+            node scripts/release/cli.mjs preflight
+          else
+            node scripts/release/cli.mjs verify-cutover
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: inputs.mode == 'preflight'
+        with:
+          name: preflight-passed-${{ github.run_id }}
+          path: ${{ runner.temp }}/campuspay-release/receipt/result.json
+          if-no-files-found: error
+          retention-days: 2
+
+  approve-backup:
+    needs: gate
+    if: inputs.mode == 'release'
+    environment: campuspay-backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Record separate action-time approval for backup destination and retention
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BACKUP_DESTINATION_POLICY: ${{ vars.BACKUP_DESTINATION_POLICY }}
+        run: node scripts/release/cli.mjs approve-backup
+
+  release:
+    needs: [gate, approve-backup]
+    if: inputs.mode == 'release'
+    environment: campuspay-production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      restore:
+        image: postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-restore-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: kohnerbouchard-star/campuspay-pos
+          ref: 4e55ece88cb0afcc3e85c8f0436f8d346f5c40a1
+          path: release-candidate
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Install system trust for libpq verify-full inside isolated PostgreSQL tools
+        env:
+          PG_TOOL_CONTAINER: ${{ job.services.restore.id }}
+        run: |
+          docker exec "$PG_TOOL_CONTAINER" mkdir -p /root/.postgresql
+          docker cp /etc/ssl/certs/ca-certificates.crt "$PG_TOOL_CONTAINER":/root/.postgresql/root.crt
+      - name: Verify holds and create encrypted backup after both approvals
+        id: backup
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CAMPUSPAY_OWNER_URL: ${{ secrets.CAMPUSPAY_OWNER_URL }}
+          CAMPUSPAY_BACKUP_KEY: ${{ secrets.CAMPUSPAY_BACKUP_KEY }}
+          VERCEL_READ_TOKEN: ${{ secrets.VERCEL_READ_TOKEN }}
+          BACKUP_DESTINATION_POLICY: ${{ vars.BACKUP_DESTINATION_POLICY }}
+          PG_TOOL_CONTAINER: ${{ job.services.restore.id }}
+          PG_DUMP_BIN: ./scripts/ci/pg-dump
+        run: node scripts/release/cli.mjs backup
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        id: upload
+        with:
+          name: campuspay-encrypted-backup-${{ github.run_id }}
+          path: ${{ runner.temp }}/campuspay-release/out/campuspay.cpbackup
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+          overwrite: false
+      - name: Verify external backup identity and actual retention
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BACKUP_DESTINATION_POLICY: ${{ vars.BACKUP_DESTINATION_POLICY }}
+          BACKUP_ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          BACKUP_ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+        run: node scripts/release/cli.mjs retained
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          artifact-ids: ${{ steps.upload.outputs.artifact-id }}
+          path: ${{ runner.temp }}/campuspay-release/downloaded
+          merge-multiple: true
+      - name: Restore downloaded backup, recheck every gate under lock, apply only 045–049
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CAMPUSPAY_OWNER_URL: ${{ secrets.CAMPUSPAY_OWNER_URL }}
+          CAMPUSPAY_BACKUP_KEY: ${{ secrets.CAMPUSPAY_BACKUP_KEY }}
+          VERCEL_READ_TOKEN: ${{ secrets.VERCEL_READ_TOKEN }}
+          BACKUP_DESTINATION_POLICY: ${{ vars.BACKUP_DESTINATION_POLICY }}
+          BACKUP_ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          BACKUP_ARTIFACT_DIGEST: ${{ steps.upload.outputs.artifact-digest }}
+          BACKUP_CIPHERTEXT_SHA256: ${{ steps.backup.outputs.ciphertext_sha256 }}
+          PG_TOOL_CONTAINER: ${{ job.services.restore.id }}
+          PG_RESTORE_BIN: ./scripts/ci/pg-restore
+        run: node scripts/release/cli.mjs migrate
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-passed-${{ github.run_id }}
+          path: ${{ runner.temp }}/campuspay-release/receipt/result.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Remove runner backup copies even after failure
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/campuspay-release"

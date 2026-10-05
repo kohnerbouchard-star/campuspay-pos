@@ -25,7 +25,7 @@ function pgTool(binary,args,url,input) {
   if(result.error||result.status!==0) throw new Error('POSTGRES_BACKUP_TOOL_FAILED')
   return result.stdout
 }
-async function inventory(client) {
+export async function inventory(client) {
   const tables=(await client.query("select schemaname,tablename from pg_tables where schemaname in ('public','private') order by schemaname collate \"C\",tablename collate \"C\"")).rows
   const rows=[]
   for(const table of tables) {

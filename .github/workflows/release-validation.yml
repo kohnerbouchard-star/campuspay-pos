@@ -1,0 +1,51 @@
+name: CampusPay release tooling validation
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  release-rehearsal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17@sha256:d74eeac9a635390a49bc21bd49fccd973de707e2a53a76ac49b552b8712ec46f
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-release-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: kohnerbouchard-star/campuspay-pos
+          ref: 4e55ece88cb0afcc3e85c8f0436f8d346f5c40a1
+          path: release-candidate
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: node scripts/verify-workflow-pins.mjs
+      - run: node --test scripts/release/policy.test.mjs
+      - name: Native PostgreSQL release and failure rehearsal (synthetic only)
+        env:
+          RELEASE_TEST_DATABASE_URL: postgresql://postgres:ci-release-only@localhost:5432/campuspay
+          PG_TOOL_CONTAINER: ${{ job.services.postgres.id }}
+          PG_DUMP_BIN: ./scripts/ci/pg-dump
+          PG_RESTORE_BIN: ./scripts/ci/pg-restore
+        run: node --test scripts/release/native.test.mjs
+      - name: Record exact tested source
+        run: |
+          git rev-parse HEAD
+          git rev-parse 'HEAD^{tree}'

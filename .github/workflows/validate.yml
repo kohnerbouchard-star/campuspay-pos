@@ -46,6 +46,7 @@ jobs:
       - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
       - run: node --test scripts/backup-envelope.test.mjs scripts/backup-file.test.mjs
       - run: npm ci
+      - run: node --test scripts/release/policy.test.mjs
       # Collect functional diagnostics even when the audit is red. The final
       # unconditional gate below still makes this SAME validate job fail.
       - name: Complete dependency audit including development tools
