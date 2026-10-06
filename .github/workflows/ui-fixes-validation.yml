@@ -40,6 +40,12 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: node --experimental-strip-types --no-warnings scripts/verify-ui-fixes.mjs
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Print bounded UI test diagnostics
+        if: always()
+        run: |
+          for file in .validation/ui-fixes/tested-commit.txt .validation/ui-fixes/tested-tree.txt .validation/ui-fixes/results.json; do
+            if [ -f "$file" ]; then echo "$file"; head -c 24000 "$file"; echo; fi
+          done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
