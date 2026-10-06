@@ -62,18 +62,34 @@ jobs:
         id: complete_dependency_audit
         continue-on-error: true
         run: npm audit --audit-level=high --json > .validation/dependency-audit.json
-      - run: npm run security:dependencies
-      - run: npm run validate:static
-      - run: node --experimental-strip-types --no-warnings --test scripts/navigation-ux.test.mjs
-      - run: node --experimental-strip-types --no-warnings --test scripts/receipt-policy-recovery.test.mjs scripts/request-validation.test.mjs
-      - run: node --experimental-strip-types --no-warnings --test scripts/checkout-store.test.mjs
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run lint
-      - run: npm run build
-      - run: npm run db:migrate
-      - run: node scripts/verify-runtime-readiness.mjs
-      - run: node scripts/verify-student-roster.mjs
+      # Diagnose every core gate without hiding any failure. Existing gates and
+      # dependency policy are unchanged; each failing command fails this step.
+      - name: Run every core functional gate
+        run: |
+          failed=0
+          check() {
+            if "$@"; then
+              echo "PASS $*"
+            else
+              failed=1
+              echo "FAIL $*"
+            fi
+          }
+          check npm run validate:static
+          check node --experimental-strip-types --no-warnings --test scripts/navigation-ux.test.mjs
+          check node --experimental-strip-types --no-warnings --test scripts/receipt-policy-recovery.test.mjs scripts/request-validation.test.mjs
+          check node --experimental-strip-types --no-warnings --test scripts/checkout-store.test.mjs
+          check npm run typecheck
+          check npm test
+          check npm run lint
+          check npm run build
+          check npm run db:migrate
+          check node scripts/verify-runtime-readiness.mjs
+          check node scripts/verify-student-roster.mjs
+          exit "$failed"
+      - name: Enforce runtime dependency audit
+        if: always()
+        run: npm run security:dependencies
       - name: Enforce complete dependency audit policy
         if: always()
         run: node scripts/validate-complete-audit.mjs

@@ -39,6 +39,8 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 1000 } }); contexts.push(context)
     await context.addCookies([...cookies].filter(([, v]) => v).map(([name, value]) => ({ name, value, url: base })))
     const page = await context.newPage(); pages.push(page)
+    // Install before navigation so application intervals and deadlines share one clock.
+    await page.clock.install()
     page.on('pageerror', error => pageErrors.push(error.message))
     return page
   }
@@ -99,10 +101,16 @@ try {
 
   phase = 'quantity controls and stock refresh'; await resetPos()
   const quantity = pos.getByRole('spinbutton', { name: `${water.name} quantity`, exact: true }), increment = pos.getByRole('button', { name: `Increase ${water.name} quantity`, exact: true })
-  for (const [typed, expected] of [['98','98'], ['100','99'], ['10000','99'], ['1.9','1']]) { await quantity.fill(typed); await quantity.press('Enter'); await expect(quantity).toHaveValue(expected) }
-  await quantity.fill('98'); await quantity.press('Enter'); await increment.press('Enter'); await expect(quantity).toHaveValue('99'); await expect(increment).toBeDisabled()
+  for (const width of [1440, 390]) {
+    await pos.setViewportSize({ width, height: 900 })
+    for (const [typed, expected] of [['98','98'], ['100','99'], ['10000','99'], ['1.9','1']]) { await quantity.fill(typed); await quantity.press('Enter'); await expect(quantity).toHaveValue(expected) }
+    await quantity.fill('7'); await quantity.press('Escape'); await expect(quantity).toHaveValue('1')
+    await quantity.fill('100'); await quantity.press('Tab'); await expect(quantity).toHaveValue('99')
+    await quantity.fill('95'); await quantity.press('Enter')
+    for (let i = 0; i < 4; i++) await increment.press('Enter')
+    await expect(quantity).toHaveValue('99'); await expect(increment).toBeDisabled()
+  }
   await capture(pos, 'quantity-limit')
-  await pos.clock.install()
   await pos.route('**/api/pos/payment-policy', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'INTERNAL_ERROR', message: 'Synthetic refresh check' } }) }), { times: 1 })
   await pos.clock.fastForward(15_001)
   await expect(pos.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
@@ -137,7 +145,12 @@ try {
     await pos.getByRole('button', { name: `Increase ${water.name} quantity`, exact: true }).click()
     await pos.getByLabel('Coupon code', { exact: true }).fill('CHECKOUTA'); await pos.getByLabel('Coupon code', { exact: true }).press('Enter')
     await expect(pos.locator('.coupon-applied')).toBeVisible()
-    await request(admin, `/api/inventory/products/${water.id}/price`, { newPriceWon: price, reason: 'Synthetic price changed after register catalog/quote load' })
+    const currentProduct = (await request(admin, `/api/management?kind=PRODUCT&status=ALL&targetId=${water.id}`)).records[0]
+    assert.ok(currentProduct)
+    const changedPrice = await request(admin, '/api/management', { kind: 'PRODUCT', action: 'CHANGE_PRODUCT_PRICE', targetId: water.id,
+      expectedUpdatedAt: currentProduct.updated_at, sellingPriceWon: price, reason: 'Synthetic price changed after register catalog/quote load',
+      verified: true, requestKey: randomUUID() })
+    assert.equal(changedPrice.outcome, 'COMPLETED')
     let approval, intentId
     await pos.route('**/api/pos/intents/*/confirm', async route => {
       intentId = new URL(route.request().url()).pathname.split('/')[4]
@@ -201,7 +214,7 @@ try {
     await expect(store.getByRole('button', { name: 'Recover order', exact: true })).toBeEnabled()
     await expect(store.getByRole('button', { name: /^Place order/ })).toHaveCount(0)
   }
-  phase = 'stalled original request, tombstone and late arrival'; await reviewStore(); await store.clock.install()
+  phase = 'stalled original request, tombstone and late arrival'; await reviewStore()
   const beforeAbsent = await native(), absentGate = deferred(); let absentInput
   await store.route('**/api/store/orders', async route => {
     if (route.request().method() !== 'POST') return route.continue()
@@ -271,11 +284,14 @@ try {
   checks.push('Native simultaneous same-key placement and repeated recovery serialize to one order and one charge')
   assert.deepEqual(pageErrors, [])
   fs.writeFileSync(`${directory}/results.json`, JSON.stringify({ passed: true, liveDataUsed: false, checks, screenshots: evidence, native: { beforeCommitted, after, beforeRace, afterRace }, pageErrors }, null, 2))
+  console.log(JSON.stringify({ checks, native: { beforeCommitted, after, beforeRace, afterRace }, pageErrors }))
   console.log(`PASS: checkout/store acceptance (${checks.length} groups; ${evidence.length} desktop/mobile screenshots)`)
 } catch (error) {
   fs.writeFileSync(`${directory}/failure.txt`, `Phase: ${phase}\n${error.stack}`)
   const last = pages.filter(p => !p.isClosed()).at(-1); if (last) await last.screenshot({ path: `${directory}/failure.png` }).catch(() => undefined)
-  console.error(`FAIL checkout/store at ${phase}: ${error.stack}`); process.exitCode = 1
+  console.error(`FAIL checkout/store at ${phase}: ${error.stack}`)
+  console.error(JSON.stringify({ completedChecks: checks, screenshotsGenerated: evidence }))
+  process.exitCode = 1
 } finally {
   await Promise.allSettled(contexts.map(c => c.close()))
   if (browser) await browser.close()
