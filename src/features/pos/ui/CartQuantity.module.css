@@ -1,0 +1,4 @@
+.control { display: grid; gap: .35rem; justify-items: end; min-width: 0; }
+.control small { max-width: 13rem; white-space: normal; text-align: right; }
+.input { width: 3.4rem; min-width: 0; text-align: center; padding: .35rem .1rem; }
+@media (max-width: 540px) { .control small { max-width: 10rem; } }

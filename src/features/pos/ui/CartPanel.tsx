@@ -3,6 +3,7 @@
 import type { CouponQuote } from '@/features/coupons/domain'
 import type { CartState } from '@/features/pos/cart'
 import type { CartLine, CatalogProduct, TenderMode } from '@/features/pos/domain'
+import { CartQuantity } from '@/features/pos/ui/CartQuantity'
 import { CouponEntry } from '@/features/pos/ui/CouponEntry'
 import { formatWon } from '@/lib/format/currency'
 import { Icon } from '@/components/ui/Icon'
@@ -15,7 +16,7 @@ export function CartPanel({
   total,
   coupon,
   cartLines,
-  onCouponApplied,
+  onCouponApply, couponChecking, couponError, couponBlocked,
   onCouponRemoved,
   onChange,
   onCheckout,
@@ -29,7 +30,10 @@ export function CartPanel({
   total: number
   coupon: { code: string; quote: CouponQuote } | null
   cartLines: CartLine[]
-  onCouponApplied(code: string, quote: CouponQuote): void
+  onCouponApply(code: string): void
+  couponChecking: boolean
+  couponError: string | null
+  couponBlocked: boolean
   onCouponRemoved(): void
   onChange(productId: string, delta: number, max: number): void
   onCheckout(): void
@@ -43,17 +47,16 @@ export function CartPanel({
       {lines.length === 0 && <div className="cart-empty"><span><Icon name="bag" size={28} /></span><strong>Ready for the next order</strong><p>Select an item to begin.</p></div>}
       {lines.map((product) => <div className="cart-line" key={product.id}>
         <div><strong>{product.name}</strong><small>{formatWon(product.selling_price_won)} each</small></div>
-        <div className="quantity">
-          <button onClick={() => onChange(product.id, -1, product.stock_on_hand)} aria-label={`Decrease ${product.name} quantity`}><Icon name="minus" size={16} /></button>
-          <span aria-label={`${cart[product.id]} items`}>{cart[product.id]}</span>
-          <button onClick={() => onChange(product.id, 1, product.stock_on_hand)} aria-label={`Increase ${product.name} quantity`}><Icon name="plus" size={16} /></button>
-        </div>
+        <CartQuantity name={product.name} quantity={cart[product.id]} stock={product.sold_out ? 0 : product.stock_on_hand}
+          onChange={quantity => onChange(product.id, quantity - cart[product.id], product.stock_on_hand)} />
       </div>)}
     </div>
     {canRedeem&&<CouponEntry
-      items={cartLines}
+      empty={cartLines.length === 0}
+      checking={couponChecking}
+      error={couponError}
       applied={coupon}
-      onApplied={onCouponApplied}
+      onApply={onCouponApply}
       onRemoved={onCouponRemoved}
     />}
     <div className="order-summary">
@@ -67,6 +70,6 @@ export function CartPanel({
       <div className="segmented-control">{(['WALLET', ...(cashEnabled ? ['CASH', 'SPLIT'] : [])] as TenderMode[]).map(mode => <button type="button" key={mode} aria-pressed={tenderMode === mode} onClick={() => onTenderChange(mode)}>{mode === 'WALLET' ? 'MICA Money' : mode === 'CASH' ? 'Cash' : 'Split'}</button>)}</div>
       {tenderMode === 'SPLIT' && <p className="muted">Scan the student’s card first, then choose their MICA Money contribution.</p>}
     </fieldset>
-    <button className="primary-action" disabled={!lines.length || busy} onClick={onCheckout}><Icon name="card" size={19} />{busy ? 'Opening payment…' : `Take payment · ${formatWon(total)}`}</button>
+    <button className="primary-action" disabled={!lines.length || busy || couponBlocked} onClick={onCheckout}><Icon name="card" size={19} />{busy ? 'Opening payment…' : couponBlocked ? 'Check or clear coupon before payment' : `Take payment · ${formatWon(total)}`}</button>
   </aside>
 }
