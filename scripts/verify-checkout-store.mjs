@@ -58,7 +58,7 @@ try {
   const holds = []
   await pos.route('**/api/pos/coupons/quote', async route => {
     const response = await route.fetch(); assert.equal(response.status(), 200)
-    const hold = { ...deferred(), body: await response.json() }; holds.push(hold)
+    const hold = { ...deferred(), request: route.request(), body: await response.json() }; holds.push(hold)
     await hold.promise; await route.fulfill({ response })
   })
   async function beginCoupon(code = 'CHECKOUTA') {
@@ -69,6 +69,14 @@ try {
     await expect(take()).toBeDisabled()
     return holds.at(-1)
   }
+  async function releaseCoupon(hold) {
+    // Assert only after this exact delayed response reaches the browser and its
+    // queued React update has had a paint opportunity, not before delivery.
+    const delivered = pos.waitForResponse(response => response.request() === hold.request)
+    hold.resolve()
+    await (await delivered).finished()
+    await pos.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  }
   for (const kind of ['quantity', 'add', 'remove']) {
     phase = `delayed coupon / ${kind}`; await resetPos()
     if (kind === 'remove') await add(other.name).click()
@@ -76,7 +84,7 @@ try {
     if (kind === 'quantity') await pos.getByRole('button', { name: `Increase ${water.name} quantity`, exact: true }).click()
     else if (kind === 'add') await add(other.name).click()
     else await pos.getByRole('button', { name: `Decrease ${water.name} quantity`, exact: true }).click()
-    hold.resolve(); await expect(pos.locator('.coupon-entry')).toHaveAttribute('aria-busy', 'false')
+    await releaseCoupon(hold); await expect(pos.locator('.coupon-entry')).toHaveAttribute('aria-busy', 'false')
     await expect(pos.locator('.coupon-applied')).toHaveCount(0)
     const total = kind === 'quantity' ? water.selling_price_won * 2 : kind === 'add' ? water.selling_price_won + other.selling_price_won : other.selling_price_won
     await expect(take()).toContainText(won(total)); await expect(take()).toBeEnabled()
@@ -84,17 +92,17 @@ try {
   }
   phase = 'coupon replacement and clear'
   await resetPos(); const first = await beginCoupon(), second = await beginCoupon('CHECKOUTB')
-  first.resolve(); await expect(take()).toBeDisabled()
-  second.resolve(); await expect(pos.locator('.coupon-applied')).toContainText('Synthetic CHECKOUTB')
+  await releaseCoupon(first); await expect(take()).toBeDisabled()
+  await releaseCoupon(second); await expect(pos.locator('.coupon-applied')).toContainText('Synthetic CHECKOUTB')
   await expect(take()).toContainText(won(second.body.data.total_won))
   await capture(pos, 'coupon-replaced')
   await pos.getByRole('button', { name: 'Remove Synthetic CHECKOUTB coupon', exact: true }).press('Enter')
   await expect(pos.getByLabel('Coupon code', { exact: true })).toBeFocused()
-  const cleared = await beginCoupon(); await pos.getByRole('button', { name: 'Clear coupon', exact: true }).press('Enter'); cleared.resolve()
+  const cleared = await beginCoupon(); await pos.getByRole('button', { name: 'Clear coupon', exact: true }).press('Enter'); await releaseCoupon(cleared)
   await expect(pos.locator('.coupon-applied')).toHaveCount(0); await expect(take()).toContainText(won(water.selling_price_won))
   // Let the current response finish FIRST; an older response cannot overwrite it.
-  const older = await beginCoupon(), newer = await beginCoupon('CHECKOUTB'); newer.resolve()
-  await expect(pos.locator('.coupon-applied')).toContainText('Synthetic CHECKOUTB'); older.resolve()
+  const older = await beginCoupon(), newer = await beginCoupon('CHECKOUTB'); await releaseCoupon(newer)
+  await expect(pos.locator('.coupon-applied')).toContainText('Synthetic CHECKOUTB'); await releaseCoupon(older)
   await expect(pos.locator('.coupon-applied')).toContainText('Synthetic CHECKOUTB')
   checks.push('Replacement, clearing, reversed completion order and keyboard/focus return reject stale coupon responses')
   await pos.unroute('**/api/pos/coupons/quote')
@@ -198,7 +206,7 @@ try {
   const saved = async () => store.evaluate(key => JSON.parse(sessionStorage.getItem(key)), storageKey)
   async function reviewStore() {
     await store.goto(base + '/store'); await store.getByRole('button', { name: `Add ${water.name} to cart`, exact: true }).click()
-    await store.getByLabel('Room', { exact: true }).selectOption(location.location_id)
+    await store.getByRole('combobox', { name: /^Room/ }).selectOption(location.location_id)
     await store.getByRole('button', { name: 'Review order', exact: true }).press('Enter')
     await expect(store.getByRole('button', { name: /^Place order/ })).toBeVisible()
   }
