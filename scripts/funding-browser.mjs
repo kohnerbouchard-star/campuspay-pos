@@ -4,7 +4,7 @@ import { chromium,expect } from '@playwright/test'
 import { formatWon } from '../src/lib/format/currency.ts'
 export async function fundingBrowser(ctx,cookies,card){
  const browser=await chromium.launch({headless:true}),context=await browser.newContext(),page=await context.newPage(),errors=[],frames=[]
- const dir='.validation/funding';fs.mkdirSync(dir,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000)
+ const dir='.validation/funding';fs.mkdirSync(dir,{recursive:true});page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());page.setDefaultTimeout(15000)
  await context.addCookies([...cookies].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
  // Retain only frame equality/length diagnostics, never the reader value.
  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/funding/card'){
@@ -24,7 +24,7 @@ export async function fundingBrowser(ctx,cookies,card){
   await expect(receipt).toContainText(`Wallet: ${formatWon(operation.balance_before_won)} → ${formatWon(operation.balance_after_won)}`)
   await receipt.getByRole('heading').evaluate(el=>el.scrollIntoView({block:'start'}))
   await page.screenshot({path:`${dir}/${label}-receipt.png`})
-  await page.getByRole('button',{name:'Close dialog',exact:true}).click()
+  await page.getByRole('dialog',{name:`Add Funds · ${selected.display_name}`,exact:true}).getByRole('button',{name:'Close dialog',exact:true}).click()
   const detail=page.locator('section[aria-labelledby="student-detail-heading"]')
   await expect(detail.locator('dl > div').filter({has:page.getByText('Wallet balance',{exact:true})}).locator('dd')).toHaveText(formatWon(operation.balance_after_won))
   await detail.evaluate(el=>el.scrollIntoView({block:'start'}))
@@ -61,23 +61,24 @@ export async function fundingBrowser(ctx,cookies,card){
   await page.goto(ctx.base+'/students');await openStudent();await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeVisible()
   for(const width of [1440,1024,768,390]){await page.setViewportSize({width,height:900});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({path:`${dir}/funding-${width}.png`})}
   await prepare()
-  const readiness=page.locator('section[aria-label="Student funding readiness"]')
-  await readiness.locator('summary').click()
-  await expect(readiness.getByRole('button',{name:'Refresh funding readiness',exact:true})).toBeEnabled()
+  await expect(page.getByRole('dialog',{name:`Add Funds · ${selected.display_name}`,exact:true})).toBeVisible()
+  // A harmless blocked-close warning rerenders the mounted funding screen.
+  // Readiness refresh now deliberately disables transaction controls while GET
+  // is pending; its read-only/race behavior has separate UI regression coverage.
   // Reproduce callback churn between the prefix and suffix of one frame. The
   // timestamps model a continuous device frame independently of CI scheduling.
   const refreshedScan=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/funding/card').catch(e=>({error:e.message}))
   await page.evaluate(async value=>{
    let tick=performance.now()
    const emit=key=>{const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});Object.defineProperty(event,'timeStamp',{value:tick++});window.dispatchEvent(event)}
-   const journal=document.querySelector('section[aria-label="Student funding readiness"]')
-   const refresh=[...document.querySelectorAll('button')].find(e=>e.textContent==='Refresh funding readiness')
-   if(!journal||!refresh||refresh.disabled)throw new Error('Funding readiness refresh unavailable for the reader regression')
+   const funding=[...document.querySelectorAll('dialog')].find(e=>e.getAttribute('aria-label')?.startsWith('Add Funds ·'))
+   const close=funding?.querySelector('button[aria-label="Close dialog"]')
+   if(!funding||!close||close.disabled)throw new Error('Funding dialog unavailable for reader regression')
    for(const char of value.slice(0,8))emit(char)
    await new Promise((resolve,reject)=>{
-    const observer=new MutationObserver(()=>{if(!journal.isConnected){observer.disconnect();clearTimeout(timer);resolve()}})
+    const observer=new MutationObserver(()=>{if(funding.textContent.includes('An operation or recovery check is unresolved.')){observer.disconnect();clearTimeout(timer);resolve()}})
     const timer=setTimeout(()=>{observer.disconnect();reject(new Error('Expected funding-screen rerender did not occur'))},3000)
-    observer.observe(document.body,{childList:true,subtree:true});refresh.click()
+    observer.observe(document.body,{childList:true,subtree:true});close.click()
    })
    for(const char of value.slice(8))emit(char)
    emit('Enter');emit('Enter')

@@ -1,31 +1,63 @@
 'use client'
 import type { Permission } from '@/features/auth/domain'
 import { PRESET_LABELS,PRESET_DEFAULTS,accessDiff,type AccessPreset } from '@/features/auth/capabilities'
+import { AccessSnapshotSchema } from '@/features/access/domain'
 import { AccessEditor } from '@/features/access/AccessEditor'
 import { EffectiveAccess } from '@/features/access/EffectiveAccess'
 import { useCallback,useEffect,useRef,useState } from 'react'
 import { apiFetch,ClientApiError } from '@/lib/api/client'
-import { AdministrationRecoverySchema,type AdministrationSnapshot,type AdministrationResult,type AdministrationChange } from '../domain'
+import { AdministrationRecoverySchema,AdministrationSnapshotSchema,type StaffRecord,type AdministrationSnapshot,type AdministrationResult,type AdministrationChange } from '../domain'
 import { AdministrationForm,type AdministrationTarget } from './AdministrationForm'
 const storageKey='campuspay:administration-operation:v1'
 export function AdministrationScreen({enabled,userId,permissions,preset}:{enabled:boolean;userId:string;permissions:readonly Permission[];preset:AccessPreset}) {
  const [snapshot,setSnapshot]=useState<AdministrationSnapshot|null>(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false)
  const [staffOffset,setStaffOffset]=useState(0),[terminalOffset,setTerminalOffset]=useState(0),[pending,setPending]=useState<string|null>(null),[target,setTarget]=useState<AdministrationTarget|null>(null)
  const [editorKey,setEditorKey]=useState(0),[accessTarget,setAccessTarget]=useState<string|null>(null)
+ const [summary,setSummary]=useState<StaffRecord|null>(null),[summaryState,setSummaryState]=useState<'current'|'loading'|'stale'>('current')
+ const summaryGeneration=useRef(0),summaryFlight=useRef<{id:string;promise:Promise<void>}|null>(null)
  const canStaff=permissions.includes('staff.manage'),canTerminals=permissions.includes('terminals.manage'),canAccess=preset==='super_admin'&&permissions.includes('staff.access.manage')
  const [storageReady,setStorageReady]=useState(false),[storageBlocked,setStorageBlocked]=useState(false)
  const working=useRef(false),generation=useRef(0)
  function selectTarget(next:AdministrationTarget){
   // A selection is a fresh editing session, even for the same entity. Values
   // and optimistic preconditions must come from the same immutable snapshot.
+  summaryGeneration.current++;summaryFlight.current=null;setSummary(next.kind==='STAFF'?structuredClone(next.record):null);setSummaryState('current')
   setTarget(structuredClone(next));setEditorKey(n=>n+1)
  }
  const invalidateRefresh=useCallback(()=>{generation.current++},[])
  const refresh=useCallback(async()=>{
   const revision=++generation.current
-  const data=await apiFetch<AdministrationSnapshot>(`/api/administration?staffOffset=${staffOffset}&terminalOffset=${terminalOffset}`)
-  if(revision===generation.current)setSnapshot(data)
+  const data=AdministrationSnapshotSchema.parse(await apiFetch<unknown>(`/api/administration?staffOffset=${staffOffset}&terminalOffset=${terminalOffset}`))
+  if(revision===generation.current){setSnapshot(data);setSummary(current=>{const row=data.staff.find(r=>r.user_id===current?.user_id);return row&&current&&row.revision>=current.revision?row:current})}
  },[staffOffset,terminalOffset])
+ // The profile editor intentionally retains its immutable target and optimistic
+ // preconditions. Only the authoritative read display is replaced after access saves.
+ function refreshAccessDisplay(id:string):Promise<void>{
+  if(summaryFlight.current?.id===id)return summaryFlight.current.promise
+  const requestGeneration=++summaryGeneration.current
+  setSummaryState('loading')
+  const promise=(async()=>{
+   const results=await Promise.allSettled([
+    apiFetch<unknown>(`/api/administration/access/${id}`).then(raw=>{
+     const access=AccessSnapshotSchema.parse(raw)
+     if(access.user_id!==id)throw new Error('Employee identity did not match')
+     return access
+    }),refresh(),
+   ])
+   if(requestGeneration!==summaryGeneration.current)return
+   const [access,directory]=results
+   if(access.status==='rejected'||directory.status==='rejected'){
+    setSummaryState('stale');setError('The access change is confirmed, but the employee display could not refresh. Permissions shown in the directory may be stale. Retry the employee access refresh before relying on them.')
+    throw new Error('Employee access display is stale')
+   }
+   setSummary(current=>current?.user_id===id?{...current,...access.value}:current)
+   setSummaryState('current');setError('')
+  })()
+  const flight={id,promise};summaryFlight.current=flight
+  void promise.finally(()=>{if(summaryFlight.current===flight)summaryFlight.current=null}).catch(()=>{})
+  return promise
+ }
+ useEffect(()=>()=>{summaryGeneration.current++;summaryFlight.current=null},[])
  useEffect(()=>{let active=true;void Promise.resolve().then(()=>{
   try{
    const raw=sessionStorage.getItem(storageKey)
@@ -74,8 +106,12 @@ export function AdministrationScreen({enabled,userId,permissions,preset}:{enable
   {pending&&<section className="uncertain-result"><h2>Administrative result needs confirmation</h2><p>Recovery returns the recorded outcome or closes the request so a delayed submission cannot apply afterward. No PIN is stored in browser recovery data.</p><button disabled={busy} onClick={()=>void recover()}>Recover administrative result</button></section>}
   {snapshot&&<>{permissions.includes('staff.read')&&<section className="panel"><h2>Staff directory</h2><p>Staff sign in with an employee code. Students use their card and PIN under Students. Deactivate staff instead of deleting identities linked to transactions.</p>{canAccess&&<button className="primary-action" disabled={!canChange} onClick={()=>selectTarget({kind:'CREATE'})}>Create employee</button>}<div className="table-scroll"><table><thead><tr><th>Name / code</th><th>Preset</th><th>Status</th><th>Employee</th></tr></thead><tbody>{snapshot.staff.map(r=><tr key={r.user_id}><td>{r.display_name}<small>{r.employee_code}</small></td><td>{PRESET_LABELS[r.preset]}<small>{accessDiff(PRESET_DEFAULTS[r.preset],r.permissions).added.length||accessDiff(PRESET_DEFAULTS[r.preset],r.permissions).removed.length?'Customized':'Preset defaults'}</small></td><td>{r.active?'Active':'Inactive'} · {r.has_pin?'PIN set':'No PIN'}</td><td>{<button className="table-link" onClick={()=>selectTarget({kind:'STAFF',record:r})}>Open employee</button>}{r.user_id===userId&&<small>Your current account</small>}</td></tr>)}</tbody></table></div><p>Showing {snapshot.staff.length?staffOffset+1:0}–{staffOffset+snapshot.staff.length} of {snapshot.staff_total} staff.</p><button disabled={busy||staffOffset===0} onClick={()=>setStaffOffset(n=>Math.max(0,n-50))}>Previous staff page</button><button disabled={busy||staffOffset+50>=snapshot.staff_total} onClick={()=>setStaffOffset(n=>n+50)}>Next staff page</button></section>}
   {permissions.includes('terminals.read')&&<section className="panel"><h2>Registered terminals</h2><p>Terminals appear after staff sign-in. Revocation applies to that browser token, not a physical-device ban.</p><div className="table-scroll"><table><thead><tr><th>Label / identifier</th><th>Access</th><th>Cash drawer</th><th>Manage</th></tr></thead><tbody>{snapshot.terminals.map(r=><tr key={r.terminal_id}><td>{r.label??'Unlabelled terminal'}<small>{r.terminal_id}</small>{r.terminal_id===snapshot.current_terminal_id&&<small>Your terminal</small>}</td><td>{r.active?'Active':'Inactive'}</td><td>{r.has_open_shift?'Open — close before deactivation':'No open shift'}</td><td>{canTerminals&&<button disabled={!canChange} onClick={()=>selectTarget({kind:'TERMINAL',record:r,isCurrent:r.terminal_id===snapshot.current_terminal_id})}>Manage terminal</button>}</td></tr>)}</tbody></table></div><p>Showing {snapshot.terminals.length?terminalOffset+1:0}–{terminalOffset+snapshot.terminals.length} of {snapshot.terminal_total} terminals.</p><button disabled={busy||terminalOffset===0} onClick={()=>setTerminalOffset(n=>Math.max(0,n-50))}>Previous terminal page</button><button disabled={busy||terminalOffset+50>=snapshot.terminal_total} onClick={()=>setTerminalOffset(n=>n+50)}>Next terminal page</button></section>}</>}
-  {target?.kind==='STAFF'&&<section className="panel"><h2>{target.record.display_name}</h2><p>{target.record.employee_code} · {PRESET_LABELS[target.record.preset]} · {target.record.active?'Active':'Inactive'}</p><EffectiveAccess permissions={target.record.permissions}/>{canAccess&&<button className="secondary-action" disabled={busy||!!pending} onClick={()=>setAccessTarget(target.record.user_id)}>Access</button>}</section>}
+  {target?.kind==='STAFF'&&summary?.user_id===target.record.user_id&&<section className="panel" aria-label="Selected employee access" aria-busy={summaryState==='loading'}><h2>{summary.display_name}</h2><p>{summary.employee_code} · {summary.active?'Active':'Inactive'}</p>
+   {summaryState==='current'?<><p>Current preset: {PRESET_LABELS[summary.preset]}</p><EffectiveAccess permissions={summary.permissions}/></>:<p role={summaryState==='stale'?'alert':'status'}>{summaryState==='loading'?'Refreshing authoritative employee access…':'Employee access display is stale. Current permissions could not be verified.'}</p>}
+   {summaryState!=='current'&&canAccess&&<button className="secondary-action" disabled={summaryState==='loading'} onClick={()=>void refreshAccessDisplay(summary.user_id).catch(()=>{})}>Retry employee access refresh</button>}
+   {summary.revision!==target.record.revision&&<p className="notice">Access changed. Unsaved profile edits are retained with their original concurrency checks; reopen the profile before submitting it if the server reports a stale editing snapshot.</p>}
+   {canAccess&&<button className="secondary-action" disabled={busy||!!pending||summaryState!=='current'} onClick={()=>setAccessTarget(target.record.user_id)}>Access</button>}</section>}
   {canEditTarget&&(!pending||busy)&&target&&<AdministrationForm key={editorKey} target={target} busy={busy} onSubmit={submit} onCancel={()=>setTarget(null)} />}
-  {accessTarget&&<AccessEditor targetId={accessTarget} currentUserId={userId} enabled={Boolean(enabled&&snapshot?.enabled)} canReadAudit={permissions.includes('audit.read')} onClose={()=>setAccessTarget(null)} onChanged={refresh}/>}
+  {accessTarget&&<AccessEditor targetId={accessTarget} currentUserId={userId} enabled={Boolean(enabled&&snapshot?.enabled)} canReadAudit={permissions.includes('audit.read')} onClose={()=>setAccessTarget(null)} onChanged={()=>refreshAccessDisplay(accessTarget)}/>}
  </main>
 }
