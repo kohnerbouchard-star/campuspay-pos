@@ -37,7 +37,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           test ! -e .env.local
-          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.$schema,"https://openapi.vercel.sh/vercel.json");assert.equal(c.git.deploymentEnabled["release/campuspay-app-integration-20261008"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.$schema,"https://openapi.vercel.sh/vercel.json");assert.equal(c.git.deploymentEnabled["release/campuspay-app-integration-20261008"],false);assert.equal(c.git.deploymentEnabled["feat/effective-access-workspaces-20261005"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
           node -e "if (!['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL_UNPOOLED).hostname)) process.exit(1)"
           mkdir -p .validation
           git rev-parse HEAD > .validation/tested-commit.txt
@@ -126,7 +126,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           test ! -e .env.local
-          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.$schema,"https://openapi.vercel.sh/vercel.json");assert.equal(c.git.deploymentEnabled["release/campuspay-app-integration-20261008"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.$schema,"https://openapi.vercel.sh/vercel.json");assert.equal(c.git.deploymentEnabled["release/campuspay-app-integration-20261008"],false);assert.equal(c.git.deploymentEnabled["feat/effective-access-workspaces-20261005"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
           node -e "if (!['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL_UNPOOLED).hostname)) process.exit(1)"
           mkdir -p .validation
           git rev-parse HEAD > .validation/tested-commit.txt
@@ -192,7 +192,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
           test ! -e .env.local
-          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.$schema,"https://openapi.vercel.sh/vercel.json");assert.equal(c.git.deploymentEnabled["release/campuspay-app-integration-20261008"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.$schema,"https://openapi.vercel.sh/vercel.json");assert.equal(c.git.deploymentEnabled["release/campuspay-app-integration-20261008"],false);assert.equal(c.git.deploymentEnabled["feat/effective-access-workspaces-20261005"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
           node -e "if (!['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL_UNPOOLED).hostname)) process.exit(1)"
           mkdir -p .validation
           git rev-parse HEAD > .validation/tested-commit.txt

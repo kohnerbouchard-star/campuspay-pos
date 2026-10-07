@@ -8,6 +8,7 @@
       "fix/runtime-security-dependencies-20261007": false,
       "fix/stock-removal-recovery-20261007": false,
       "local/ui-integration-preview-20261007": false,
+      "feat/effective-access-workspaces-20261005": false,
       "release/campuspay-app-integration-20261008": false
     }
   }
