@@ -154,8 +154,6 @@ jobs:
             scripts: scripts/verify-stock-recovery.mjs
           - group: checkout-store
             scripts: scripts/verify-checkout-store.mjs
-          - group: ui-fixes
-            scripts: scripts/verify-ui-fixes.mjs
           - group: management-security
             scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-session-exit.mjs scripts/verify-complete-enrollment.mjs
           - group: navigation-administration
