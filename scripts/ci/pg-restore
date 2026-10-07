@@ -1,4 +1,0 @@
-#!/bin/sh
-set -eu
-: "${PG_TOOL_CONTAINER:?Disposable CI PostgreSQL container required}"
-exec docker exec -i -e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE -e PGSSLMODE "$PG_TOOL_CONTAINER" pg_restore "$@"

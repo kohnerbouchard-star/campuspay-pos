@@ -1,5 +1,0 @@
-/* Record management: readable identifiers and visible, touch-sized actions. */
-.management-editor { border-top: 1px solid var(--line); padding-top: 1rem; }
-.recovery-reference { overflow-wrap: anywhere; }
-[aria-label="Managed records"] .table-action { min-height: 44px; margin: .15rem; }
-[aria-label="Student account lifecycle"] { margin-top: 1rem; }
