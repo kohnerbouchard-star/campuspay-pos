@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Render the unchanged real-component fixture before changing a failing locator.
-// Synthetic data, loopback only; deliberately retain exact label/role diagnostics.
+// Render the real-component fixture and retain exact label/role diagnostics.
+// Synthetic data and loopback only; no application or financial requests.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -15,7 +15,7 @@ try{
  const outputs=(Array.isArray(bundle)?bundle:[bundle]).flatMap(b=>b.output)
  const script=outputs.find(o=>o.type==='chunk'&&o.isEntry)?.code;assert.ok(script)
  const css=fs.readFileSync('src/app/globals.css','utf8')+'\n'+fs.readFileSync('src/app/usability.css','utf8')
- server=createServer((req,res)=>{if(req.url==='/fixture.js'){res.setHeader('Content-Type','text/javascript');res.end(script)}else if(req.url==='/fixture.css'){res.setHeader('Content-Type','text/css');res.end(css)}else if(req.url?.startsWith('/?')){res.setHeader('Content-Type','text/html');res.end('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>')}else{res.statusCode=404;res.end()}})
+ server=createServer((req,res)=>{if(req.url==='/fixture.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');res.end(script)}else if(req.url==='/fixture.css'){res.setHeader('Content-Type','text/css; charset=utf-8');res.end(css)}else if(req.url?.startsWith('/?')){res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>')}else{res.statusCode=404;res.end()}})
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`
  browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH}:{})})
  const context=await browser.newContext({viewport:{width:1440,height:1000}})
@@ -33,9 +33,13 @@ try{
  })
  await page.goto(`${base}/?screen=students`);await page.getByLabel('Search students',{exact:true}).fill('Synthetic')
  await expect(page.getByRole('row').filter({hasText:'UI-001'})).toBeVisible()
+ diagnostics.characterSet=await page.evaluate(()=>document.characterSet);assert.equal(diagnostics.characterSet,'UTF-8')
+ await expect(page.getByText('MICA Money · E202',{exact:true})).toBeVisible()
  diagnostics.controls=await page.locator('input,select').evaluateAll(nodes=>nodes.map(n=>({tag:n.tagName,outerHTML:n.outerHTML,labels:[...(n.labels??[])].map(l=>({text:l.textContent,html:l.outerHTML})),ariaLabel:n.getAttribute('aria-label'),ariaLabelledBy:n.getAttribute('aria-labelledby')})))
  diagnostics.exactStudentYearLabelCount=await page.getByLabel('Student Year',{exact:true}).count()
  diagnostics.exactStudentYearRoleCount=await page.getByRole('combobox',{name:'Student Year',exact:true}).count()
+ await expect(page.getByRole('combobox',{name:'Student Year',exact:true})).toHaveCount(1)
+ await expect(page.getByRole('combobox',{name:'Student Year',exact:true})).toHaveAccessibleName('Student Year')
  diagnostics.comboboxAccessibleSnapshot=await page.getByRole('combobox').ariaSnapshot()
  diagnostics.bodyAccessibleSnapshot=await page.locator('body').ariaSnapshot()
  diagnostics.bodyHTML=await page.locator('body').innerHTML()

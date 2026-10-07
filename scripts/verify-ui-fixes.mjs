@@ -17,14 +17,14 @@ const ready={database_enabled:true,cash_enabled:true,drawer_open:true,drawer_ass
 const gate=()=>{let resolve;const promise=new Promise(r=>{resolve=r});return {promise,resolve}}
 const success=(route,data)=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,data})})
 const failure=route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,error:{code:'UNAVAILABLE',message:'Synthetic readiness/refresh failure'}})})
-const checks=[],errors=[];let browser,server,phase='bundle'
+const checks=[],errors=[],consoleMessages=[],network=[];let browser,server,activePage,phase='bundle'
 try{
  const bundle=await build({configFile:false,envFile:false,logLevel:'error',resolve:{alias:{'@':path.resolve('src')}},define:{'process.env':'{"NODE_ENV":"production"}','process.browser':'true'},oxc:{jsx:{runtime:'automatic'}},build:{write:false,minify:false,lib:{entry:'scripts/ui-fixes-fixture.tsx',formats:['iife'],name:'CampusPayUiFixture'},rolldownOptions:{output:{inlineDynamicImports:true}}}})
  const outputs=(Array.isArray(bundle)?bundle:[bundle]).flatMap(b=>b.output)
  const script=outputs.find(o=>o.type==='chunk'&&o.isEntry)?.code
  assert.ok(script,'Fixture must have one browser entry')
  const css=fs.readFileSync('src/app/globals.css','utf8')+'\n'+fs.readFileSync('src/app/usability.css','utf8')
- server=createServer((req,res)=>{if(req.url==='/fixture.js'){res.setHeader('Content-Type','text/javascript');res.end(script)}else if(req.url==='/fixture.css'){res.setHeader('Content-Type','text/css');res.end(css)}else if(req.url==='/'||req.url?.startsWith('/?')){res.setHeader('Content-Type','text/html');res.end('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>')}else{res.statusCode=404;res.end()}})
+ server=createServer((req,res)=>{if(req.url==='/fixture.js'){res.setHeader('Content-Type','text/javascript; charset=utf-8');res.end(script)}else if(req.url==='/fixture.css'){res.setHeader('Content-Type','text/css; charset=utf-8');res.end(css)}else if(req.url==='/'||req.url?.startsWith('/?')){res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><div id="root"></div><script src="/fixture.js"></script></body></html>')}else{res.statusCode=404;res.end()}})
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`
  browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH}:{})})
  async function session(width=1440){
@@ -32,7 +32,11 @@ try{
   // Next injects a browser process shim in the real application. This isolated
   // library bundle must supply that same browser environment, not a Node process.
   await context.addInitScript(()=>{Object.defineProperty(globalThis,'process',{value:{env:{NODE_ENV:'production'},browser:true,nextTick:(callback,...args)=>queueMicrotask(()=>callback(...args))},configurable:true})})
-  const page=await context.newPage();page.setDefaultTimeout(12000);page.on('pageerror',e=>{errors.push(e.message);console.error('Synthetic fixture browser error:',e.message)});page.on('dialog',d=>d.accept())
+  const page=await context.newPage();activePage=page;page.setDefaultTimeout(12000);
+  page.on('console',m=>consoleMessages.push({phase,type:m.type(),text:m.text()}));
+  page.on('response',r=>network.push({phase,path:new URL(r.url()).pathname,status:r.status()}));
+  page.on('requestfailed',r=>network.push({phase,path:new URL(r.url()).pathname,failed:r.failure()?.errorText}));
+  page.on('pageerror',e=>{errors.push(e.message);console.error('Synthetic fixture browser error:',e.message)});page.on('dialog',d=>d.accept())
   const model={requests:[],getReady:route=>success(route,ready),funding:route=>route.abort('failed'),accessLost:false,directoryFails:false,accessReadFailures:0,
    employee:{user_id:id(500),employee_code:'UI-EMP',display_name:'Synthetic employee',active:true,role:'cashier',has_pin:true,preset:'staff',permissions:[...PRESET_DEFAULTS.staff],revision:1,updated_at:'2026-01-01T00:00:00Z'}}
   await context.route('**/*',async route=>{
@@ -62,14 +66,16 @@ try{
    if(url.pathname==='/api/administration/access/recover')return success(route,{outcome:'COMPLETED',audit_reference:'UI-ACCESS-1',sessions_revoked:1})
    throw new Error(`Unexpected synthetic request: ${req.method()} ${url.pathname}`)
   })
-  return {context,page,model,go:screen=>page.goto(`${base}/?screen=${screen}`)}
+  return {context,page,model,go:async screen=>{const response=await page.goto(`${base}/?screen=${screen}`);assert.equal(response.status(),200);assert.equal(await page.evaluate(()=>document.characterSet),'UTF-8');return response}}
  }
  const mutations=model=>model.requests.filter(r=>r.method!=='GET')
  const openStudent=async(page,code='UI-001')=>{await page.getByLabel('Search students',{exact:true}).fill(code);const button=page.getByRole('row').filter({hasText:code}).getByRole('button');await button.click();return page.getByRole('dialog',{name:/^Student account ·/})}
  const openFunding=async page=>{await page.getByRole('button',{name:'Add Funds',exact:true}).click();return page.getByRole('dialog',{name:/^Add Funds ·/})}
  for(const width of [1440,390]){
   phase=`student panel ${width}`;const {page,context,model,go}=await session(width);await go('students')
-  await page.getByLabel('Search students',{exact:true}).fill('Synthetic');await page.getByLabel('Student Year',{exact:true}).selectOption('7')
+  await expect(page.getByText('MICA Money · E202',{exact:true})).toBeVisible();
+  const yearFilter=page.getByRole('combobox',{name:'Student Year',exact:true});await expect(yearFilter).toHaveCount(1);await expect(yearFilter).toHaveAccessibleName('Student Year');await expect(yearFilter.locator('option')).toHaveCount(14);
+  await page.getByLabel('Search students',{exact:true}).fill('Synthetic');await page.getByRole('combobox',{name:'Student Year',exact:true}).selectOption('7')
   await expect(page.getByRole('row').filter({hasText:'UI-001'})).toBeVisible();await page.getByRole('button',{name:'Next',exact:true}).click()
   const row=page.locator(`#student-select-${id(61)}`);await expect(row).toBeEnabled();await row.focus()
   const scroller=page.locator('.student-directory .table-scroll');const before=await scroller.evaluate(n=>({list:n.scrollTop,page:window.scrollY}))
@@ -82,7 +88,7 @@ try{
   for(const key of ['Tab','Shift+Tab'])for(let i=0;i<8;i++){await page.keyboard.press(key);assert.ok(await dialog.evaluate(n=>n.contains(document.activeElement)))}
   await page.screenshot({path:`${out}/student-panel-${width}.png`})
   await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(row).toBeFocused()
-  await expect(page.getByLabel('Search students',{exact:true})).toHaveValue('Synthetic');await expect(page.getByLabel('Student Year',{exact:true})).toHaveValue('7')
+  await expect(page.getByLabel('Search students',{exact:true})).toHaveValue('Synthetic');await expect(page.getByRole('combobox',{name:'Student Year',exact:true})).toHaveValue('7')
   await expect(page.getByText('51–100 of 120',{exact:true})).toBeVisible();assert.deepEqual(await scroller.evaluate(n=>({list:n.scrollTop,page:window.scrollY})),before)
   assert.equal(mutations(model).length,0);await context.close();checks.push(`${width}px keyboard selection, viewport detail, focus trap/return and preserved search/year/page/list/page scroll`)
  }
@@ -150,7 +156,8 @@ try{
   await page.getByRole('button',{name:'Open employee',exact:true}).click();await page.getByLabel('Staff display name',{exact:true}).fill('Unrelated unsaved profile name')
   await page.getByLabel('Reason and verification evidence',{exact:true}).fill('Keep this unrelated unsaved profile reason')
   await page.getByRole('button',{name:'Access',exact:true}).click();const editor=page.getByRole('dialog',{name:'Employee Access',exact:true})
-  await editor.getByLabel('Preset',{exact:true}).selectOption('manager');await editor.getByRole('button',{name:'Reset to Manager defaults',exact:true}).click()
+  const presetSelect=editor.getByRole('combobox',{name:'Preset',exact:true});await expect(presetSelect).toHaveCount(1);await expect(presetSelect).toHaveAccessibleName('Preset');
+  await presetSelect.selectOption('manager');await editor.getByRole('button',{name:'Reset to Manager defaults',exact:true}).click()
   await editor.getByLabel('Reason for access change',{exact:true}).fill('Synthetic reviewed permission update')
   await editor.getByLabel('Your current Super Admin PIN',{exact:true}).fill('12345678');await editor.getByRole('button',{name:'Review access changes',exact:true}).click()
   const review=page.getByRole('dialog',{name:'Save employee access?',exact:true});await review.getByRole('textbox',{name:'Type UI-EMP to confirm',exact:true}).fill('UI-EMP');return {editor,review}
@@ -191,5 +198,9 @@ try{
  }
  assert.deepEqual(errors,[])
  fs.writeFileSync(`${out}/results.json`,JSON.stringify({passed:true,checks,browserErrors:errors},null,2));console.log(JSON.stringify({passed:true,checks},null,2))
-}catch(error){fs.writeFileSync(`${out}/results.json`,JSON.stringify({passed:false,phase,checks,error:String(error),browserErrors:errors},null,2));console.error('UI fixes regression failed:',phase,error,JSON.stringify({browserErrors:errors}));process.exitCode=1}
+}catch(error){
+ const diagnostic={phase,console:consoleMessages.slice(-40),network:network.slice(-60)}
+ if(activePage&&!activePage.isClosed()){try{diagnostic.characterSet=await activePage.evaluate(()=>document.characterSet);diagnostic.dom=await activePage.locator('body').innerHTML();diagnostic.accessibility=await activePage.locator('body').ariaSnapshot();await activePage.screenshot({path:`${out}/failure.png`})}catch(cause){diagnostic.captureError=String(cause)}}
+ fs.writeFileSync(`${out}/failure-diagnostics.json`,JSON.stringify(diagnostic,null,2));console.error('UI_FAILURE_DIAGNOSTICS '+JSON.stringify(diagnostic))
+ fs.writeFileSync(`${out}/results.json`,JSON.stringify({passed:false,phase,checks,error:String(error),browserErrors:errors},null,2));console.error('UI fixes regression failed:',phase,error,JSON.stringify({browserErrors:errors}));process.exitCode=1}
 finally{await browser?.close();if(server)await new Promise(r=>server.close(r))}
