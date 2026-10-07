@@ -28,6 +28,6 @@ export const fetchPaymentPolicy = () => apiFetch<PaymentPolicy>('/api/pos/paymen
 export const savePaymentPolicy = (cashEnabled: boolean, eventName: string | null, endsAt: string | null) => apiFetch<PaymentPolicy>('/api/pos/payment-policy', { method: 'POST', body: JSON.stringify({ cashEnabled, eventName, endsAt }) })
 export const cancelPaymentIntent = (intentId: string) => apiFetch<{ cancelled: boolean }>(`/api/pos/intents/${intentId}/cancel`, { method: 'POST', body: '{}' })
 
-export const recoverPaymentIntent = (intentId: string) => apiFetch<PaymentRecovery>(`/api/pos/intents/${intentId}/recover`, { method: 'POST', body: '{}' })
+export const recoverPaymentIntent = (intentId: string) => apiFetch<PaymentRecovery>(`/api/pos/intents/${intentId}/recover`, { method: 'POST', signal: AbortSignal.timeout(30_000), body: '{}' })
 
 export const submitTenderPlan = (intentId: string, walletAmountWon: number) => apiFetch<PaymentIntent>(`/api/pos/intents/${intentId}/tender`, { method: 'POST', body: JSON.stringify({ walletAmountWon }) })

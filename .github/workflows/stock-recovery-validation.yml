@@ -1,0 +1,229 @@
+# Branch-owned isolated qualification; no deployment credentials or release actions.
+name: CampusPay stock recovery qualification
+on:
+  pull_request:
+    branches: [feat/effective-access-workspaces-20261005]
+permissions:
+  contents: read
+jobs:
+  validate:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/stock-removal-recovery-20261007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+      CAMPUSPAY_LOCAL_HTTP: 'true'
+      APP_ORIGIN: 'http://localhost:3000'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify source and isolated target
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test ! -e .env.local
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.deepEqual(c,{$schema:"https://openapi.vercel.sh/vercel.json",git:{deploymentEnabled:{"fix/stock-removal-recovery-20261007":false}}});'
+          node -e "if (!['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL_UNPOOLED).hostname)) process.exit(1)"
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+      - name: Record exact candidate source for reproducible validation
+        run: |
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+          git archive --format=tar.gz --output=.validation/tested-source.tar.gz HEAD
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: node scripts/verify-local-repair.mjs
+      - run: node scripts/verify-workflow-pins.mjs
+      - run: node --experimental-strip-types --test --experimental-test-coverage --test-coverage-include='src/lib/http/deployment-policy.ts' --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=85 scripts/production-boundaries.test.mjs
+      - run: node --test scripts/backup-envelope.test.mjs scripts/backup-file.test.mjs
+      - run: npm ci
+      # Collect functional diagnostics even when the audit is red. The final
+      # unconditional gate below still makes this SAME validate job fail.
+      - name: Complete dependency audit including development tools
+        id: complete_dependency_audit
+        continue-on-error: true
+        run: npm audit --audit-level=high --json > .validation/dependency-audit.json
+      # Diagnose every core gate without hiding any failure. Existing gates and
+      # dependency policy are unchanged; each failing command fails this step.
+      - name: Run every core functional gate
+        run: |
+          failed=0
+          check() {
+            if "$@"; then
+              echo "PASS $*"
+            else
+              failed=1
+              echo "FAIL $*"
+            fi
+          }
+          check npm run validate:static
+          check node --experimental-strip-types --no-warnings --test scripts/navigation-ux.test.mjs
+          check node --experimental-strip-types --no-warnings --test scripts/receipt-policy-recovery.test.mjs scripts/request-validation.test.mjs
+          check npm run typecheck
+          check npm test
+          check npm run lint
+          check npm run build
+          check npm run db:migrate
+          check node scripts/verify-runtime-readiness.mjs
+          check node scripts/verify-student-roster.mjs
+          exit "$failed"
+      - name: Enforce runtime dependency audit
+        if: always()
+        run: npm run security:dependencies
+      - name: Enforce complete dependency audit policy
+        if: always()
+        run: node scripts/validate-complete-audit.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: stock-recovery-core-results
+          path: .validation/
+          include-hidden-files: true
+
+  access-database:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/stock-removal-recovery-20261007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify source and isolated target
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test ! -e .env.local
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.deepEqual(c,{$schema:"https://openapi.vercel.sh/vercel.json",git:{deploymentEnabled:{"fix/stock-removal-recovery-20261007":false}}});'
+          node -e "if (!['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL_UNPOOLED).hostname)) process.exit(1)"
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: node --experimental-strip-types --no-warnings scripts/verify-effective-access.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: stock-recovery-access-results
+          path: .validation/access/
+          include-hidden-files: true
+
+  regression:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/stock-removal-recovery-20261007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: stock-recovery
+            scripts: scripts/verify-stock-recovery.mjs
+          - group: management-security
+            scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-complete-enrollment.mjs
+          - group: navigation-administration
+            scripts: scripts/verify-access-workspaces.mjs scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs
+          - group: refunds-operations
+            scripts: scripts/verify-sale-refunds.mjs scripts/verify-operations.mjs scripts/verify-refund-preview.mjs scripts/verify-partial-refunds.mjs
+          - group: funding-history
+            scripts: scripts/verify-funding.mjs scripts/verify-history.mjs scripts/verify-reconciliation.mjs
+          - group: integration-recovery
+            scripts: scripts/verify-receipt-policy-recovery.mjs scripts/integration-test.mjs scripts/verify-backup-restore.mjs
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+      CAMPUSPAY_LOCAL_HTTP: 'true'
+      APP_ORIGIN: http://localhost:3000
+      PG_DUMP_BIN: ./scripts/ci/pg-dump
+      PG_RESTORE_BIN: ./scripts/ci/pg-restore
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify source and isolated target
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test ! -e .env.local
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.deepEqual(c,{$schema:"https://openapi.vercel.sh/vercel.json",git:{deploymentEnabled:{"fix/stock-removal-recovery-20261007":false}}});'
+          node -e "if (!['localhost','127.0.0.1'].includes(new URL(process.env.DATABASE_URL_UNPOOLED).hostname)) process.exit(1)"
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npm run db:migrate
+      - run: npx playwright install --with-deps chromium
+      - name: Verify every regression in this group
+        env:
+          CHECK_SCRIPTS: ${{ matrix.scripts }}
+          PG_TOOL_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+          failed=0
+          for script in $CHECK_SCRIPTS; do
+            if node --experimental-strip-types --no-warnings "$script"; then
+              echo "PASS $script"
+            else
+              failed=1
+              echo "FAIL $script"
+            fi
+          done
+          exit "$failed"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: stock-recovery-regression-${{ matrix.group }}
+          path: .validation/
+          include-hidden-files: true

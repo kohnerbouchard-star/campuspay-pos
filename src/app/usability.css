@@ -22,3 +22,18 @@
 @media(max-width:650px){.matrix-table table,.matrix-table tbody,.matrix-table tr,.matrix-table td,.matrix-table th{display:block;}.matrix-table thead{display:none;}.matrix-table caption{display:none;}.matrix-table tr{border-bottom:1px solid var(--border,#ddd);padding:.7rem 0;}.matrix-table td{padding:.3rem;}.matrix-table td:has(span[aria-label="Not applicable"]){display:none;}.matrix-cell-label{max-width:none;}}
 
 .dialog.access-dialog{width:min(100% - 32px,960px);}
+
+/* Student selection is out of document flow. Do not change the shared table-panel
+   full-width rule: other workspaces rely on it. The directory stays mounted. */
+.students-directory-layout{display:grid;gap:20px;min-width:0;}
+.student-directory .table-scroll{max-height:55dvh;overflow:auto;overscroll-behavior:contain;}
+.student-directory .selected-row{outline:2px solid var(--accent);outline-offset:-2px;}
+.dialog.student-detail-dialog{position:fixed;inset:0 0 0 auto;margin:0;width:min(44rem,60vw);max-width:100vw;height:100dvh;max-height:100dvh;border-radius:var(--radius-lg) 0 0 var(--radius-lg);overscroll-behavior:contain;}
+.student-detail-dialog>.panel-heading{position:sticky;top:-24px;z-index:1;background:var(--surface,#fff);padding-block:12px;align-items:start;}
+.student-detail-dialog>.panel-heading h2{overflow-wrap:anywhere;}
+.student-detail-content{min-width:0;}
+.student-detail-content>.action-row{margin-block:16px;}
+@media(max-width:768px){
+ .dialog.student-detail-dialog{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;}
+ .student-detail-dialog>.panel-heading{top:-20px;}
+}

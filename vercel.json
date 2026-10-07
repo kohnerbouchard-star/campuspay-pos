@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "fix/checkout-store-consistency-20261007": false,
+      "fix/ui-student-access-readiness-20261007": false,
+      "fix/local-financial-session-followups-20261007": false,
+      "fix/runtime-security-dependencies-20261007": false,
+      "fix/stock-removal-recovery-20261007": false,
+      "local/ui-integration-preview-20261007": false,
+      "release/campuspay-app-integration-20261008": false
+    }
+  }
+}

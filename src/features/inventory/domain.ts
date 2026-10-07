@@ -48,7 +48,23 @@ export const StockAdjustmentSchema = z.object({
   reasonCode: StockAdjustmentReasonSchema,
   notes: z.string().trim().min(3).max(500),
   idempotencyKey: z.string().uuid(),
-})
+}).strict()
+
+export const StockAdjustmentRecoveryInputSchema = z.object({ idempotencyKey: z.string().uuid() }).strict()
+export const StockAdjustmentResultSchema = z.object({
+  idempotency_key: z.string().uuid(),
+  reference_id: z.string().uuid(),
+  reference_number: z.string().regex(/^ADJ-\d{8}-\d+$/),
+  created_at: z.iso.datetime({ offset: true }),
+}).strict()
+export const StockAdjustmentRecoverySchema = z.discriminatedUnion('state', [
+  StockAdjustmentResultSchema.extend({
+    state: z.literal('POSTED'),
+    quantity_removed: z.number().int().positive().max(1_000_000),
+    total_cost_won: z.number().int().nonnegative(),
+  }).strict(),
+  z.object({ state: z.literal('CLOSED'), idempotency_key: z.string().uuid() }).strict(),
+])
 
 export const InventoryLotSchema = z.object({
   lot_id: z.string().uuid(),

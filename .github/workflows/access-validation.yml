@@ -43,7 +43,7 @@ jobs:
       matrix:
         include:
           - group: management-security
-            scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-complete-enrollment.mjs
+            scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-session-exit.mjs scripts/verify-complete-enrollment.mjs
           - group: navigation-administration
             scripts: scripts/verify-access-workspaces.mjs scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs
           - group: refunds-operations

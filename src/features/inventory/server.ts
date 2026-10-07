@@ -3,7 +3,7 @@ import { InventoryProductSchema } from '@/features/inventory/domain'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
-  InventoryLotsSchema, MutationResultSchema, ReceiptResultSchema,
+  InventoryLotsSchema, MutationResultSchema, ReceiptResultSchema, StockAdjustmentResultSchema, StockAdjustmentRecoverySchema,
   type ReceiveStockSchema, type StockAdjustmentSchema,
 } from '@/features/inventory/domain'
 import { callApiRpc } from '@/lib/db/rpc'
@@ -49,8 +49,8 @@ export function receiveStock(session: SessionContext, input: z.infer<typeof Rece
   }, z.array(ReceiptResultSchema).length(1).transform(([row]) => row))
 }
 
-export function removeStock(session: SessionContext, input: z.infer<typeof StockAdjustmentSchema>) {
-  return callApiRpc('remove_stock', {
+export async function removeStock(session: SessionContext, input: z.infer<typeof StockAdjustmentSchema>) {
+  const result = await callApiRpc('remove_stock', {
     p_session_id: session.session_id,
     p_product_id: input.productId,
     p_lot_id: input.lotId ?? null,
@@ -59,6 +59,14 @@ export function removeStock(session: SessionContext, input: z.infer<typeof Stock
     p_notes: input.notes,
     p_idempotency_key: input.idempotencyKey,
   }, z.array(MutationResultSchema).length(1).transform(([row]) => row))
+  // The SQL driver's raw timestamptz text uses a space and +00; publish a
+  // canonical ISO timestamp for the strict browser response contract.
+  return StockAdjustmentResultSchema.parse({ ...result, created_at: new Date(result.created_at).toISOString(), idempotency_key: input.idempotencyKey })
+}
+
+export function recoverStockAdjustment(session: SessionContext, idempotencyKey: string) {
+  return callApiRpc('recover_stock_adjustment', { p_session_id: session.session_id, p_idempotency_key: idempotencyKey },
+    z.array(z.object({ result: StockAdjustmentRecoverySchema })).length(1).transform(([row]) => row.result))
 }
 
 export function inventoryProducts(session: SessionContext) {

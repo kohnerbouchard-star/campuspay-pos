@@ -9,8 +9,10 @@ export function login(employeeCode: string, pin: string) {
   })
 }
 
-export function logout() {
-  return apiFetch<{ signedOut: true }>('/api/auth/logout', { method: 'POST' })
+export async function logout() {
+  const value = await apiFetch<unknown>('/api/auth/logout', { method: 'POST' })
+  if (!value || typeof value !== 'object' || !('signedOut' in value) || value.signedOut !== true) throw new Error('Sign-out response was not confirmed')
+  return { signedOut: true as const }
 }
 
 export function recordActivity() {

@@ -1,0 +1,112 @@
+name: CampusPay isolated UI fixes validation
+on:
+  push:
+    branches: [fix/ui-student-access-readiness-20261007]
+  pull_request:
+    branches: [feat/effective-access-workspaces-20261005]
+permissions:
+  contents: read
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Record exact source identity
+        run: |
+          mkdir -p .validation/ui-fixes
+          git rev-parse HEAD > .validation/ui-fixes/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/ui-fixes/tested-tree.txt
+      - run: npm ci
+        id: install
+      - run: npm run typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm run lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm test
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm run validate:static
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm run build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npx playwright install --with-deps chromium
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Diagnose rendered fixture labels and network
+        run: node --experimental-strip-types --no-warnings scripts/diagnose-ui-labels.mjs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: node --experimental-strip-types --no-warnings scripts/verify-ui-fixes.mjs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Runtime dependency security gate
+        run: npm run security:dependencies
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Complete dependency security gate
+        run: npm audit --audit-level=high --json > .validation/ui-fixes/dependency-audit.json
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Print bounded UI test diagnostics
+        if: always()
+        run: |
+          for file in .validation/ui-fixes/tested-commit.txt .validation/ui-fixes/tested-tree.txt .validation/ui-fixes/results.json .validation/ui-fixes/label-diagnostics.json .validation/ui-fixes/dependency-audit.json; do
+            if [ -f "$file" ]; then echo "$file"; head -c 24000 "$file"; echo; fi
+          done
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: isolated-ui-fixes
+          path: .validation/ui-fixes/
+          include-hidden-files: true
+  native-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ui-ci-synthetic-only
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ui-ci-synthetic-only@localhost:5432/campuspay
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+      CAMPUSPAY_LOCAL_HTTP: 'true'
+      APP_ORIGIN: http://localhost:3000
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Existing native authorization, finance and browser regressions
+        run: |
+          mkdir -p .validation
+          git rev-parse HEAD > .validation/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/tested-tree.txt
+          failed=0
+          for script in scripts/verify-effective-access.mjs scripts/verify-access-workspaces.mjs scripts/verify-funding.mjs scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs scripts/verify-management-journeys.mjs; do
+            if node --experimental-strip-types --no-warnings "$script"; then
+              echo "PASS $script"
+            else
+              failed=1
+              echo "FAIL $script"
+            fi
+          done
+          exit "$failed"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ui-fixes-native-regressions
+          path: .validation/
+          include-hidden-files: true

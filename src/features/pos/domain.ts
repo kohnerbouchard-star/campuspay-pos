@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MAX_CART_QUANTITY } from '@/features/pos/quantity'
 import { eventPaymentIssue } from './payment-policy-validation'
 import { CouponCodeSchema } from '@/features/coupons/domain'
 
@@ -17,7 +18,7 @@ export const CatalogSchema = z.array(CatalogProductSchema)
 
 export const CartLineSchema = z.object({
   productId: z.string().uuid(),
-  quantity: z.number().int().min(1).max(99),
+  quantity: z.number().int().min(1).max(MAX_CART_QUANTITY),
 })
 export type CartLine = z.infer<typeof CartLineSchema>
 

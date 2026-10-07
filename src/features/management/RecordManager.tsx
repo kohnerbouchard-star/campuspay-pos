@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import type { LeaveState } from '@/components/ui/leave-state'
 import { apiFetch } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
@@ -7,7 +8,7 @@ import { RecordDirectorySchema, RecordChangeSchema, type RecordDirectory, type R
 import { useRecordOperation } from './use-record-operation'
 import { OperationFeedback } from './OperationFeedback'
 
-export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void|Promise<void>}) {
+export function RecordManager({kind,userId,targetId,onChanged,onLeaveStateChange}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void|Promise<void>;onLeaveStateChange?(state:LeaveState):void}) {
   const editorHeading=useRef<HTMLHeadingElement>(null)
   const reviewDeadline=useRef(0)
   const [data,setData]=useState<RecordDirectory|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true)
@@ -35,6 +36,7 @@ export function RecordManager({kind,userId,targetId,onChanged}:{kind:RecordKind;
     return()=>{active=false;clearTimeout(timer)}
   },[kind,query,status,offset,targetId,revision])
   const locked=loading||!operation.ready||operation.busy||operation.blocked||!!operation.pending
+  useEffect(()=>{onLeaveStateChange?.(!operation.ready||operation.busy||operation.blocked||operation.pending?'pending':selected||confirm?'dirty':'clean')},[operation.ready,operation.busy,operation.blocked,operation.pending,selected,confirm,onLeaveStateChange])
   function select(row:ManagedRecord,edit=false){setSelected(structuredClone(row));setEditing(edit);setName(row.name);setCategory(row.category??'');setReorder(row.reorder_level??0);setReason('');setPin('');setError('')}
   useEffect(()=>{if(selected&&!confirm){editorHeading.current?.focus();editorHeading.current?.scrollIntoView({block:'start'})}},[selected,confirm])
   const action=editing?'UPDATE_PRODUCT':kind==='PRODUCT'?(selected?.active?'ARCHIVE_PRODUCT':'RESTORE_PRODUCT'):(selected?.active?'DEACTIVATE_STUDENT':'REACTIVATE_STUDENT')

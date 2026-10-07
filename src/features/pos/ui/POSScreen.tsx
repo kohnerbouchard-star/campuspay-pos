@@ -2,9 +2,11 @@
 
 import './pos.css'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CouponQuote } from '@/features/coupons/domain'
-import { addProduct, cartTotal, changeQuantity, toCartLines, type CartState } from '@/features/pos/cart'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { previewCoupon } from '@/features/coupons/client'
+import { checkoutReducer, couponBlocksCheckout, initialCheckoutState } from '@/features/pos/checkout-state'
+import { confirmedReceipt } from '@/features/pos/confirmed-receipt'
+import { addProduct, cartTotal, changeQuantity, reconcileCart, toCartLines, type CartState } from '@/features/pos/cart'
 import type { CatalogProduct, PaymentIntent, PaymentReceipt, PaymentPolicy, TenderMode } from '@/features/pos/domain'
 import { fetchCatalog, fetchPaymentPolicy, openPaymentIntent, recoverPaymentIntent } from '@/features/pos/client'
 import { ProductGrid } from '@/features/pos/ui/ProductGrid'
@@ -20,8 +22,11 @@ import { Icon } from '@/components/ui/Icon'
 
 export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: string;canCheckout:boolean;canRedeem:boolean }) {
   const [products, setProducts] = useState<CatalogProduct[]>([])
-  const [cart, setCart] = useState<CartState>({})
-  const [coupon, setCoupon] = useState<{ code: string; quote: CouponQuote } | null>(null)
+  const [checkoutState, dispatch] = useReducer(checkoutReducer, initialCheckoutState)
+  const { cart } = checkoutState
+  const calculation = checkoutState.coupon
+  const coupon = calculation.status === 'ready' ? { code: calculation.request.code, quote: calculation.quote } : null
+  const couponBlocked = couponBlocksCheckout(calculation)
   const [intent, setIntent] = useState<PaymentIntent | null>(null)
   const [receipt, setReceipt] = useState<PaymentReceipt | null>(null)
   const [receiptItems, setReceiptItems] = useState<ReceiptLine[]>([])
@@ -45,9 +50,9 @@ export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: 
     const id = readPendingPayment()
     if (!id) return
     try {
-      const result = await recoverPaymentIntent(id)
+      const result = confirmedReceipt(await recoverPaymentIntent(id))
       forgetPendingPayment(); setRecoveryBlocked(false)
-      if (result.receipt) { setReceipt(result.receipt); setReceiptItems(result.items) }
+      if (result?.receipt) { setReceipt(result.receipt); setReceiptItems(result.items) }
     } catch {
       setRecoveryBlocked(true)
       throw new Error('A previous payment still needs a confirmed result. Sign in again on this register or retry recovery before starting another sale.')
@@ -56,14 +61,14 @@ export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: 
 
   async function load() {
     setLoading(true)
-    try { const [catalog, paymentPolicy] = await Promise.all([fetchCatalog(), fetchPaymentPolicy()]); setProducts(catalog); setPolicy(paymentPolicy); await recoverPending(); setError(null) }
+    try { const [catalog, paymentPolicy] = await Promise.all([fetchCatalog(), fetchPaymentPolicy()]); setProducts(catalog); dispatch({ type: 'cart', update: current => reconcileCart(current, catalog), invalidate: true }); setPolicy(paymentPolicy); await recoverPending(); setError(null) }
     catch (caught) { setError(caught instanceof Error ? caught.message : 'Catalog could not be loaded') }
     finally { setLoading(false) }
   }
   useEffect(() => {
     let active = true
     void Promise.all([fetchCatalog(), fetchPaymentPolicy()]).then(async ([catalog, paymentPolicy]) => {
-      if (active) { setProducts(catalog); setPolicy(paymentPolicy); await recoverPending(); setError(null) }
+      if (active) { setProducts(catalog); dispatch({ type: 'cart', update: current => reconcileCart(current, catalog), invalidate: true }); setPolicy(paymentPolicy); await recoverPending(); setError(null) }
     }).catch((caught: unknown) => {
       if (active) setError(caught instanceof Error ? caught.message : 'Catalog could not be loaded')
     }).finally(() => { if (active) setLoading(false) })
@@ -71,22 +76,30 @@ export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: 
   }, [recoverPending])
 
   function mutateCart(update: (current: CartState) => CartState) {
-    checkoutKey.current = null; setCoupon(null); setCart(update)
+    checkoutKey.current = null; dispatch({ type: 'cart', update })
+  }
+  async function applyCoupon(code: string) {
+    if (!canRedeem || pending.current || !cartLines.length) return
+    checkoutKey.current = null
+    const request = { id: crypto.randomUUID(), revision: checkoutState.revision, code }
+    dispatch({ type: 'coupon-start', request })
+    try { dispatch({ type: 'coupon-result', request, quote: await previewCoupon(cartLines, code) }) }
+    catch (caught) { dispatch({ type: 'coupon-error', request, message: caught instanceof Error ? caught.message : 'Coupon could not be checked.' }) }
   }
   async function checkout() {
-    if (!canCheckout || pending.current || !cartLines.length) return
+    if (!canCheckout || pending.current || couponBlocked || recoveryBlocked || loading || error || !cartLines.length) return
     pending.current = true; setBusy(true)
     checkoutKey.current ??= crypto.randomUUID()
     try {
       setIntent(await openPaymentIntent(cartLines, coupon?.code ?? null, tenderMode, null, checkoutKey.current))
-      setReceiptItems(products.filter(product => cart[product.id]).map(product => ({ name: product.name, quantity: cart[product.id], lineTotalWon: product.selling_price_won * cart[product.id] })))
+      setReceiptItems([])
       setError(null)
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Checkout could not be opened') }
     finally { pending.current = false; setBusy(false) }
   }
-  function completed(nextReceipt: PaymentReceipt, recoveredItems?: ReceiptLine[]) {
-    if (recoveredItems) setReceiptItems(recoveredItems)
-    setReceipt(nextReceipt); setIntent(null); setCart({}); setCoupon(null); setTenderMode('WALLET'); checkoutKey.current = null; void load()
+  function completed(nextReceipt: PaymentReceipt, recoveredItems: ReceiptLine[]) {
+    setReceiptItems(recoveredItems)
+    setReceipt(nextReceipt); setIntent(null); dispatch({ type: 'cart', update: () => ({}) }); setTenderMode('WALLET'); checkoutKey.current = null; void load()
   }
   const policyChanged = useCallback((next: PaymentPolicy) => { setPolicy(next); if (!next.cash_enabled) { setTenderMode('WALLET'); checkoutKey.current = null } }, [])
 
@@ -114,7 +127,8 @@ export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: 
       {canCheckout&&<a className="pos-cart-link" href="#pos-cart"><Icon name="bag" size={18} />View cart · {itemCount} {itemCount === 1 ? 'item' : 'items'}</a>}
       <ProductGrid canSelect={canCheckout} products={products} onSelect={product => mutateCart(current => addProduct(current, product))} />
       {canCheckout&&<CartPanel canRedeem={canRedeem} cart={cart} products={products} subtotal={subtotal} discount={discount} total={total} coupon={coupon} cartLines={cartLines}
-        onCouponApplied={(code, quote) => { checkoutKey.current = null; setCoupon({ code, quote }) }} onCouponRemoved={() => { checkoutKey.current = null; setCoupon(null) }}
+        onCouponApply={code => void applyCoupon(code)} couponChecking={calculation.status === 'pending'} couponError={calculation.status === 'error' ? calculation.message : null} couponBlocked={couponBlocked}
+        onCouponRemoved={() => { checkoutKey.current = null; dispatch({ type: 'coupon-clear' }) }}
         onChange={(id, delta, max) => mutateCart(current => changeQuantity(current, id, delta, max))} onCheckout={() => void checkout()}
         tenderMode={tenderMode} cashEnabled={policy?.cash_enabled ?? false} busy={busy || loading || recoveryBlocked}
         onTenderChange={mode => { setTenderMode(mode); checkoutKey.current = null }} />}
