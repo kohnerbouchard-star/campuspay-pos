@@ -38,12 +38,21 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npx playwright install --with-deps chromium
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Diagnose rendered fixture labels and network
+        run: node --experimental-strip-types --no-warnings scripts/diagnose-ui-labels.mjs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: node --experimental-strip-types --no-warnings scripts/verify-ui-fixes.mjs
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Runtime dependency security gate
+        run: npm run security:dependencies
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Complete dependency security gate
+        run: npm audit --audit-level=high --json > .validation/ui-fixes/dependency-audit.json
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - name: Print bounded UI test diagnostics
         if: always()
         run: |
-          for file in .validation/ui-fixes/tested-commit.txt .validation/ui-fixes/tested-tree.txt .validation/ui-fixes/results.json; do
+          for file in .validation/ui-fixes/tested-commit.txt .validation/ui-fixes/tested-tree.txt .validation/ui-fixes/results.json .validation/ui-fixes/label-diagnostics.json .validation/ui-fixes/dependency-audit.json; do
             if [ -f "$file" ]; then echo "$file"; head -c 24000 "$file"; echo; fi
           done
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
