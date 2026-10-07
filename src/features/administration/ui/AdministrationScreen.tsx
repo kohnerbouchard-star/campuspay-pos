@@ -14,6 +14,7 @@ export function AdministrationScreen({enabled,userId,permissions,preset}:{enable
  const [staffOffset,setStaffOffset]=useState(0),[terminalOffset,setTerminalOffset]=useState(0),[pending,setPending]=useState<string|null>(null),[target,setTarget]=useState<AdministrationTarget|null>(null)
  const [editorKey,setEditorKey]=useState(0),[accessTarget,setAccessTarget]=useState<string|null>(null)
  const [summary,setSummary]=useState<StaffRecord|null>(null),[summaryState,setSummaryState]=useState<'current'|'loading'|'stale'>('current')
+ const staleAccessIds=useRef(new Set<string>())
  const summaryGeneration=useRef(0),summaryFlight=useRef<{id:string;promise:Promise<void>}|null>(null)
  const canStaff=permissions.includes('staff.manage'),canTerminals=permissions.includes('terminals.manage'),canAccess=preset==='super_admin'&&permissions.includes('staff.access.manage')
  const [storageReady,setStorageReady]=useState(false),[storageBlocked,setStorageBlocked]=useState(false)
@@ -21,7 +22,7 @@ export function AdministrationScreen({enabled,userId,permissions,preset}:{enable
  function selectTarget(next:AdministrationTarget){
   // A selection is a fresh editing session, even for the same entity. Values
   // and optimistic preconditions must come from the same immutable snapshot.
-  summaryGeneration.current++;summaryFlight.current=null;setSummary(next.kind==='STAFF'?structuredClone(next.record):null);setSummaryState('current')
+  summaryGeneration.current++;summaryFlight.current=null;setSummary(next.kind==='STAFF'?structuredClone(next.record):null);setSummaryState(next.kind==='STAFF'&&staleAccessIds.current.has(next.record.user_id)?'stale':'current')
   setTarget(structuredClone(next));setEditorKey(n=>n+1)
  }
  const invalidateRefresh=useCallback(()=>{generation.current++},[])
@@ -35,7 +36,7 @@ export function AdministrationScreen({enabled,userId,permissions,preset}:{enable
  function refreshAccessDisplay(id:string):Promise<void>{
   if(summaryFlight.current?.id===id)return summaryFlight.current.promise
   const requestGeneration=++summaryGeneration.current
-  setSummaryState('loading')
+  staleAccessIds.current.add(id);setSummaryState('loading')
   const promise=(async()=>{
    const results=await Promise.allSettled([
     apiFetch<unknown>(`/api/administration/access/${id}`).then(raw=>{
@@ -51,7 +52,7 @@ export function AdministrationScreen({enabled,userId,permissions,preset}:{enable
     throw new Error('Employee access display is stale')
    }
    setSummary(current=>current?.user_id===id?{...current,...access.value}:current)
-   setSummaryState('current');setError('')
+   staleAccessIds.current.delete(id);setSummaryState('current');setError('')
   })()
   const flight={id,promise};summaryFlight.current=flight
   void promise.finally(()=>{if(summaryFlight.current===flight)summaryFlight.current=null}).catch(()=>{})

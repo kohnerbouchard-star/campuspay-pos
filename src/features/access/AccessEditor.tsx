@@ -26,7 +26,7 @@ export function AccessEditor({targetId,currentUserId,enabled,canReadAudit,onClos
  // Notify the parent even when the editor's own GET fails after a confirmed
  // (or recovered) result. Neither refresh is a financial/access mutation.
  async function refreshConfirmedDisplay(){
-  try{await Promise.all([refresh(),Promise.resolve(onChanged())]);setReady(true);setRefreshFailed(false)}
+  try{await Promise.all([refresh(),Promise.resolve(onChanged())]);setReady(true);setRefreshFailed(false);setError('')}
   catch{setReady(false);setRefreshFailed(true);setError('The access change is confirmed. Refresh this employee before making another change.')}
  }
  async function save(v:AccessChange){if(flight.current||pending)return;flight.current=true;setBusy(true);setError('');

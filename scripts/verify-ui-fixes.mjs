@@ -29,7 +29,10 @@ try{
  browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH}:{})})
  async function session(width=1440){
   const context=await browser.newContext({viewport:{width,height:width===390?844:1000},reducedMotion:'reduce'})
-  const page=await context.newPage();page.setDefaultTimeout(12000);page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept())
+  // Next injects a browser process shim in the real application. This isolated
+  // library bundle must supply that same browser environment, not a Node process.
+  await context.addInitScript(()=>{Object.defineProperty(globalThis,'process',{value:{env:{NODE_ENV:'production'},browser:true,nextTick:(callback,...args)=>queueMicrotask(()=>callback(...args))},configurable:true})})
+  const page=await context.newPage();page.setDefaultTimeout(12000);page.on('pageerror',e=>{errors.push(e.message);console.error('Synthetic fixture browser error:',e.message)});page.on('dialog',d=>d.accept())
   const model={requests:[],getReady:route=>success(route,ready),funding:route=>route.abort('failed'),accessLost:false,directoryFails:false,accessReadFailures:0,
    employee:{user_id:id(500),employee_code:'UI-EMP',display_name:'Synthetic employee',active:true,role:'cashier',has_pin:true,preset:'staff',permissions:[...PRESET_DEFAULTS.staff],revision:1,updated_at:'2026-01-01T00:00:00Z'}}
   await context.route('**/*',async route=>{
@@ -102,19 +105,19 @@ try{
   await context.close();checks.push('Initial failure → repeated failure → successful GET-only retry, one in-flight request, no draft reset or financial requests')
  }
  phase='delayed readiness after student change';{
-  const {page,context,model,go}=await session();const old=gate();let a=0,b=0
-  model.getReady=async(route,path)=>{if(path.includes(id(1))){a++;await old.promise;return success(route,ready).catch(()=>{})}b++;return failure(route)}
+  const {page,context,model,go}=await session();const old=gate(),answered=gate();let a=0,b=0
+  model.getReady=async(route,path)=>{if(path.includes(id(1))){a++;await old.promise;try{return await success(route,ready)}catch{}finally{answered.resolve()}}b++;return failure(route)}
   await go('funding');await expect.poll(()=>a).toBe(1);await page.getByRole('button',{name:'Select fixture student B',exact:true}).click();await expect.poll(()=>b).toBe(1)
-  await expect(page.getByRole('button',{name:'Retry funding readiness',exact:true})).toBeEnabled();old.resolve()
+  await expect(page.getByRole('button',{name:'Retry funding readiness',exact:true})).toBeEnabled();old.resolve();await answered.promise
   await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeDisabled();await expect(page.getByRole('alert')).toContainText('Synthetic readiness/refresh failure')
   model.getReady=route=>success(route,ready);await page.getByRole('button',{name:'Retry funding readiness',exact:true}).click();await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeEnabled()
   assert.equal(mutations(model).length,0);await context.close();checks.push('Late student-A success cannot replace student-B error or enable its deposit')
  }
  phase='late failure cannot poison current readiness';{
-  const {page,context,model,go}=await session();const old=gate();let a=0
-  model.getReady=async(route,path)=>{if(path.includes(id(1))){a++;await old.promise;return failure(route).catch(()=>{})}return success(route,ready)}
+  const {page,context,model,go}=await session();const old=gate(),answered=gate();let a=0
+  model.getReady=async(route,path)=>{if(path.includes(id(1))){a++;await old.promise;try{return await failure(route)}catch{}finally{answered.resolve()}}return success(route,ready)}
   await go('funding');await expect.poll(()=>a).toBe(1);await page.getByRole('button',{name:'Select fixture student B',exact:true}).click();await expect(page.getByRole('button',{name:'Prepare operation',exact:true})).toBeEnabled()
-  old.resolve();await page.waitForTimeout(50);await expect(page.getByRole('alert')).toHaveCount(0);assert.equal(mutations(model).length,0)
+  old.resolve();await answered.promise;await expect(page.getByRole('alert')).toHaveCount(0);assert.equal(mutations(model).length,0)
   await context.close();checks.push('Late student-A failure cannot invalidate student-B successful readiness')
  }
  phase='student draft and financial recovery';{
@@ -170,6 +173,15 @@ try{
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('campuspay:access-change:v1')),null)
   await page.screenshot({path:`${out}/employee-${lost?'recovered':'saved'}-${refreshFails?'retried':'refreshed'}.png`});await context.close();checks.push(phase+' preserves profile draft and uses read-only refresh')
  }
+ phase='reopening an employee does not clear stale access';{
+  const {page,context,model,go}=await session();await go('administration');const {editor,review}=await editAccess(page);model.directoryFails=true
+  await review.getByRole('button',{name:'Save exact access',exact:true}).click();await expect(editor.getByRole('button',{name:'Retry employee refresh',exact:true})).toBeEnabled()
+  await editor.getByRole('button',{name:'Close dialog',exact:true}).click()
+  const summary=page.getByRole('region',{name:'Selected employee access',exact:true});await expect(summary.getByRole('alert')).toContainText('display is stale')
+  await page.getByRole('button',{name:'Open employee',exact:true}).click();await expect(summary.getByRole('alert')).toContainText('display is stale');await expect(summary.getByText('Current preset: Staff',{exact:true})).toHaveCount(0)
+  const count=mutations(model).length;model.directoryFails=false;await summary.getByRole('button',{name:'Retry employee access refresh',exact:true}).click();await expect(summary.getByText('Current preset: Manager',{exact:true})).toBeVisible();assert.equal(mutations(model).length,count)
+  await context.close();checks.push('Reselecting a stale directory record cannot relabel old permissions as current')
+ }
  phase='editor refresh failure still notifies parent';{
   const {page,context,model,go}=await session();await go('administration');const {editor,review}=await editAccess(page);model.accessReadFailures=1
   await review.getByRole('button',{name:'Save exact access',exact:true}).click();await expect(editor.getByRole('button',{name:'Retry employee refresh',exact:true})).toBeEnabled()
@@ -179,5 +191,5 @@ try{
  }
  assert.deepEqual(errors,[])
  fs.writeFileSync(`${out}/results.json`,JSON.stringify({passed:true,checks,browserErrors:errors},null,2));console.log(JSON.stringify({passed:true,checks},null,2))
-}catch(error){fs.writeFileSync(`${out}/results.json`,JSON.stringify({passed:false,phase,checks,error:String(error),browserErrors:errors},null,2));console.error('UI fixes regression failed:',phase,error);process.exitCode=1}
+}catch(error){fs.writeFileSync(`${out}/results.json`,JSON.stringify({passed:false,phase,checks,error:String(error),browserErrors:errors},null,2));console.error('UI fixes regression failed:',phase,error,JSON.stringify({browserErrors:errors}));process.exitCode=1}
 finally{await browser?.close();if(server)await new Promise(r=>server.close(r))}
