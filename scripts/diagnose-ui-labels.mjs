@@ -7,6 +7,7 @@ import path from 'node:path'
 import { createServer } from 'node:http'
 import { build } from 'vite'
 import { chromium, expect } from '@playwright/test'
+import { assertDialogFocus } from './assert-dialog-focus.mjs'
 const out='.validation/ui-fixes';fs.mkdirSync(out,{recursive:true})
 const diagnostics={console:[],pageErrors:[],requests:[],responses:[],failedRequests:[]}
 let server,browser
@@ -44,6 +45,7 @@ try{
  diagnostics.bodyAccessibleSnapshot=await page.locator('body').ariaSnapshot()
  diagnostics.bodyHTML=await page.locator('body').innerHTML()
  await page.screenshot({path:`${out}/label-diagnostic-desktop.png`})
+ diagnostics.focusTrace=await assertDialogFocus(page)
  assert.deepEqual(diagnostics.pageErrors,[])
  assert.ok(diagnostics.responses.some(r=>r.path==='/api/students/roster'&&r.status===200))
  console.log('UI_LABEL_DIAGNOSTICS '+JSON.stringify(diagnostics))

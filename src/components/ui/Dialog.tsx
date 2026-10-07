@@ -18,8 +18,18 @@ export function Dialog({ title, children, onClose, busy = false, className = '',
     onKeyDown={event => {
       if (event.key !== 'Tab' || (event.target as Element).closest('dialog') !== event.currentTarget) return
       const dialog = event.currentTarget
-      const controls = [...dialog.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]')]
-        .filter(element => element.tabIndex >= 0 && !element.matches(':disabled') && element.getClientRects().length > 0)
+      const controls = [...dialog.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, summary, [tabindex]')]
+        .filter(element => {
+          if (element.tabIndex < 0 || element.matches(':disabled') || element.closest('[inert]') || element.closest('dialog') !== dialog || element.getClientRects().length === 0) return false
+          const visibility = getComputedStyle(element).visibility
+          if (visibility === 'hidden' || visibility === 'collapse') return false
+          // Collapsed details descendants may still have layout rectangles in
+          // Chromium. Only their first summary is in the keyboard focus order.
+          for (let ancestor = element.parentElement; ancestor && ancestor !== dialog; ancestor = ancestor.parentElement) {
+            if (ancestor instanceof HTMLDetailsElement && !ancestor.open && !ancestor.querySelector(':scope > summary')?.contains(element)) return false
+          }
+          return true
+        })
       const first = controls[0], last = controls.at(-1)
       if (!first) { event.preventDefault(); dialog.focus(); return }
       if (event.shiftKey && (document.activeElement === first || document.activeElement === dialog)) { event.preventDefault(); last?.focus() }
