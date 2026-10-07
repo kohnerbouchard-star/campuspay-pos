@@ -46,8 +46,14 @@ jobs:
       - name: Runtime dependency security gate
         run: npm run security:dependencies
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-      - name: Complete dependency security gate
+      - name: Capture complete dependency audit
         run: npm audit --audit-level=high --json > .validation/ui-fixes/dependency-audit.json
+        continue-on-error: true
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - name: Enforce complete dependency security gate
+        run: |
+          cp .validation/ui-fixes/dependency-audit.json .validation/dependency-audit.json
+          node scripts/validate-complete-audit.mjs
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - name: Print bounded UI test diagnostics
         if: always()
