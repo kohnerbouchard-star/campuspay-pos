@@ -4,7 +4,7 @@ import {randomBytes,randomUUID} from 'node:crypto'
 import fs from 'node:fs'
 import pg from 'pg'
 import {refundTestContext} from './refund-test-context.mjs'
-import {runOperationsBrowser} from './operations-browser.mjs'
+import {runOperationsBrowser,runCashEligibilityBrowser} from './operations-browser.mjs'
 let ctx,phase='setup';const checks=[]
 try {
  ctx=await refundTestContext();await ctx.start(true)
@@ -107,6 +107,15 @@ try {
  checks.push('three concurrent checkout/close races include each committed cash sale exactly once; open-shift attribution cannot be disabled')
  phase='browser';await runOperationsBrowser(ctx,await login(),delivered.receipt.order_number)
  checks.push('cash opening response-loss recovery and verified return UI on four viewports')
+ phase='drawer-close-eligibility'
+ // Additional identities exist only in refundTestContext's disposable localhost DB.
+ for(const [code,permissions] of [['DRAWER-VIEW',['cash.read']],['DRAWER-OVERRIDE',['pos.read','pos.checkout','cash.read','cash.shift.manage','cash.drawer.override']]]){
+  const id=(await owner.query("insert into public.staff_profiles(employee_code,display_name,role) values($1,$1,'cashier') returning auth_user_id",[code])).rows[0].auth_user_id
+  await owner.query("insert into private.staff_credentials(staff_user_id,pin_hash) values($1,extensions.crypt($2,extensions.gen_salt('bf',12)))",[id,ctx.staffPinProof(ctx.staffPin)])
+  await owner.query('update private.staff_access set permissions=$2::text[],revision=revision+1 where user_id=$1',[id,permissions])
+ }
+ await runCashEligibilityBrowser(ctx)
+ checks.push('drawer owner/explicit override eligibility, stale reads, no forbidden submission keys, preserved unresolved recovery and unchanged server denials')
  fs.mkdirSync('.validation/operations',{recursive:true});fs.writeFileSync('.validation/operations/results.json',JSON.stringify({checks,liveDataUsed:false},null,2))
  console.log(`Operations passed: ${checks.length} acceptance groups; synthetic isolated data only.`)
 }catch(e){fs.mkdirSync('.validation/operations',{recursive:true});fs.writeFileSync('.validation/operations/failure.txt',`Phase: ${phase}\n${e?.stack??'unknown'}`);console.error(`Operations test failed at ${phase}: ${e?.message??'unknown'}`);process.exitCode=1}
