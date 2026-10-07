@@ -78,6 +78,7 @@ jobs:
           check npm run validate:static
           check node --experimental-strip-types --no-warnings --test scripts/navigation-ux.test.mjs
           check node --experimental-strip-types --no-warnings --test scripts/receipt-policy-recovery.test.mjs scripts/request-validation.test.mjs
+          check node --experimental-strip-types --no-warnings --test scripts/checkout-store.test.mjs
           check npm run typecheck
           check npm test
           check npm run lint
@@ -151,8 +152,12 @@ jobs:
         include:
           - group: stock-recovery
             scripts: scripts/verify-stock-recovery.mjs
+          - group: checkout-store
+            scripts: scripts/verify-checkout-store.mjs
+          - group: ui-fixes
+            scripts: scripts/verify-ui-fixes.mjs
           - group: management-security
-            scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-complete-enrollment.mjs
+            scripts: scripts/verify-management-journeys.mjs scripts/verify-security-recovery.mjs scripts/verify-session-exit.mjs scripts/verify-complete-enrollment.mjs
           - group: navigation-administration
             scripts: scripts/verify-access-workspaces.mjs scripts/verify-navigation-ux.mjs scripts/verify-administration.mjs scripts/verify-administration-hardening.mjs
           - group: refunds-operations
