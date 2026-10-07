@@ -43,10 +43,12 @@ export function StudentsScreen({userId,permissions,fundingEnabled}:{userId:strin
     <div className={enrolling?"dashboard-grid":"students-directory-layout"}>
       {enrolling ? <section className="panel"><p className="eyebrow">New account</p><h2>Ready for the student</h2><ol className="workflow-steps"><li>Check the student’s ID and name.</li><li>Scan an unused MICA Money Card.</li><li>Let the student enter and confirm their PIN.</li><li>Create the account and hand over the card.</li></ol><p className="muted">The new wallet starts at {formatWon(0)}. The student can sign in to the online store immediately.</p></section> :
         <StudentDirectory canViewWallet={permissions.includes('wallet.read')} selectedId={student?.student_id} refreshKey={refreshKey} onSelect={(value) => { refreshGeneration.current++;setRefreshError('');setStudent(value); setResult(null) }} />}
+      {/* The modal is out of flow. Keep its background layout mounted, otherwise
+          the shorter document clamps page scroll before the dialog can save it. */}
       {enrolling ? <EnrollmentForm onCancel={() => setEnrolling(false)} onComplete={(value) => { setResult(value); setStudent(null); setEnrolling(false); setRefreshKey((key) => key + 1) }} /> :
         result ? <EnrollmentSuccess result={result} onDone={() => setResult(null)} onAnother={startEnrollment} /> :
-          student ? <StudentDetail key={student.student_id} student={student} userId={userId} permissions={permissions} fundingEnabled={fundingEnabled} refreshError={refreshError} onClose={()=>{refreshGeneration.current++;setRefreshError('');setStudent(null)}} onChanged={refreshSelected} /> :
-            <section className="panel empty-state"><h2>Select a student</h2><p className="muted">Review a student’s wallet and card status, or enroll a new student at E202.</p></section>}
+          <section className="panel empty-state"><h2>Select a student</h2><p className="muted">Review a student’s wallet and card status, or enroll a new student at E202.</p></section>}
     </div>
+    {!enrolling&&!result&&student&&<StudentDetail key={student.student_id} student={student} userId={userId} permissions={permissions} fundingEnabled={fundingEnabled} refreshError={refreshError} onClose={()=>{refreshGeneration.current++;setRefreshError('');setStudent(null)}} onChanged={refreshSelected} />}
   </main>
 }
