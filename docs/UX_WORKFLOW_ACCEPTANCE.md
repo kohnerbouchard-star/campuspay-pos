@@ -85,3 +85,7 @@ An independent reviewer inspected all production diff paths, tests, the deletion
 | Not exercised | Production, hardware, other browser engines, screen readers | Local synthetic Chromium coverage only |
 
 Local tooling was Node 24.19.0, Next 16.3.8 and React 19.2.8 using the existing installed tree. No fresh npm ci or new-branch CI was run; CI uses Node 22. The checkpoint is local only: publication, PR creation, merge and deployment are not authorized for this broad pass. The external handoff records the exact checkpoint commit and patch hashes.
+
+## Draft publication follow-up
+
+The reviewed pass was subsequently authorized for publication as draft PR #55, without merge or deployment. Its first CI run passed the new workflow suites but exposed one stale selector sequence in the older visual integration harness: Back to products now clears selection, so each subsequent product action must explicitly reselect the product. The harness now follows that directory flow without removing outcome assertions. Final PR checks and tested commit/tree are recorded in the external publication evidence; the earlier local-only qualification above describes the original checkpoint.
