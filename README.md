@@ -43,13 +43,13 @@ Only after inspecting those results and confirming maintenance is still active:
 node "$HOME/campuspay-release-d01-operator/run-release.mjs" apply "$HOME/campuspay-release-d01-source" "$HOME/campuspay-release-d01-evidence"
 ```
 
-The driver requires the exact backup hash and schema-38 preflight, then durably records `migration-attempt-started.json` **before** using `scripts/migrate.mjs`. The original runner holds advisory lock `84632291` and applies each pending migration in its own transaction. It must report both exact `Applied ...` lines and pass the read-only schema-40 grant/history probe. Keep maintenance active. **If any result is missing or uncertain, do not invoke `apply` again.** Use the read-only `postflight` mode, inspect history, and arrange a reviewed fix-forward procedure.
+The driver requires the exact backup hash and schema-38 preflight, then authenticates the backup key and checks every pre-existing public/private table against the backup snapshot. It durably records `migration-attempt-started.json` **before** using `scripts/migrate.mjs`. The original runner holds advisory lock `84632291` and applies each pending migration in its own transaction. It must report both exact `Applied ...` lines and pass the read-only schema-40 grant/history probe and unchanged-table comparison. Keep maintenance active. **If any result is missing or uncertain, do not invoke `apply` again.** Use the read-only `postflight` mode, inspect history, and arrange a reviewed fix-forward procedure.
 
 ```bash
 node "$HOME/campuspay-release-d01-operator/run-release.mjs" postflight "$HOME/campuspay-release-d01-source" "$HOME/campuspay-release-d01-evidence"
 ```
 
-The successful terminal result is `SCHEMA_40_VERIFIED_APP_RELEASE_PENDING`. Report only sanitized status lines and SHA-256 of the encrypted backup, not credentials or database contents.
+The successful terminal result is `SCHEMA_40_VERIFIED_APP_RELEASE_PENDING`, accompanied by `PRE_EXISTING_TABLES_UNCHANGED`. Report only sanitized status lines and SHA-256 of the encrypted backup, not credentials or database contents.
 
 ## App release boundary
 
