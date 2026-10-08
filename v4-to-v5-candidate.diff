@@ -1,0 +1,175 @@
+diff -ruN operator-source/Dockerfile operator-v5-candidate/Dockerfile
+--- operator-source/Dockerfile	2026-10-08 05:05:04.594436282 +0000
++++ operator-v5-candidate/Dockerfile	2026-10-08 05:11:06.688621830 +0000
+@@ -10,10 +10,12 @@
+     done
+ 
+ FROM node@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddfe4238355d3a30b772c
++RUN mkdir -p /etc/ssl/certs && \
++    node -e 'const fs=require("fs"),tls=require("tls");if(tls.rootCertificates.length<100)process.exit(1);fs.writeFileSync("/etc/ssl/certs/ca-certificates.crt",tls.rootCertificates.join("\n")+"\n",{mode:0o644})'
+ COPY --from=pgclient /client-libs/ /opt/pgroot/
+ COPY --from=pgclient /usr/lib/postgresql/17/bin/pg_dump /opt/pg-bin/pg_dump
+ COPY --from=pgclient /usr/lib/postgresql/17/bin/pg_restore /opt/pg-bin/pg_restore
+-RUN printf '#!/bin/sh\nLD_LIBRARY_PATH=/opt/pgroot/lib/x86_64-linux-gnu:/opt/pgroot/usr/lib/x86_64-linux-gnu exec /opt/pg-bin/pg_dump "$@"\n' > /usr/local/bin/pg_dump && \
+-    printf '#!/bin/sh\nLD_LIBRARY_PATH=/opt/pgroot/lib/x86_64-linux-gnu:/opt/pgroot/usr/lib/x86_64-linux-gnu exec /opt/pg-bin/pg_restore "$@"\n' > /usr/local/bin/pg_restore && \
+-    chmod 755 /usr/local/bin/pg_dump /usr/local/bin/pg_restore && \
++COPY pg-client-wrapper.sh /usr/local/bin/pg_dump
++COPY pg-client-wrapper.sh /usr/local/bin/pg_restore
++RUN chmod 755 /usr/local/bin/pg_dump /usr/local/bin/pg_restore && \
+     pg_dump --version && pg_restore --version
+diff -ruN operator-source/README.md operator-v5-candidate/README.md
+--- operator-source/README.md	2026-10-08 05:05:04.594319417 +0000
++++ operator-v5-candidate/README.md	2026-10-08 05:11:06.688210112 +0000
+@@ -1,6 +1,6 @@
+ # CampusPay schema 39–40 operator package (Windows Git Bash + Docker Desktop)
+ 
+-**Qualified source:** `kohnerbouchard-star/campuspay-pos` commit `d01d2992659dbab3d6aff95581dd6bed5f618daf`, tree `4c5583b65e2963ff71f6cd4f8212b10832e50e65`. This package contains no database credentials, backup key, SQL copy, Blob configuration, or deployment action. It invokes the repository's migration and encrypted backup scripts. Keep maintenance enabled and product photos disabled. Never rerun stock migration 050.
++**Qualified source:** `kohnerbouchard-star/campuspay-pos` commit `d01d2992659dbab3d6aff95581dd6bed5f618daf`, tree `4c5583b65e2963ff71f6cd4f8212b10832e50e65`. This package contains no database credentials, backup key, SQL copy, Blob configuration, or deployment action. It invokes the repository's migration and encrypted backup scripts. **The operator must confirm maintenance is enabled and product photos are disabled; this package cannot verify either setting.** Never rerun stock migration 050.
+ 
+ ## Prepare your Windows computer
+ 
+@@ -53,7 +53,13 @@
+ bash "$HOME/Downloads/campuspay-release-d01-operator/run-docker.sh" apply "$HOME/campuspay-release-d01-source"
+ ```
+ 
+-**Never repeat `apply` if the attempt starts and the result is missing or uncertain.** Run the read-only postflight, inspect exact history, and arrange a reviewed fix-forward procedure.
++**Never repeat `apply` if the attempt starts and the result is missing or uncertain.** If migration 39 committed but 40 failed, this is a partial schema-39 state and needs an explicit reviewed fix-forward plan. Use the read-only diagnostic command to report exact history without retrying a migration:
++
++```bash
++bash "$HOME/Downloads/campuspay-release-d01-operator/run-docker.sh" diagnose "$HOME/campuspay-release-d01-source"
++```
++
++If schema 40 is present but the original terminal result is uncertain, run the read-only postflight to verify grants and unchanged data before considering app release:
+ 
+ ```bash
+ bash "$HOME/Downloads/campuspay-release-d01-operator/run-docker.sh" postflight "$HOME/campuspay-release-d01-source"
+diff -ruN operator-source/diagnose.mjs operator-v5-candidate/diagnose.mjs
+--- operator-source/diagnose.mjs	1970-01-01 00:00:00.000000000 +0000
++++ operator-v5-candidate/diagnose.mjs	2026-10-08 05:11:06.688787298 +0000
+@@ -0,0 +1,51 @@
++#!/usr/bin/env node
++// Read-only history inspection after any uncertain or partial migration result.
++import fs from 'node:fs'
++import path from 'node:path'
++import { createRequire } from 'node:module'
++
++const manifest = JSON.parse(fs.readFileSync(new URL('./manifest.json', import.meta.url)))
++const [source, attemptState] = process.argv.slice(2)
++const fail = code => { throw new Error(code) }
++let client
++try {
++  if (!source || !['attempt-recorded', 'no-attempt-recorded'].includes(attemptState)
++    || process.argv.length !== 4) fail('USAGE')
++  const raw = process.env.DATABASE_URL_UNPOOLED
++  if (!raw) fail('OWNER_URL_MISSING')
++  const url = new URL(raw)
++  if (!['postgres:', 'postgresql:'].includes(url.protocol)
++    || url.hostname !== manifest.baseline.host
++    || url.pathname !== '/' + manifest.baseline.database
++    || decodeURIComponent(url.username) !== manifest.baseline.owner
++    || url.searchParams.get('sslmode') !== 'verify-full' || url.hash
++    || [...url.searchParams.keys()].some(key => key !== 'sslmode')) fail('OWNER_TARGET_INVALID')
++  const require = createRequire(path.join(path.resolve(source), 'package.json'))
++  const { Client } = require('pg')
++  client = new Client({ connectionString: raw, connectionTimeoutMillis: 15000 })
++  await client.connect()
++  await client.query('begin read only')
++  await client.query("set local statement_timeout='15s'")
++  const identity = (await client.query('select current_user as role,current_database() as database')).rows[0]
++  if (identity.role !== manifest.baseline.owner || identity.database !== manifest.baseline.database)
++    fail('DATABASE_IDENTITY_MISMATCH')
++  const actual = (await client.query('select version from private.schema_migrations order by version')).rows.map(row => row.version)
++  const expected = Object.keys(manifest.files).filter(name => name.startsWith('database/migrations/'))
++    .map(name => path.basename(name, '.sql')).sort()
++  if (actual.length < manifest.baseline.applied || actual.length > expected.length
++    || JSON.stringify(actual) !== JSON.stringify(expected.slice(0, actual.length)))
++    fail('MIGRATION_HISTORY_UNEXPECTED')
++  const privateAccess = await client.query("select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relkind in ('r','p') and has_table_privilege('campuspay_runtime',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') limit 1")
++  if (privateAccess.rowCount) fail('RUNTIME_PRIVATE_TABLE_ACCESS')
++  await client.query('rollback')
++  const status = actual.length === 38 ? 'SCHEMA_38_REVIEW_ATTEMPT_STATE'
++    : actual.length === 39 ? 'SCHEMA_39_PARTIAL_STOP_FIX_FORWARD_REVIEW_REQUIRED'
++      : 'SCHEMA_40_POSTFLIGHT_REVIEW_REQUIRED'
++  console.log(JSON.stringify({ status, historyRows: actual.length, lastVersion: actual.at(-1),
++    pending: expected.slice(actual.length), attemptRecorded: attemptState === 'attempt-recorded',
++    targetHost: url.hostname, database: identity.database, owner: identity.role,
++    runtimePrivateTableAccess: false }))
++} catch (error) {
++  console.error('STOP: ' + (/^[A-Z_]+$/.test(error?.message ?? '') ? error.message : 'DIAGNOSTIC_PROBE_FAILED'))
++  process.exitCode = 1
++} finally { if (client) await client.end().catch(() => {}) }
+diff -ruN operator-source/pg-client-wrapper.sh operator-v5-candidate/pg-client-wrapper.sh
+--- operator-source/pg-client-wrapper.sh	1970-01-01 00:00:00.000000000 +0000
++++ operator-v5-candidate/pg-client-wrapper.sh	2026-10-08 05:11:06.688732106 +0000
+@@ -0,0 +1,17 @@
++#!/bin/sh
++set -eu
++binary=${0##*/}
++case "$binary" in pg_dump|pg_restore) ;; *) exit 1 ;; esac
++if [ "${PGSSLMODE:-}" = verify-full ]; then
++  # libpq does not use the system roots without this explicit setting.
++  # pgTool strips inherited PG* settings; this is scoped to its verified-TLS call.
++  [ -s /etc/ssl/certs/ca-certificates.crt ] || exit 1
++  export PGSSLROOTCERT=system
++  SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
++  export SSL_CERT_FILE
++  unset SSL_CERT_DIR
++  unset OPENSSL_CONF
++fi
++LD_LIBRARY_PATH=/opt/pgroot/lib/x86_64-linux-gnu:/opt/pgroot/usr/lib/x86_64-linux-gnu
++export LD_LIBRARY_PATH
++exec "/opt/pg-bin/$binary" "$@"
+diff -ruN operator-source/run-docker.sh operator-v5-candidate/run-docker.sh
+--- operator-source/run-docker.sh	2026-10-08 05:05:04.594453769 +0000
++++ operator-v5-candidate/run-docker.sh	2026-10-08 05:11:06.688676111 +0000
+@@ -52,7 +52,7 @@
+   docker volume create "$evidence_volume" >/dev/null
+   docker volume create "$source_volume" >/dev/null
+   local_password="cp_local_${run_id}"
+-  docker run -d --rm --name "$pg_container" --log-driver none --tmpfs /var/lib/postgresql/data:rw,size=1024m \
++  MSYS_NO_PATHCONV=1 docker run -d --rm --name "$pg_container" --log-driver none --tmpfs /var/lib/postgresql/data:rw,size=1024m \
+     -e "POSTGRES_PASSWORD=$local_password" "$pg_image" >/dev/null
+   printf 'run_id=%s\npg_container=%s\nevidence_volume=%s\nsource_volume=%s\n' \
+     "$run_id" "$pg_container" "$evidence_volume" "$source_volume" > "$state_file"
+@@ -93,8 +93,8 @@
+   printf 'LOCAL_POSTGRES_STOPPED; evidence volume retained: %s\n' "$evidence_volume"
+   exit 0
+ fi
+-[[ $mode == preflight || $mode == backup-and-restore || $mode == apply || $mode == postflight ]] ||
+-  stop 'USAGE: setup SOURCE | preflight SOURCE | backup-and-restore SOURCE | export-backup OUTPUT_DIR | apply SOURCE | postflight SOURCE | stop-local'
++[[ $mode == preflight || $mode == backup-and-restore || $mode == apply || $mode == postflight || $mode == diagnose ]] ||
++  stop 'USAGE: setup SOURCE | preflight SOURCE | backup-and-restore SOURCE | export-backup OUTPUT_DIR | apply SOURCE | postflight SOURCE | diagnose SOURCE | stop-local'
+ [[ $# -eq 2 ]] || stop 'SOURCE_DIRECTORY_REQUIRED'
+ check_source "$2"
+ load_state
+diff -ruN operator-source/run-release.mjs operator-v5-candidate/run-release.mjs
+--- operator-source/run-release.mjs	2026-10-08 05:05:04.594417204 +0000
++++ operator-v5-candidate/run-release.mjs	2026-10-08 05:11:06.688563012 +0000
+@@ -60,7 +60,7 @@
+ 
+ let attemptStarted = false
+ try {
+-  if (!['preflight', 'backup-and-restore', 'apply', 'postflight'].includes(phase)
++  if (!['preflight', 'backup-and-restore', 'apply', 'postflight', 'diagnose'].includes(phase)
+     || !sourceArg || !evidenceArg || process.argv.length !== 5) fail('USAGE')
+   const source = fs.realpathSync(sourceArg)
+   const evidence = fs.realpathSync(evidenceArg)
+@@ -87,6 +87,10 @@
+       || proof.tree !== manifest.tree || proof.historyRows !== 38 || proof.file !== backupFile
+       || !fs.existsSync(backupFile) || proof.sha256 !== hash(backupFile)) fail('BACKUP_RESTORE_PROOF_MISMATCH')
+   }
++  if (phase === 'diagnose') {
++    console.log(run(source, path.join(root, 'diagnose.mjs'), [source, fs.existsSync(attemptFile) ? 'attempt-recorded' : 'no-attempt-recorded'], env))
++    process.exit(0)
++  }
+   if (phase === 'postflight') {
+     verifiedBackup()
+     env.CAMPUSPAY_BACKUP_KEY = await hidden('Existing backup encryption key (hidden)')
+@@ -129,6 +133,6 @@
+   console.log('SCHEMA_40_VERIFIED_APP_RELEASE_PENDING')
+ } catch (error) {
+   const code = /^[A-Z_]+$/.test(error?.message ?? '') ? error.message : 'OPERATOR_STEP_FAILED'
+-  console.error(`STOP: ${code}. ${attemptStarted ? 'Keep maintenance enabled; inspect exact history before any retry.' : 'No migration attempt started.'}`)
++  console.error(`STOP: ${code}. ${attemptStarted ? 'Keep maintenance enabled; inspect exact history before any retry.' : 'No migration attempt started in this invocation; inspect existing evidence before another apply.'}`)
+   process.exitCode = 1
+ }
