@@ -7,6 +7,6 @@ export const dynamic = 'force-dynamic'
 export const POST = withApiRoute('/api/auth/login', async (request: Request) => {
   try {
     const input = await parseJson(request, LoginSchema)
-    return ok(await loginStaff(input.employeeCode, input.pin))
+    return ok(await loginStaff(request, input.employeeCode, input.pin))
   } catch (error) { return failure(error) }
 })

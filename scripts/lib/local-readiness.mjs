@@ -13,6 +13,7 @@ export const REQUIRED_SECRETS = [
   'STUDENT_PIN_PEPPER', 'SESSION_HMAC_SECRET', 'TERMINAL_COOKIE_SECRET',
 ]
 export const REQUIRED_APIS = [
+  'api.create_staff_session(text,text,text,text,text)', 'api.refund_cash_readiness(uuid,uuid,uuid)',
   'api.authorize_session(text,text,text)', 'api.catalog(uuid)',
   'api.terminal_payment_policy_v2(uuid)',
   'api.finalize_payment_tender(uuid,uuid,bigint)',

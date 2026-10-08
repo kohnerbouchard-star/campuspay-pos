@@ -10,6 +10,7 @@ import { compatibilityError, requireEffectiveAccessResult } from '@/lib/db/compa
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  refund_cash_readiness: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_refund_id', cast: 'uuid' }, { name: 'p_sale_id', cast: 'uuid' }],
   recover_stock_adjustment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   record_directory: [{name:'p_session_id',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_query',cast:'text'},{name:'p_status',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_target_id',cast:'uuid'}],
   change_record: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_payload',cast:'jsonb'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],
@@ -52,7 +53,7 @@ const RPCS = {
   recover_employee_access: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'}],
   student_funding_readiness: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'}],
   prepare_student_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_payload',cast:'jsonb'}],
-  create_staff_session: [{ name: 'p_employee_code', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }],
+  create_staff_session: [{ name: 'p_employee_code', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }, { name: 'p_ingress_fingerprint', cast: 'text' }],
   authorize_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }, { name: 'p_permission', cast: 'text' }],
   revoke_staff_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }],
   catalog: [{ name: 'p_session_id', cast: 'uuid' }],

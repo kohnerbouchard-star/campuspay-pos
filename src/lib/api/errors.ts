@@ -8,6 +8,7 @@ export type ApiErrorCode =
   | 'OPEN_CASH_SHIFT'
   | 'CASH_CONTROLS_DISABLED'
   | 'CASH_SHIFT_REQUIRED'
+  | 'CASH_PAYOUT_UNAVAILABLE'
   | 'CASH_DISABLED'
   | 'CASH_UNDERPAYMENT'
   | 'TENDER_INVALID'
@@ -68,6 +69,7 @@ export function toApiError(error: unknown): ApiError {
   if (message.includes('ADMINISTRATION_DISABLED')) return new ApiError(409, 'ADMINISTRATION_DISABLED', 'Administrative changes are not activated.')
   if (message.includes('LAST_ADMIN_REQUIRED')) return new ApiError(409, 'LAST_ADMIN_REQUIRED', 'At least one active administrator must remain.')
   if (message.includes('OPEN_CASH_SHIFT')) return new ApiError(409, 'OPEN_CASH_SHIFT', 'Close the affected cash drawer before changing this access.')
+  if (message.includes('CASH_PAYOUT_UNAVAILABLE')) return new ApiError(409, 'CASH_PAYOUT_UNAVAILABLE', 'Cash refund readiness changed. Confirm an authorized payout operator and drawer before retrying. Nothing was refunded.')
   if (message.includes('CASH_SHIFT_REQUIRED')) return new ApiError(409, 'CASH_SHIFT_REQUIRED', 'Open a cash shift at this terminal before accepting or paying cash. Nothing was settled.')
   if (message.includes('CASH_CONTROLS_DISABLED')) return new ApiError(409, 'CASH_CONTROLS_DISABLED', 'Cash drawer controls are not activated.')
   if (message.includes('CASH_DISABLED')) return new ApiError(409, 'CASH_DISABLED', 'Cash payments are disabled for this terminal.')
