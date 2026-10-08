@@ -1,6 +1,7 @@
 # Branch-owned isolated qualification; no deployment credentials or release actions.
 name: CampusPay product photo qualification
 on:
+  workflow_dispatch:
   push:
     branches: [feat/product-photos-20261008]
 permissions:
@@ -155,7 +156,7 @@ jobs:
       matrix:
         include:
           - group: refund-login
-            scripts: scripts/verify-audit-fixes.mjs
+            scripts: scripts/verify-audit-fixes.mjs scripts/verify-refund-readiness-submit.mjs
           - group: photos
             scripts: scripts/verify-product-photos.mjs
           - group: stock-recovery

@@ -154,9 +154,9 @@ begin
             or jsonb_typeof(image->'width') is distinct from 'number' or image->>'width' !~ '^[0-9]+$'
             or jsonb_typeof(image->'height') is distinct from 'number' or image->>'height' !~ '^[0-9]+$'
             or jsonb_typeof(image->'bytes') is distinct from 'number' or image->>'bytes' !~ '^[0-9]+$'
-            or (image->>'width')::numeric not between 1 and case when image_name='display' then 1280 else 384 end
-            or (image->>'height')::numeric not between 1 and case when image_name='display' then 1280 else 384 end
-            or (image->>'bytes')::numeric not between 1 and case when image_name='display' then 2000000 else 500000 end
+            or (image->>'width')::numeric not between 1 and (case when image_name='display' then 1280 else 384 end)
+            or (image->>'height')::numeric not between 1 and (case when image_name='display' then 1280 else 384 end)
+            or (image->>'bytes')::numeric not between 1 and (case when image_name='display' then 2000000 else 500000 end)
             or jsonb_typeof(image->'sha256') is distinct from 'string' or image->>'sha256' !~ '^[a-f0-9]{64}$'
             then raise exception 'BAD_REQUEST'; end if;
         end loop;
