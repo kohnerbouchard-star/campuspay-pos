@@ -1,4 +1,5 @@
 import 'server-only'
+import { withProductPhotos } from '@/features/product-photos/catalog'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import {
@@ -18,8 +19,9 @@ import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { fingerprintCouponCode } from '@/lib/crypto/coupon-code'
 import { studentPinProof } from '@/lib/crypto/student-pin'
 
-export function getCatalog(session: SessionContext) {
-  return callApiRpc('catalog', { p_session_id: session.session_id }, CatalogSchema)
+export async function getCatalog(session: SessionContext) {
+  const products = await callApiRpc('catalog', { p_session_id: session.session_id }, CatalogSchema)
+  return withProductPhotos(products, session.session_id)
 }
 
 export function createPaymentIntent(

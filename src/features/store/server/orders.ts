@@ -1,4 +1,5 @@
 import 'server-only'
+import { withProductPhotos } from '@/features/product-photos/catalog'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import { fingerprintCouponCode } from '@/lib/crypto/coupon-code'
@@ -10,8 +11,9 @@ import {
   OnlineOrderQuoteSchema,
 } from '@/features/store/domain'
 
-export function storeCatalog(session: CustomerSession) {
-  return callApiRpc('store_catalog', { p_customer_session_id: session.session_id }, StoreCatalogSchema)
+export async function storeCatalog(session: CustomerSession) {
+  const products = await callApiRpc('store_catalog', { p_customer_session_id: session.session_id }, StoreCatalogSchema)
+  return withProductPhotos(products, session.session_id, true)
 }
 
 export function deliveryLocations(session: CustomerSession) {

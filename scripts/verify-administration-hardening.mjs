@@ -20,6 +20,6 @@ try{
  fs.writeFileSync(dir+'/browser.json',JSON.stringify(browser,null,2))
  assert.equal(await unchanged(),before)
  fs.writeFileSync(dir+'/results.json',JSON.stringify({lockingCases:locking.length,negativeControls:locking.filter(x=>x.baseline).length,editorChecks:browser.checks,studentStateUnchanged:true,liveDataUsed:false},null,2))
- console.log(`Administration hardening passed: ${locking.length} controlled lock cases (including two reproduced pre-fix deadlocks), four two-operator editor checks; synthetic localhost data only.`)
+ console.log(`Administration hardening passed: ${locking.length} controlled lock cases (including a reproduced pre-fix administration deadlock; login races are in audit-login-checks), four two-operator editor checks; synthetic localhost data only.`)
 }catch(e){fs.writeFileSync(dir+'/failure.txt',`Phase: ${phase}\n${e.stack??'unknown'}`);console.error(`Administration hardening failed at ${phase}: ${e.message??'unknown'}`);process.exitCode=1}
 finally{if(ctx)await ctx.close()}

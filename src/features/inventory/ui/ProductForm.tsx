@@ -10,7 +10,7 @@ export function ProductForm({userId,onSaved}:{userId:string;onSaved():void}) {
   const [review,setReview]=useState<typeof form|null>(null),[error,setError]=useState('')
   const operation=useRecordOperation('PRODUCT',userId,onSaved)
   const locked=!operation.ready||operation.busy||operation.blocked||!!operation.pending
-  return <section className="panel form-stack"><h2>Add product</h2><p>A product defines what can be sold. Receive stock separately to record quantity and purchase cost.</p>
+  return <section className="panel form-stack"><h2>Add product</h2><p>A product defines what can be sold. Receive stock separately to record quantity and purchase cost.</p><p className="muted">After creating the product, select it in Products → Edit / Archive → Edit product to add its primary photo.</p>
     <OperationFeedback operation={operation}/>
     <form className="form-grid" onSubmit={e=>{e.preventDefault();if(locked)return;const parsed=RecordChangeSchema.safeParse({...form,kind:"PRODUCT",action:"CREATE_PRODUCT",requestKey:crypto.randomUUID(),reason:"New catalog product reviewed by authorized operator",verified:true});if(!parsed.success){setError('Check the SKU, name, category, price and reorder level.');return}setError('');setReview({...form,sku:form.sku.trim(),name:form.name.trim(),category:form.category.trim()})}}>
       <label className="field"><span>SKU</span><input required maxLength={40} disabled={locked} value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})}/></label>

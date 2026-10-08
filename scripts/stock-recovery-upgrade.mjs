@@ -12,7 +12,7 @@ export async function verifyStockRecoveryUpgrade() {
   await control.query(`create database "${name}"`);created=true;target.pathname='/'+name
   db=new pg.Client({connectionString:target.href});await db.connect()
   await db.query('create schema private; create table private.schema_migrations(version text primary key,applied_at timestamptz not null default now())')
-  const final='20261007120000_stock_adjustment_recovery.sql',files=fs.readdirSync('database/migrations').filter(x=>x.endsWith('.sql')).sort()
+  const final='20261007120000_stock_adjustment_recovery.sql',files=fs.readdirSync('database/migrations').filter(x=>x.endsWith('.sql') && x<=final).sort()
   assert.equal(files.at(-1),final)
   for(const file of files.slice(0,-1)){await db.query('begin');await db.query(fs.readFileSync('database/migrations/'+file,'utf8'));await db.query('insert into private.schema_migrations(version) values($1) on conflict do nothing',[file.slice(0,-4)]);await db.query('commit')}
   const proof=randomBytes(32).toString('hex'),roles=['cashier','inventory_admin','accountant','super_admin']
