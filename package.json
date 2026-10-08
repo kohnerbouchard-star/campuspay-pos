@@ -33,12 +33,14 @@
     "test:api-recovery": "node --experimental-strip-types --no-warnings --test scripts/api-client.test.mjs scripts/security-action-recovery.test.mjs"
   },
   "dependencies": {
+    "@vercel/blob": "2.6.1",
     "drizzle-orm": "0.45.2",
     "next": "16.3.8",
     "pg": "8.16.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
+    "sharp": "0.35.5",
     "zod": "4.1.12"
   },
   "devDependencies": {

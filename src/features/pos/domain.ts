@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PhotoSchema } from '@/features/product-photos/domain'
 import { MAX_CART_QUANTITY } from '@/features/pos/quantity'
 import { eventPaymentIssue } from './payment-policy-validation'
 import { CouponCodeSchema } from '@/features/coupons/domain'
@@ -11,6 +12,7 @@ export const CatalogProductSchema = z.object({
   selling_price_won: z.number().int().nonnegative(),
   stock_on_hand: z.number().int().nonnegative(),
   sold_out: z.boolean(),
+  photo: PhotoSchema.nullable().optional(),
 })
 export type CatalogProduct = z.infer<typeof CatalogProductSchema>
 

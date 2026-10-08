@@ -11,7 +11,8 @@
       "feat/effective-access-workspaces-20261005": false,
       "release/campuspay-app-integration-20261008": false,
       "fix/refund-readiness-login-contention-20261008": false,
-      "fix/refund-readiness-submit-lock-20261008": false
+      "fix/refund-readiness-submit-lock-20261008": false,
+      "feat/product-photos-20261008": false
     }
   }
 }
