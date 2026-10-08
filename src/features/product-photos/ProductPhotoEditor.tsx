@@ -4,6 +4,7 @@ import { MAX_PHOTO_BYTES, type PhotoCrop } from './domain'
 import { previewDimensions } from './preview'
 import { ProductPhoto } from './ProductPhoto'
 import { useProductPhoto } from './useProductPhoto'
+import { useUnsavedNavigation } from '@/components/navigation/useUnsavedNavigation'
 import styles from './photos.module.css'
 
 export function ProductPhotoEditor({ productId, name, category, userId, onChanged, onPendingChange }: {
@@ -18,6 +19,7 @@ export function ProductPhotoEditor({ productId, name, category, userId, onChange
   const [crop, setCrop] = useState<PhotoCrop>({ mode: 'fit', x: 50, y: 50 })
   const inputId = useId()
   const dirty = reading || !!file || !!photo.reference || !!photo.busy && photo.busy !== 'loading' || removeReview
+  useUnsavedNavigation(dirty, 'Leave the photo editor? Unsaved local photo selections and crop settings will be discarded. Submitted photo changes are not cancelled; return to this product to check their status. Choose Cancel to keep editing.')
   const locked = !!photo.busy || !!photo.reference || photo.blocked || photo.disabled || !photo.snapshot
   const validReason = reason.trim().length >= 10 && reason.trim().length <= 500 && !/[\u0000-\u001f\u007f]/.test(reason)
   useEffect(() => {
@@ -30,12 +32,6 @@ export function ProductPhotoEditor({ productId, name, category, userId, onChange
     void Promise.resolve().then(() => setPreview(url))
     return () => URL.revokeObjectURL(url)
   }, [file])
-  useEffect(() => {
-    if (!dirty) return
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [dirty])
   useEffect(() => () => { selection.current++ }, [])
   useEffect(() => { if (photo.snapshot?.operation?.state === 'SAVED') void Promise.resolve().then(() => setRetryFile(null)) }, [photo.snapshot])
   async function choose(next: File | null) {

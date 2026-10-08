@@ -9,7 +9,7 @@ CampusPay follows default-deny and least privilege.
 - Card and coupon codes are stored only as keyed HMAC fingerprints.
 - Wallet and inventory corrections are append-only counter-transactions rather than destructive edits.
 - Checkout uses row locks and idempotency keys so sale, wallet, stock, coupon, and audit changes are atomic.
-- The cashier session expires after 20 seconds of inactivity; administrative sessions expire after two minutes.
+- The register initiates inactivity sign-out after five minutes, with bounded protection for payment/receipt flows; other staff workspaces do so after 15 minutes. The client attempts server sign-out and attempts to leave the workspace if revocation cannot be confirmed; an unsaved-change prompt can prevent navigation. Separately, the server session has a 15-minute sliding inactivity expiry capped at eight hours from creation.
 - Student credential resets require a one-use, 60-second super-admin authorization tied to one student and one purpose.
 
 `DATABASE_URL` and all peppers/HMAC secrets are server-only and must never be committed or prefixed with `NEXT_PUBLIC_`.
