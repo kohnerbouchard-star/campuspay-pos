@@ -61,7 +61,7 @@ jobs:
           for file in .validation/ui-fixes/tested-commit.txt .validation/ui-fixes/tested-tree.txt .validation/ui-fixes/results.json .validation/ui-fixes/label-diagnostics.json .validation/ui-fixes/dependency-audit.json; do
             if [ -f "$file" ]; then echo "$file"; head -c 24000 "$file"; echo; fi
           done
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: isolated-ui-fixes
@@ -110,7 +110,7 @@ jobs:
             fi
           done
           exit "$failed"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: ui-fixes-native-regressions
