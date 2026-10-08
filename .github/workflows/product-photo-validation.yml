@@ -1,0 +1,38 @@
+# Branch-owned dependency preparation only. Replaced by final exact-head qualification.
+name: CampusPay product photo qualification
+on:
+  push:
+    branches: [feat/product-photos-20261008]
+permissions:
+  contents: read
+jobs:
+  dependency-preparation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Verify held source
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test ! -e .env.local
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";const c=JSON.parse(fs.readFileSync("vercel.json","utf8"));assert.equal(c.git.deploymentEnabled["feat/product-photos-20261008"],false);assert.equal(c.git.deploymentEnabled["feat/effective-access-workspaces-20261005"],false);assert.ok(Object.values(c.git.deploymentEnabled).every(v=>v===false));'
+      - name: Generate pinned dependency lock candidate without lifecycle scripts
+        run: |
+          npm install --package-lock-only --ignore-scripts --save-exact @vercel/blob@2.6.1 sharp@0.35.5
+          mkdir -p .validation/product-photo-dependencies
+          cp package.json package-lock.json .validation/product-photo-dependencies/
+          git rev-parse HEAD > .validation/product-photo-dependencies/preparation-commit.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: product-photo-dependency-candidate
+          path: .validation/product-photo-dependencies/
+          include-hidden-files: true
+          if-no-files-found: error
