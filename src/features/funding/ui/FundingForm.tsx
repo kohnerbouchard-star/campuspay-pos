@@ -21,8 +21,8 @@ export function FundingForm({actions,busy,available=true,onPrepare,onLeaveStateC
  <h2>{actions.length===1&&actions[0]==='CASH_DEPOSIT'?'Enter the student deposit':'Record funds or a cash movement'}</h2><p>Prepare the exact amount first. No money or stock changes until final confirmation.</p>
  {error&&<p role="alert" className="error-message">{error}</p>}
  <fieldset disabled={busy||!available} className="form-fields"><legend>Choose the operation</legend>
- <label htmlFor={`${id}-kind`}>Operation</label><select id={`${id}-kind`} value={action} onChange={e=>{setAction(e.target.value as FundingAction);setUnits([])}}>
- {actions.map(a=><option key={a} value={a}>{FUNDING_LABELS[a]}</option>)}</select>
+ <label className="field" htmlFor={`${id}-kind`}><span>Operation</span><select id={`${id}-kind`} value={action} onChange={e=>{setAction(e.target.value as FundingAction);setUnits([])}}>
+ {actions.map(a=><option key={a} value={a}>{FUNDING_LABELS[a]}</option>)}</select></label>
  {wallet&&<><div className="denominations">{ALLOWED_DENOMINATIONS_WON.map(d=><button type="button" key={d} disabled={units.length>=30} onClick={()=>setUnits(n=>[...n,d])}>+ {formatWon(d)}</button>)}</div><div className="selected-total"><span>Wallet amount</span><strong>{formatWon(units.reduce((a,b)=>a+b,0))}</strong><button type="button" disabled={!units.length} onClick={()=>setUnits(v=>v.slice(0,-1))}>Undo last amount</button></div></>}
  {action==='CASH_DEPOSIT'&&<label className="field"><span>Cash received before change (won)</span><input name="received" type="number" min={1} max={1000000000} step={1} required inputMode="numeric" /></label>}
  {action==='REVERSE_FUNDING'&&<><label className="field"><span>Original funding receipt</span><input name="original" required maxLength={80} placeholder="FND-…" /></label><p>Reverse the whole original deposit or correction once. A cash-deposit reversal records cash handed back and debits the original wallet; scan that student’s card. It is not a sale refund.</p></>}

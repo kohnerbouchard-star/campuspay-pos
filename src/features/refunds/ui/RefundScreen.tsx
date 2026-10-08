@@ -64,7 +64,7 @@ export function RefundScreen({ enabled, canPost, canPayout, userId, allowReturns
   }
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Append-only financial corrections</p><h1>Refunds</h1><p>Full-sale refunds, pre-dispatch cancellation, and verified post-dispatch returns. Original receipts are preserved.</p></div></header>
     <p><Link href={`/refunds/items?reference=${encodeURIComponent(reference.trim())}`}>Item refunds and returns — remaining quantities and all refund receipts</Link></p>
-    {!enabled && <p role="status">New refund posting is disabled for this installation. Existing records, recovery, and outstanding cash handover recording remain available after the migration is installed.</p>}
+    {!enabled && <p role="status">New refunds are disabled for this installation. You can still look up existing records, recover an earlier request, or record an eligible outstanding cash handover.</p>}
     {!canPost && <p>Refund issue access is not assigned. Authorized refund records remain available.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}
     {pending && <section className="panel"><h2>Unresolved refund request</h2><p>Only opaque sale and request IDs were saved. Recover before creating a new refund.</p>{canPost?<button className="primary-action" disabled={busy} onClick={() => void recover()}>Recover refund result</button>:<p>Use the original operator with assigned refund access to check this request.</p>}</section>}

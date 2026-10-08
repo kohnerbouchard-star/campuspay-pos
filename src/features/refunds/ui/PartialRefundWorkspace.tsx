@@ -32,7 +32,7 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
     if (working.current || pending) return
     working.current = true; setBusy(true); setError(''); setMessage(''); setReceipt(null)
     try { await load(ref,offset) }
-    catch { setSnapshot(null); setError('The sale could not load. Verify the reference, connection and installed migrations.') }
+    catch { setSnapshot(null); setError('The sale could not load. Check the receipt reference and connection, then try again.') }
     finally { working.current = false; setBusy(false) }
   }
   function accept(value: RefundDecision, saleId: string) {
@@ -73,7 +73,7 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
   const eligible = snapshot && snapshot.allocations.some(a => a.remaining_quantity > 0) && !snapshot.refunds.some(r => r.scope === 'FULL')
     && (snapshot.sale.channel === 'POS' || (allowReturns && snapshot.returns_enabled && ['OUT_FOR_DELIVERY','DELIVERED'].includes(snapshot.sale.order_status ?? '')))
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Original-tender item corrections</p><h1>Item refunds and returns</h1><p>Repeated partial refunds with original-lot inspection. Each refund remains a separate immutable receipt.</p><Link href={`/refunds?reference=${encodeURIComponent(reference.trim())}`}>Full-sale refunds and net-day reports</Link></div></header>
-    {!enabled && <p role="status">New item-level posting is disabled. Existing receipts and recovery remain available after the migration is installed.</p>}
+    {!enabled && <p role="status">New item refunds are disabled for this installation. You can still look up existing receipts and recover an earlier request.</p>}
     {!canPost && <p>Refund issue access is not assigned. This view does not grant cash payout access.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}
     {pending && <section className="panel"><h2>Unresolved item refund</h2><p>Only opaque sale/request identifiers are stored. Recover before another refund.</p>{canPost?<button className="primary-action" disabled={busy} onClick={() => void recover()}>Recover item refund result</button>:<p>Use the original operator with assigned refund access to check this request.</p>}</section>}
@@ -85,8 +85,8 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
     {receipt && !pending && <RefundReceipt key={receipt.refund_id} refund={receipt} userId={canPayout ? userId : ''} onUpdate={updateReceipt} />}
     {snapshot && <section className="panel"><h2>All refund receipts for this sale</h2><p>Showing {snapshot.refunds.length ? snapshot.offset+1 : 0}–{snapshot.offset+snapshot.refunds.length} of {snapshot.refund_count}. Select a receipt to review its own cash handover, not the latest receipt.</p>
       {snapshot.refunds.map(r => <p key={r.refund_id} style={{ overflowWrap:'anywhere' }}><button className="secondary-action" disabled={busy || Boolean(pending)} onClick={() => setReceipt(r)}>Open refund {r.refund_id}</button> {r.scope === 'PARTIAL' ? 'Item-level' : 'Full-sale'} · {formatWon(r.total_won)}</p>)}
-      <button disabled={busy || Boolean(pending) || snapshot.offset===0} onClick={() => void lookup(Math.max(0,snapshot.offset-50),snapshot.sale.sale_id)}>Previous refunds</button>
-      <button disabled={busy || Boolean(pending) || snapshot.offset+50>=snapshot.refund_count} onClick={() => void lookup(snapshot.offset+50,snapshot.sale.sale_id)}>Next refunds</button>
+      <button className="secondary-action" disabled={busy || Boolean(pending) || snapshot.offset===0} onClick={() => void lookup(Math.max(0,snapshot.offset-50),snapshot.sale.sale_id)}>Previous refunds</button>
+      <button className="secondary-action" disabled={busy || Boolean(pending) || snapshot.offset+50>=snapshot.refund_count} onClick={() => void lookup(snapshot.offset+50,snapshot.sale.sale_id)}>Next refunds</button>
     </section>}
   </main>
 }

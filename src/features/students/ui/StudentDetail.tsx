@@ -11,6 +11,7 @@ import { WalletHistory } from '@/features/wallets/ui/WalletHistory'
 import { businessDate, formatBusinessTime } from '@/lib/format/business-time'
 import type { ManagedStudent } from '@/features/students/domain'
 import { formatWon } from '@/lib/format/currency'
+import { isStaffSessionExiting } from '@/features/terminal/session-exit'
 export function StudentDetail({student,userId,permissions,fundingEnabled,onChanged,onClose,refreshError=''}:{student:ManagedStudent;userId:string;permissions:readonly Permission[];fundingEnabled:boolean;onChanged():void|Promise<void>;onClose():void;refreshError?:string}) {
  const [view,setView]=useState<'funding'|'history'|'status'|null>(null)
  const [childState,setChildState]=useState<LeaveState>('pending')
@@ -23,7 +24,7 @@ export function StudentDetail({student,userId,permissions,fundingEnabled,onChang
  },[])
  useEffect(()=>{
   if(state==='clean')return
-  const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=''}
+  const warn=(event:BeforeUnloadEvent)=>{if(!isStaffSessionExiting()){event.preventDefault();event.returnValue=''}}
   window.addEventListener('beforeunload',warn)
   return()=>window.removeEventListener('beforeunload',warn)
  },[state])

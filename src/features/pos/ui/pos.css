@@ -12,7 +12,7 @@
 .product-card[data-tone="drinks"] .product-medallion { color: #2671a5; background: #e6f2fc; }
 .product-card[data-tone="food"] .product-medallion { color: #a25d18; background: #fff0db; }
 .product-card[data-tone="snacks"] .product-medallion { color: #9a5478; background: #faeaf3; }
-.product-card-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
+.product-card-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; }
 .product-card .product-price { font-size: 21px; letter-spacing: -.025em; }
 .product-add { display: grid; place-items: center; flex: 0 0 auto; width: 29px; height: 29px; color: var(--accent-dark); background: var(--accent-soft); border-radius: 9px; }
 .product-card small { color: var(--muted); font-size: 12px; }
@@ -26,9 +26,13 @@
 .cart-empty p { color: var(--muted); margin: 0; font-size: 14px; }
 .pos-cart .quantity button { display: grid; place-items: center; min-width: 36px; }
 .pos-cart .cart-line strong { font-size: 14px; }
+.pos-cart .cart-line { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.pos-cart .cart-line strong { overflow-wrap: anywhere; }
 .pos-cart .order-summary { display: grid; gap: 10px; }
 .pos-cart .order-summary > div { display: flex; justify-content: space-between; gap: 10px; }
 .pos-cart .cart-total { align-items: center; margin-top: 2px; padding: 15px 18px; border-radius: 14px; color: white; background: var(--navy); }
+.pos-cart .cart-total { flex-wrap: wrap; white-space: normal; }
+.pos-cart .cart-total strong { font-size: clamp(22px, 5.5vw, 30px); white-space: nowrap; }
 .pos-cart .payment-methods { margin: 0; }
 .pos-cart .payment-methods legend { font-size: 14px; }
 .pos-cart > .primary-action { min-height: 50px; }

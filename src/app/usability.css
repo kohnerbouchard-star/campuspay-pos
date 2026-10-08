@@ -7,6 +7,8 @@
 .report-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
 .report-section { scroll-margin-top: 16px; margin-bottom: 28px; }
 .report-section:focus { outline-offset: 6px; }
+.report-chooser { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 20px; }
+.report-chooser .field { width: min(100%, 340px); }
 .inventory-task-groups { display: flex; flex-wrap: wrap; align-items: start; gap: 12px 24px; margin-bottom: 20px; }
 .inventory-task-group { flex: 1 1 280px; min-width: 0; }
 .inventory-task-group:last-child { flex: 2 1 480px; }

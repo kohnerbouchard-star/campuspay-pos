@@ -14,7 +14,8 @@
       "fix/refund-readiness-submit-lock-20261008": false,
       "feat/product-photos-20261008": false,
       "fix/photo-draft-navigation-20261008": false,
-      "feat/workflow-clarity-20261008": false
+      "feat/workflow-clarity-20261008": false,
+      "feat/visual-workflow-review-20261008": false
     }
   }
 }

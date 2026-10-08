@@ -5,12 +5,13 @@ import { StaffSessionGuard } from '@/features/terminal/StaffSessionGuard'
 import { StaffNavigation } from '@/components/navigation/StaffNavigation'
 import { WorkspaceSections } from '@/components/navigation/WorkspaceSections'
 import { WorkspaceBreadcrumbs } from '@/components/navigation/WorkspaceBreadcrumbs'
+import { StaffSessionBoundary } from '@/features/terminal/StaffSessionBoundary'
 
 export function WorkspaceFrame({ session, title, children }: {
   session: SessionContext; title: string; children: ReactNode
 }) {
   const allowedLinks = WORKSPACE_LINKS.filter(link => canAccessWorkspace(session.permissions, link))
-  return <div className="app-shell">
+  return <StaffSessionBoundary><div className="app-shell">
     <a className="skip-link" href="#workspace-content">Skip to workspace</a>
     <StaffNavigation links={allowedLinks} displayName={session.display_name} role={session.preset} />
     <div className="main-stage" id="workspace-content" tabIndex={-1}>
@@ -19,5 +20,5 @@ export function WorkspaceFrame({ session, title, children }: {
       <WorkspaceSections permissions={session.permissions} />
       {children}
     </div>
-  </div>
+  </div></StaffSessionBoundary>
 }

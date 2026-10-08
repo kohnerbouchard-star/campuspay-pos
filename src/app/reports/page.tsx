@@ -17,7 +17,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   const selected = reports.find(report => report.id === params.report) ?? reports[0]
   return <WorkspaceFrame session={session} title="Reports"><main className="workspace">
     <header className="workspace-header"><div><p className="eyebrow">School operations</p><h1>Reports</h1><p>Choose one report to review. Only reports assigned to your account are available.</p></div></header>
-    {reports.length > 1 && <form className="toolbar" action="/reports"><label className="field"><span>Report</span><select name="report" defaultValue={selected.id}>{reports.map(report => <option key={report.id} value={report.id}>{report.label}</option>)}</select></label><button className="secondary-action">Open report</button></form>}
+    {reports.length > 1 && <form className="report-chooser" action="/reports"><label className="field"><span>Report</span><select name="report" defaultValue={selected.id}>{reports.map(report => <option key={report.id} value={report.id}>{report.label}</option>)}</select></label><button className="secondary-action">Open report</button></form>}
     {session.permissions.includes('reconciliation.read') && <p><a className="secondary-action" href="/reconciliation">Open daily reconciliation</a></p>}
     {selected && <div className="report-section" id={selected.id} tabIndex={-1} aria-label={`${selected.label} report section`}>{selected.panel}</div>}
   </main></WorkspaceFrame>

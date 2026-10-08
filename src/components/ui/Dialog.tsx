@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, type ReactNode } from 'react'
+import { isStaffSessionExiting } from '@/features/terminal/session-exit'
 
 export function Dialog({ title, children, onClose, busy = false, className = '', role = 'dialog', describedBy, returnFocus }: {
   title: string; children: ReactNode; onClose(): void; busy?: boolean; className?: string; role?: 'dialog' | 'alertdialog'; describedBy?: string; returnFocus?(): void
@@ -10,9 +11,10 @@ export function Dialog({ title, children, onClose, busy = false, className = '',
   useEffect(() => {
     const dialog = ref.current
     const previous = document.activeElement as HTMLElement | null
+    if (isStaffSessionExiting()) return
     dialog?.showModal()
     dialog?.querySelector<HTMLElement>('[data-dialog-initial-focus]')?.focus()
-    return () => { dialog?.close(); if (restore.current) { restore.current(); return }; if(previous?.isConnected && !previous.matches(':disabled')) previous.focus({ preventScroll: true }); else document.getElementById('workspace-content')?.focus() }
+    return () => { dialog?.close(); if (isStaffSessionExiting()) return; if (restore.current) { restore.current(); return }; if(previous?.isConnected && !previous.matches(':disabled')) previous.focus({ preventScroll: true }); else document.getElementById('workspace-content')?.focus() }
   }, [])
   return <dialog ref={ref} className={`dialog ${className}`} tabIndex={-1} role={role} aria-modal="true" aria-describedby={describedBy} aria-label={title} aria-busy={busy}
     onKeyDown={event => {
