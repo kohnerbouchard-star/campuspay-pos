@@ -19,6 +19,8 @@ export function StockAdjustmentForm({ products, lots, operatorId, onSaved, initi
   const pending = useRef(false)
   const mounted = useRef(false)
   const product = products.find(row => row.id === form.productId)
+  const selectedLot = lots.find(row => row.lot_id === form.lotId && row.product_id === form.productId)
+  const reasonLabels: Readonly<Record<string, string>> = { DAMAGED: 'Damaged', EXPIRED: 'Expired', SUPPLIER_RETURN: 'Returned to supplier', STOCK_COUNT_LOSS: 'Stock count shortage' }
   const blocked = busy || !!recoveryKey || !ready
 
   useEffect(() => {
@@ -115,6 +117,6 @@ export function StockAdjustmentForm({ products, lots, operatorId, onSaved, initi
       <label className="field span-two"><span>Adjustment notes</span><textarea required disabled={blocked} minLength={3} maxLength={500} value={form.notes} onChange={e => set('notes', e.target.value)} /></label>
       <button className="secondary-action" disabled={blocked || !product || !product.stock_on_hand}>Review stock removal</button>
     </form>
-    {confirm && <Dialog title="Confirm stock removal" busy={busy} onClose={() => setConfirm(false)}><p>Remove <strong>{form.quantityToRemove} × {product?.name}</strong> from saleable stock?</p><p>{form.notes}</p><p className="muted">This changes inventory and records the cost of the removed units.</p>{error && <p className="error-message" role="alert">{error}</p>}<div className="action-row end"><button disabled={busy} className="secondary-action" onClick={() => setConfirm(false)}>Cancel</button><button disabled={blocked} className="primary-action danger-action" onClick={() => void post()}>{busy ? 'Recording adjustment…' : 'Confirm removal'}</button></div></Dialog>}
+    {confirm && <Dialog title="Confirm stock removal" busy={busy} onClose={() => setConfirm(false)}><p>Remove <strong>{form.quantityToRemove} × {product?.name}</strong> from saleable stock?</p><dl className="detail-list"><div><dt>Reason</dt><dd>{reasonLabels[form.reasonCode]}</dd></div><div><dt>Inventory lot</dt><dd>{selectedLot ? `${selectedLot.receipt_number} · ${selectedLot.quantity_remaining} remaining` : 'Use current costing order'}</dd></div><div><dt>Product stock after removal</dt><dd>{Math.max(0, (product?.stock_on_hand ?? 0) - form.quantityToRemove)} units, if stock has not changed</dd></div><div><dt>Notes</dt><dd>{form.notes}</dd></div></dl><p className="muted">This records the cost and quantity removed. It does not delete the product or pay a supplier refund. Current stock is checked again when you confirm.</p>{error && <p className="error-message" role="alert">{error}</p>}<div className="action-row end"><button data-dialog-initial-focus disabled={busy} className="secondary-action" onClick={() => setConfirm(false)}>Cancel</button><button disabled={blocked} className="primary-action danger-action" onClick={() => void post()}>{busy ? 'Recording adjustment…' : 'Confirm removal'}</button></div></Dialog>}
   </section>
 }

@@ -76,7 +76,7 @@ export function EnrollmentForm({ onCancel, onComplete }: {
         <label className="field"><span>Student ID</span><input autoFocus autoComplete="off" required maxLength={40} pattern={'[A-Za-z0-9_\\-]+'} title="Use letters, numbers, hyphens or underscores" value={studentCode} onChange={(event) => setStudentCode(event.target.value)} /></label>
         <label className="field"><span>Student name</span><input autoComplete="off" required maxLength={120} value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>
         <div className="student-summary"><span>Initial wallet balance</span><strong className="money">{formatWon(0)}</strong></div>
-        <p className="muted">Add funds through Accounting after enrollment. Every top-up requires its own authorization and receipt.</p>
+        <p className="muted">After enrollment, open the student account for funding options. Available operations depend on your access and installation settings.</p>
         <div className="field"><span>MICA Money Card</span><button type="button" className="secondary-action" onClick={() => { setReader(true); setError(null) }}>{cardCaptured ? 'Scan a different card' : 'Scan MICA Money Card'}</button></div>
         {cardCaptured && <p role="status" className="reader-state">Card detected. Ready to activate.</p>}
         <label className="field"><span>Student PIN</span><input name="studentPin" type="password" inputMode="numeric" autoComplete="new-password" required minLength={4} maxLength={12} pattern="[0-9]{4,12}" aria-describedby="enrollment-pin-help" value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 12))} /></label>

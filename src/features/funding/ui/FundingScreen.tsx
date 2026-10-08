@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { Permission } from '@/features/auth/domain'
 import type { ManagedStudent } from '@/features/students/domain'
 import { apiFetch,ClientApiError } from '@/lib/api/client'
+import { ErrorState,LoadingState } from '@/components/ui/Feedback'
 import { businessDate } from '@/lib/format/business-time'
 import { ConfirmFundingSchema,FundingKeySchema,FundingIntentSchema,FundingResultSchema,FundingHistorySchema,type FundingAction,type FundingIntent,type FundingReceipt,type FundingHistory,type PrepareFunding } from '../domain'
 import { FundingForm } from './FundingForm'
@@ -14,9 +15,14 @@ import { FundingJournal,FundingReceiptView } from './FundingJournal'
 const storageKey='campuspay:funding-operation:v1'
 export function FundingScreen({enabled,permissions,student,cashOnly=false,onPosted,onLeaveStateChange}:{enabled:boolean;permissions:readonly Permission[];student?:ManagedStudent;cashOnly?:boolean;onPosted?():void|Promise<void>;onLeaveStateChange?(state:LeaveState):void}){
  const [ready,setReady]=useState(false),[blocked,setBlocked]=useState(false),[pending,setPending]=useState<string|null>(null),[intent,setIntent]=useState<FundingIntent|null>(null)
- const [receipt,setReceipt]=useState<FundingReceipt|null>(null),[data,setData]=useState<FundingHistory|null>(null),[busy,setBusy]=useState(false),[uncertain,setUncertain]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('')
+ const [receipt,setReceipt]=useState<FundingReceipt|null>(null),[busy,setBusy]=useState(false),[uncertain,setUncertain]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('')
  const [from,setFrom]=useState(()=>businessDate(new Date())),[to,setTo]=useState(()=>businessDate(new Date())),[offset,setOffset]=useState(0),[revision,setRevision]=useState(0)
  const [draftState,setDraftState]=useState<LeaveState>('clean')
+ const journalKey=`${from}:${to}:${offset}:${revision}`
+ const [journalResult,setJournalResult]=useState<{key:string;data:FundingHistory|null;error:string}|null>(null)
+ const journalCurrent=journalResult?.key===journalKey
+ const data=journalCurrent?journalResult.data:null
+ const journalError=journalCurrent?journalResult.error:''
  const flight=useRef(false)
  const actions:FundingAction[]=student?['CASH_DEPOSIT']:cashOnly?['PAID_IN','PAID_OUT','CASH_DROP']:['NONCASH_CREDIT','ADMIN_DEBIT','REVERSE_FUNDING']
  const allowedActions=actions.filter(a=>permissions.includes(a==='CASH_DEPOSIT'?'wallet.fund':a==='REVERSE_FUNDING'?'wallet.reverse':['NONCASH_CREDIT','ADMIN_DEBIT'].includes(a)?'wallet.correct':'cash.movement.record'))
@@ -31,9 +37,9 @@ export function FundingScreen({enabled,permissions,student,cashOnly=false,onPost
  },0);return()=>clearTimeout(timer)},[])
  useEffect(()=>{let current=true
   if(studentId)return()=>{current=false};
-  void apiFetch<unknown>(`/api/funding?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&offset=${offset}`).then(v=>{if(current)setData(FundingHistorySchema.parse(v))}).catch(e=>{if(current){setData(null);setError(e instanceof Error?e.message:'Journal unavailable')}})
+  void apiFetch<unknown>(`/api/funding?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&offset=${offset}`).then(v=>{if(current)setJournalResult({key:journalKey,data:FundingHistorySchema.parse(v),error:''})}).catch(e=>{if(current)setJournalResult({key:journalKey,data:null,error:e instanceof Error?e.message:'Journal unavailable'})})
   return()=>{current=false}
- },[from,to,offset,revision,studentId])
+ },[from,to,offset,revision,studentId,journalKey])
  function clear(){
   setIntent(null);setUncertain(false);setDraftState('clean')
   try{sessionStorage.removeItem(storageKey);if(sessionStorage.getItem(storageKey)!==null)throw new Error('storage');setPending(null)}
@@ -90,6 +96,7 @@ export function FundingScreen({enabled,permissions,student,cashOnly=false,onPost
  {intent&&!uncertain&&<FundingConfirm intent={intent} busy={busy} unavailable={Boolean(studentId&&!fundingReady)} onScan={scan} onConfirm={v=>void confirm(v)} onRecover={()=>void recover()}/>}
  {receipt&&<FundingReceiptView receipt={receipt}/>}
  {!student&&<section className="panel form-stack"><h2>Journal date range</h2><label className="field"><span>From (Korea)</span><input type="date" value={from} onChange={e=>{setFrom(e.target.value);setOffset(0)}}/></label><label className="field"><span>To (Korea)</span><input type="date" value={to} onChange={e=>{setTo(e.target.value);setOffset(0)}}/></label><button className="secondary-action" disabled={busy} onClick={()=>setRevision(n=>n+1)}>Refresh funding journal</button></section>}
+ {!student&&!journalCurrent&&<LoadingState label="Loading funding journal…"/>}{!student&&journalError&&<ErrorState message={journalError} onRetry={()=>setRevision(n=>n+1)}/>}
  {data&&<FundingJournal key={`${data.from}:${data.to}:${revision}`} data={data} offset={offset} busy={busy} onPage={setOffset}/>}
  </Container>
 }

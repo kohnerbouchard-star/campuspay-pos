@@ -104,6 +104,15 @@ try {
    else {assert.notEqual(new URL(page.url()).pathname,path,`${test.code} denied ${path}`);assert.equal(requests,0,'A denied page never fetches protected records')}
    page.off('request',listener)
   }
+  const reportChoices=[['reports.sales','sales-report'],['reports.inventory','inventory-report'],['reports.wallets','wallet-report'],['reports.coupons','coupon-report']]
+  const allowedReports=reportChoices.filter(([cap])=>test.permissions.includes(cap))
+  if(allowedReports.length){
+   const requested=reportChoices.find(([cap])=>!test.permissions.includes(cap))?.[1]??'unknown-report'
+   await page.goto(base+'/reports?report='+requested,{waitUntil:'networkidle'})
+   await expect(page.locator('.report-section')).toHaveCount(1)
+   await expect(page.locator('.report-section')).toHaveAttribute('id',allowedReports[0][1])
+   assert.deepEqual(await page.locator('select[name="report"] option').evaluateAll(options=>options.map(option=>option.value)),allowedReports.length>1?allowedReports.map(([,id])=>id):[])
+  }
   if(test.permissions.includes('students.read')){
    await page.goto(base+'/students',{waitUntil:'networkidle'})
    await page.getByRole('button',{name:/Demo Student/}).first().click()
@@ -125,6 +134,7 @@ try {
   if(test.code==='ACCESS-ADMIN-VIEW'){
    await page.goto(base+'/administration',{waitUntil:'networkidle'})
    await page.getByRole('row').filter({hasText:'ACCESS-STAFF'}).getByRole('button',{name:'Open employee',exact:true}).click()
+   await page.locator('summary').filter({hasText:/^View effective access/}).click()
    await expect(page.getByText('Take payments',{exact:true})).toBeVisible()
    assert.equal(await page.getByRole('button',{name:'Access',exact:true}).count(),0)
    assert.equal(await page.getByRole('button',{name:'Create employee',exact:true}).count(),0)

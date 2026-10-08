@@ -363,6 +363,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
         await captureAll(page,'inventory-receipt')
         await page.getByRole('button',{name:'Back to products',exact:true}).click()
         for (const [button,screenshot] of [['View Lots','inventory-lots'],['Change Price','inventory-price'],['Adjust Stock','inventory-adjustment']]) {
+          await page.getByRole('button',{name:'Bottled Water',exact:true}).click()
           const more=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Bottled Water',exact:true})}).getByText('More',{exact:true})
           if(!await more.evaluate(e=>e.closest('details').open))await more.click()
           await page.getByRole('button',{name:button,exact:true}).click();await captureAll(page,screenshot)

@@ -1,4 +1,5 @@
 'use client'
+import { ErrorState, LoadingState } from '@/components/ui/Feedback'
 import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 
 import { useEffect, useMemo, useState } from 'react'
@@ -10,11 +11,17 @@ export function CouponReportPanel() {
   const [rows, setRows] = useState<CouponReportRow[]>([])
   const [error, setError] = useState<string | null>(null)
 
+  const [loading, setLoading] = useState(true)
+  const [revision, setRevision] = useState(0)
+
   useEffect(() => {
+    let active = true
     void fetchCouponReport()
-      .then((result) => { setRows(result); setError(null) })
-      .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Coupon report could not be loaded'))
-  }, [])
+      .then((result) => { if (active) { setRows(result); setError(null) } })
+      .catch((caught: unknown) => { if (active) setError(caught instanceof Error ? caught.message : 'Coupon report could not be loaded') })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [revision])
 
   const totals = useMemo(() => rows.reduce((current, row) => ({
     redemptions: current.redemptions + row.redemption_count,
@@ -25,9 +32,9 @@ export function CouponReportPanel() {
   return <section className="panel table-panel coupon-report-panel">
     <div className="panel-heading">
       <div><p className="eyebrow">Read-only financial report</p><h2>Coupon performance</h2></div>
-      <span className="status-pill">{totals.redemptions} redemptions</span>
+      <span className="status-pill">{loading || error ? '—' : totals.redemptions} redemptions</span>
     </div>
-    {error && <p className="error-message" role="alert">{error}</p>}
+    {loading ? <LoadingState label="Loading coupon performance…" /> : error ? <ErrorState message={error} onRetry={() => { setLoading(true); setRevision(value => value + 1) }} /> : <>
     <div className="report-summary">
       <div><span>Discounts issued</span><strong>{formatWon(totals.discounts)}</strong></div>
       <div><span>Coupon sales revenue</span><strong>{formatWon(totals.revenue)}</strong></div>
@@ -46,6 +53,6 @@ export function CouponReportPanel() {
           </tr>)}
         </tbody>
       </table>
-    </div>
+    </div></> }
   </section>
 }

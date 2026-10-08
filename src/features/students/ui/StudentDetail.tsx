@@ -66,7 +66,7 @@ export function StudentDetail({student,userId,permissions,fundingEnabled,onChang
   {!student.active&&<p className="notice">This account is inactive. Funding and spending cannot proceed.</p>}
   {student.card_active&&student.pin_set===false&&<p className="notice">Card issued, but initial PIN setup is incomplete. Reset PIN cannot be used for first issuance.</p>}
 
-  {(can('students.enroll')||can('students.status.manage')||can('credentials.reset')||can('credentials.card.replace'))&&<details className="record-more"><summary>More student actions</summary><div className="action-row">
+  {((can('students.enroll')&&student.active&&student.pin_set===false&&!student.card_active)||can('students.status.manage')||(student.pin_set!==false&&(can('credentials.reset')||can('credentials.card.replace'))))&&<details className="record-more"><summary>More student actions</summary><div className="action-row">
    {can('students.enroll')&&student.active&&student.pin_set===false&&!student.card_active&&<Link className="secondary-action" href={`/students/${student.student_id}/complete`}>Complete enrollment</Link>}
    {student.pin_set!==false&&can('credentials.reset')&&<Link className="secondary-action" href={`/security?studentId=${student.student_id}&purpose=RESET_STUDENT_PIN`}>Reset PIN</Link>}
    {student.pin_set!==false&&can('credentials.card.replace')&&<Link className="secondary-action" href={`/security?studentId=${student.student_id}&purpose=RESET_STUDENT_CARD`}>Replace Card</Link>}
@@ -74,7 +74,7 @@ export function StudentDetail({student,userId,permissions,fundingEnabled,onChang
   </div></details>}
   {view==='funding'&&can('wallet.fund')&&<Dialog title={`Add Funds · ${student.display_name}`} onClose={()=>requestLeave(()=>setView(null))}><FundingScreen enabled={fundingEnabled} permissions={permissions} student={student} onPosted={onChanged} onLeaveStateChange={setChildState}/>{warning}</Dialog>}
   {view==='history'&&can('wallet.read')&&<WalletHistory student={student} onClose={()=>setView(null)}/>}
-  {view==='status'&&can('students.status.manage')&&<RecordManager kind="STUDENT" userId={userId} targetId={student.student_id} onChanged={onChanged} onLeaveStateChange={setChildState}/>}
+  {view==='status'&&can('students.status.manage')&&<><button className="secondary-action" onClick={()=>requestLeave(()=>setView(null))}>Back to student account</button><RecordManager kind="STUDENT" userId={userId} targetId={student.student_id} onChanged={onChanged} onLeaveStateChange={setChildState}/></>}
  </section>
  {leaveAction&&<ConfirmationDialog title="Discard unsaved student changes?" description="Only this unsubmitted draft will be discarded. No financial operation will be cancelled or repeated." confirmLabel="Discard draft" cancelLabel="Keep editing" destructive onCancel={()=>setLeaveAction(null)} onConfirm={async()=>{const action=leaveAction;setLeaveAction(null);setLeaveError('');action()}}/>}
  </Dialog>

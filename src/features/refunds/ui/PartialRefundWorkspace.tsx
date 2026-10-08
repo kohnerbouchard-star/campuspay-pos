@@ -8,8 +8,8 @@ import { PartialSnapshotSchema, type PartialSnapshot, type PostPartialRefundInpu
 import { clearRefundRecovery, readRefundRecovery, saveRefundRecovery } from '../storage'
 import { PartialRefundEditor } from './PartialRefundEditor'
 import { RefundReceipt } from './RefundReceipt'
-export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayout, userId }: { enabled: boolean; allowReturns: boolean; canPost: boolean; canPayout:boolean; userId: string }) {
-  const [reference,setReference] = useState(''), [snapshot,setSnapshot] = useState<PartialSnapshot | null>(null)
+export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayout, userId, initialReference = '' }: { enabled: boolean; allowReturns: boolean; canPost: boolean; canPayout:boolean; userId: string; initialReference?: string }) {
+  const [reference,setReference] = useState(initialReference), [snapshot,setSnapshot] = useState<PartialSnapshot | null>(null)
   const [receipt,setReceipt] = useState<RefundRecord | null>(null), [pending,setPending] = useState<ReturnType<typeof readRefundRecovery>>(null)
   const [ready,setReady] = useState(false), [busy,setBusy] = useState(false), [error,setError] = useState(''), [message,setMessage] = useState('')
   const working = useRef(false)
@@ -72,7 +72,7 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
   }
   const eligible = snapshot && snapshot.allocations.some(a => a.remaining_quantity > 0) && !snapshot.refunds.some(r => r.scope === 'FULL')
     && (snapshot.sale.channel === 'POS' || (allowReturns && snapshot.returns_enabled && ['OUT_FOR_DELIVERY','DELIVERED'].includes(snapshot.sale.order_status ?? '')))
-  return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Original-tender item corrections</p><h1>Item refunds and returns</h1><p>Repeated partial refunds with original-lot inspection. Each refund remains a separate immutable receipt.</p><Link href="/refunds">Full-sale refunds and net-day reports</Link></div></header>
+  return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Original-tender item corrections</p><h1>Item refunds and returns</h1><p>Repeated partial refunds with original-lot inspection. Each refund remains a separate immutable receipt.</p><Link href={`/refunds?reference=${encodeURIComponent(reference.trim())}`}>Full-sale refunds and net-day reports</Link></div></header>
     {!enabled && <p role="status">New item-level posting is disabled. Existing receipts and recovery remain available after the migration is installed.</p>}
     {!canPost && <p>Refund issue access is not assigned. This view does not grant cash payout access.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}

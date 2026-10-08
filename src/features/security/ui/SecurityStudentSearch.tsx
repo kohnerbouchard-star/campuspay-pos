@@ -27,10 +27,10 @@ export function SecurityStudentSearch({ onSelect, selectedId, disabled }: {
   }, [query, retry])
   return <section className="panel table-panel" aria-labelledby="security-students-heading" aria-busy={loading}>
     <div className="panel-heading"><div><p className="eyebrow">Find an account</p><h2 id="security-students-heading">Students</h2></div></div>
-    <label className="field"><span>Search students</span><input type="search" maxLength={120} placeholder="Student name or ID" value={query} disabled={disabled} onChange={(event) => setQuery(event.target.value)} /></label>
+    <label className="field"><span>Search students</span><input id="security-student-search" type="search" maxLength={120} placeholder="Student name or ID" value={query} disabled={disabled} onChange={(event) => setQuery(event.target.value)} /></label>
     {error ? <div role="alert" className="error-message">{error}<button className="secondary-action" onClick={() => setRetry((value) => value + 1)}>Retry</button></div> :
       <div className="table-scroll"><table><thead><tr><th scope="col">Student</th><th scope="col">Card</th></tr></thead><tbody>
-        {loading ? <tr><td colSpan={2} role="status">Loading students…</td></tr> : rows.length ? rows.map((student) => <tr key={student.student_id} className={student.student_id === selectedId ? 'selected-row' : undefined}><td><button className="table-link" aria-pressed={student.student_id === selectedId} disabled={disabled} onClick={() => onSelect(student)}><strong>{student.display_name}</strong><small>{student.student_code}</small></button></td><td>{student.card_active ? 'Active' : 'No active card'}</td></tr>) : <tr><td colSpan={2}>No students found. Try a different name or ID.</td></tr>}
+        {loading ? <tr><td colSpan={2} role="status">Loading students…</td></tr> : rows.length ? rows.map((student) => <tr key={student.student_id} className={student.student_id === selectedId ? 'selected-row' : undefined}><td><button id={`security-student-${student.student_id}`} className="table-link" aria-pressed={student.student_id === selectedId} disabled={disabled} onClick={() => onSelect(student)}><strong>{student.display_name}</strong><small>{student.student_code}</small></button></td><td>{student.card_active ? 'Active' : 'No active card'}</td></tr>) : <tr><td colSpan={2}>No students found. Try a different name or ID.</td></tr>}
       </tbody></table></div>}
     {!loading && rows.length === 50 && <p className="muted">Showing the first 50 matches. Refine your search to find a student.</p>}
   </section>

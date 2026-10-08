@@ -1,10 +1,11 @@
 'use client'
+import Link from 'next/link'
 import { BUSINESS_TIMEZONE } from '@/lib/format/business-time'
 import type { PaymentReceipt } from '@/features/pos/domain'
 import { Dialog } from '@/components/ui/Dialog'
 import { formatWon } from '@/lib/format/currency'
 export type ReceiptLine = { name: string; quantity: number; lineTotalWon: number }
-export function ReceiptDialog({ receipt, items, onClose }: { receipt: PaymentReceipt; items: ReceiptLine[]; onClose(): void }) {
+export function ReceiptDialog({ receipt, items, onClose, canReadRefunds = false }: { receipt: PaymentReceipt; items: ReceiptLine[]; onClose(): void; canReadRefunds?: boolean }) {
   return <Dialog title="Payment completed" onClose={onClose}>
     <div className="sale-receipt">
       <p className="eyebrow">MICA Money</p><strong>{receipt.receipt_number}</strong>
@@ -16,6 +17,6 @@ export function ReceiptDialog({ receipt, items, onClose }: { receipt: PaymentRec
         {receipt.tender_mode !== 'WALLET' && <><div><dt>Cash</dt><dd>{formatWon(receipt.cash_tender_won)}</dd></div><div><dt>Cash received</dt><dd>{formatWon(receipt.cash_received_won ?? 0)}</dd></div><div><dt>Change</dt><dd>{formatWon(receipt.change_given_won ?? 0)}</dd></div></>}
         {receipt.balance_after_won !== null && <div><dt>MICA Money balance</dt><dd>{formatWon(receipt.balance_after_won)}</dd></div>}
       </dl>
-    </div><button className="primary-action" onClick={onClose}>Start next sale</button>
+    </div><div className="action-row"><button data-dialog-initial-focus className="primary-action" onClick={onClose}>Start next sale</button>{canReadRefunds && <Link className="secondary-action" href={`/refunds?reference=${encodeURIComponent(receipt.receipt_number)}`}>Review refund options</Link>}</div>
   </Dialog>
 }
