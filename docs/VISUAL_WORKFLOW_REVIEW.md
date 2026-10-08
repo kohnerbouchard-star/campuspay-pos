@@ -72,3 +72,9 @@ The initial baseline report-variant captures changed the selector without submit
 Permanent deletion remains a policy decision, not an implemented button: see [the deletion proposal](PERMANENT_DELETION_PROPOSAL.md). Existing accepted policy preserves financial identities and immutable management history; deciding which setup evidence may be removed, identifier reuse and tombstone retention precedes backend expansion.
 
 Actual photo-provider testing/activation remains separate: see [the activation handoff](product-photos/ACTIVATION_HANDOFF.md). No credentials, persistent provider access, production flags or production uploads were changed. No new dependency, migration, financial writer or permission expansion is introduced here.
+
+## Independent final review follow-up
+
+An independent reviewer inspected 38 images, representing all 33 captured state families, and found one additional medium contrast inconsistency: store CSS-module fields bypassed the shared control border (about 1.65:1 on white). Store field/search borders now use the same 3.40:1 control token. Refund lookup forms use a scoped start-aligned layout to keep the action next to the reference; full-sale lookup failure copy now directs the operator to check the reference/connection.
+
+Remaining low-severity observations: some mobile financial tables need clearer horizontal-scroll cues; disabled funding/movement forms remain long before history. These are discoverability/density follow-ups, not evidence of broken scrolling or authorization. Their populated-state/interaction variants need design verification before structural changes. The independent session review found no blocking defect; explicit gaps include dirty-draft plus failed manual logout, real concurrent payment completion, other browser engines and assistive technology.

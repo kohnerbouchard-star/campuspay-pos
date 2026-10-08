@@ -39,3 +39,5 @@
  .dialog.student-detail-dialog{inset:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0;}
  .student-detail-dialog>.panel-heading{top:-20px;}
 }
+
+.toolbar.refund-lookup { justify-content: flex-start; }
