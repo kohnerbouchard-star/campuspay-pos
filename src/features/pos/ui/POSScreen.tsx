@@ -20,7 +20,7 @@ import { forgetPendingPayment, readPendingPayment } from '@/features/pos/pending
 import { ErrorState, LoadingState } from '@/components/ui/Feedback'
 import { Icon } from '@/components/ui/Icon'
 
-export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: string;canCheckout:boolean;canRedeem:boolean }) {
+export function POSScreen({ cashierName,canCheckout,canRedeem,canReadRefunds=false }: { cashierName: string;canCheckout:boolean;canRedeem:boolean;canReadRefunds?:boolean }) {
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [checkoutState, dispatch] = useReducer(checkoutReducer, initialCheckoutState)
   const { cart } = checkoutState
@@ -134,6 +134,6 @@ export function POSScreen({ cashierName,canCheckout,canRedeem }: { cashierName: 
         onTenderChange={mode => { setTenderMode(mode); checkoutKey.current = null }} />}
     </div>
     {intent && <PaymentDialog intent={intent} onClose={() => { setIntent(null); checkoutKey.current = null }} onComplete={completed} />}
-    {receipt && <ReceiptDialog receipt={receipt} items={receiptItems} onClose={() => setReceipt(null)} />}
+    {receipt && <ReceiptDialog canReadRefunds={canReadRefunds} receipt={receipt} items={receiptItems} onClose={() => setReceipt(null)} />}
   </main>
 }

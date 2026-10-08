@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { Dialog } from '@/components/ui/Dialog'
 import { formatWon } from '@/lib/format/currency'
 import { FUNDING_LABELS,type FundingHistory,type FundingReceipt } from '../domain'
 export function FundingReceiptView({receipt:r}:{receipt:FundingReceipt}){return <section className="panel form-stack" aria-label="Funding receipt"><h2>Recorded receipt {r.reference_number}</h2>
@@ -15,9 +16,9 @@ export function FundingJournal({data,offset,busy,onPage}:{data:FundingHistory;of
  {!data.finance_access&&<p>Cashier view: cash-only movements on this terminal. Student wallet records are excluded.</p>}
  <p>{data.finance_access?`Net wallet change ${formatWon(data.wallet_net_won)} · `:''}cash in {formatWon(data.cash_in_won)} · cash out {formatWon(data.cash_out_won)}</p>
  <a className="secondary-action" href={`/api/funding/export?from=${encodeURIComponent(data.from)}&to=${encodeURIComponent(data.to)}`}>Export all receipts in this date range</a><p className="muted">Single-snapshot CSV; over 50,000 rows requires a narrower range and is never silently truncated.</p>
- <div className="table-scroll"><table><thead><tr><th>Receipt</th><th>Operation</th><th>Wallet</th><th>Cash</th><th>Operator</th><th>Details</th></tr></thead><tbody>{data.rows.map(r=><tr key={r.operation_id}><td>{r.reference_number}</td><td>{FUNDING_LABELS[r.action]}</td><td>{formatWon(r.wallet_delta_won)}</td><td>{formatWon(r.cash_delta_won)}</td><td>{r.actor_name}</td><td><button onClick={()=>setSelected(r)}>View receipt</button></td></tr>)}</tbody></table></div>
+ <div className="table-scroll"><table><thead><tr><th>Receipt</th><th>Operation</th><th>Wallet</th><th>Cash</th><th>Operator</th></tr></thead><tbody>{data.rows.map(r=><tr key={r.operation_id}><td><button className="table-link" onClick={()=>setSelected(r)} aria-label={`View receipt ${r.reference_number}`}>{r.reference_number}</button></td><td>{FUNDING_LABELS[r.action]}</td><td>{formatWon(r.wallet_delta_won)}</td><td>{formatWon(r.cash_delta_won)}</td><td>{r.actor_name}</td></tr>)}</tbody></table></div>
  {!data.rows.length&&<p>No matching funding receipts.</p>}<div className="action-row"><button disabled={busy||offset===0} onClick={()=>{setSelected(null);onPage(Math.max(0,offset-50))}}>Previous funding receipts</button><span>{data.rows.length?offset+1:0}–{offset+data.rows.length} of {data.total}</span><button disabled={busy||offset+50>=data.total} onClick={()=>{setSelected(null);onPage(offset+50)}}>Next funding receipts</button></div>
- </section>{selected&&<FundingReceiptView receipt={selected}/>}
+ </section>{selected&&<Dialog title="Funding receipt details" onClose={()=>setSelected(null)}><FundingReceiptView receipt={selected}/></Dialog>}
  <section className="panel form-stack"><h2>Reconciliation checks</h2>
  {data.finance_access&&<p>Current wallet-to-ledger check (all time): {data.wallets_checked} wallets checked; <strong>{data.wallet_mismatches} mismatches</strong>.</p>}
  <p>Selected-date closed shifts: {data.closed_shifts_checked} checked; <strong>{data.closed_shift_mismatches} journal mismatches</strong>; {data.unreviewed_variances} unreviewed count variances.</p>

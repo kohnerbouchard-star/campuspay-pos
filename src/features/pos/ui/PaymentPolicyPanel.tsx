@@ -10,6 +10,7 @@ export function PaymentPolicyPanel({ policy, onChange }: { policy: PaymentPolicy
   const [endsAt, setEndsAt] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [needsSignIn, setNeedsSignIn] = useState(false)
   const pending = useRef(false)
@@ -21,7 +22,7 @@ export function PaymentPolicyPanel({ policy, onChange }: { policy: PaymentPolicy
   async function reload() {
     if (pending.current) return
     pending.current = true; setBusy(true)
-    try { onChange(await fetchPaymentPolicy()); setError(''); setFieldErrors({}); setNeedsSignIn(false) }
+    try { onChange(await fetchPaymentPolicy()); setMessage('Current payment settings loaded.'); setError(''); setFieldErrors({}); setNeedsSignIn(false) }
     catch (caught) { showError(caught) }
     finally { pending.current = false; setBusy(false) }
   }
@@ -35,14 +36,15 @@ export function PaymentPolicyPanel({ policy, onChange }: { policy: PaymentPolicy
       const issue = eventPaymentIssue(eventName, end)
       if (issue) { setError(issue.message); setFieldErrors({ [issue.field]: issue.message }); return }
     }
-    pending.current = true; setBusy(true); setError(''); setNeedsSignIn(false)
-    try { onChange(await savePaymentPolicy(!policy.cash_enabled, policy.cash_enabled ? null : eventName.trim(), end)) }
+    pending.current = true; setBusy(true); setError(''); setMessage(''); setNeedsSignIn(false)
+    try { const saved = await savePaymentPolicy(!policy.cash_enabled, policy.cash_enabled ? null : eventName.trim(), end); onChange(saved); setMessage(`Cash and split payments are now ${saved.cash_enabled ? 'on' : 'off'} for this register.`) }
     catch (caught) { showError(caught) }
     finally { pending.current = false; setBusy(false) }
   }
   if (!policy.can_manage) return null
   return <section className="payment-policy">
     <h2>Event payment settings</h2>
+    {message && <p role="status">{message}</p>}
     <p className="muted">Applies only to this register. Event cash ends automatically, within 24 hours. Enter the end time in Korea Standard Time (KST).</p>
     <p>MICA Money is always available. Online Store accepts MICA Money only.</p>
     {policy.ends_at && <p>{policy.event_status === 'EXPIRED' ? 'Event ended' : 'Event ends'}: {formatBusinessTime(policy.ends_at)} KST</p>}

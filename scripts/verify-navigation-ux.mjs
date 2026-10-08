@@ -115,17 +115,18 @@ try {
 
   phase = 'report shortcuts and inventory task groups'
   await page.goto(ctx.base + '/reports', { waitUntil: 'networkidle' })
-  const reportNav = page.getByRole('navigation', { name: 'Jump to report' })
-  await expect(reportNav.locator('a')).toHaveCount(4)
-  for (const link of await reportNav.locator('a').all()) {
-    const anchor = await link.getAttribute('href')
-    await link.click(); await expect(page.locator(anchor)).toBeFocused()
+  const reportChoice = page.getByRole('combobox', { name: 'Report', exact: true })
+  await expect(reportChoice.locator('option')).toHaveCount(4)
+  for (const value of ['sales-report','inventory-report','wallet-report','coupon-report']) {
+    await reportChoice.selectOption(value); await page.getByRole('button', { name: 'Open report', exact: true }).click()
+    await expect(page.locator('.report-section')).toHaveCount(1)
+    await expect(page.locator('#'+value)).toBeVisible()
   }
   await page.goto(ctx.base + '/inventory', { waitUntil: 'networkidle' })
   await page.getByRole('row').filter({hasText:'WATER-001'}).getByRole('button').click()
   await page.getByRole('button',{name:'Receive Stock',exact:true}).click()
   await expect(page.getByRole('combobox',{name:'Product',exact:true})).not.toHaveValue('')
-  checks.push('Report jump links move focus; receiving begins on the selected product without searching again')
+  checks.push('Report choice opens exactly one authorized report; receiving begins on the selected product without searching again')
 
   phase = 'short desktop and resize menu'
   await page.goto(ctx.base + '/pos', { waitUntil: 'networkidle' })

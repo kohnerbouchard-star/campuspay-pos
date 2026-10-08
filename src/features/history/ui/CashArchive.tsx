@@ -1,5 +1,6 @@
 'use client'
 import { useEffect,useState } from 'react'
+import { Dialog } from '@/components/ui/Dialog'
 import { apiFetch } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
 import { formatBusinessTime } from '@/lib/format/business-time'
@@ -23,14 +24,14 @@ export function CashArchive(){
  <p>{data.total} closes · expected {formatWon(data.expected_won)} · counted {formatWon(data.counted_won)} · total variance {formatWon(data.variance_won)}. These totals cover the full filter, not this page.</p>
  {data.unreviewed>0&&<p className="error-message" role="alert">{data.unreviewed} count variances still need independent review.</p>}
  <a className="secondary-action" href={`/api/cash/history/export?${historyParams({...filters,offset:0})}`}>Export all matching cash closes</a><p className="muted">One-snapshot CSV, including funding movements and review notes. More than 50,000 rows requires a narrower filter; it never returns a partial file.</p>
- <div className="table-scroll" role="region" tabIndex={0} aria-label="Complete cash-close register"><table><thead><tr><th>Closed (Korea)</th><th>Terminal / operator</th><th>Expected</th><th>Counted</th><th>Variance</th><th>Details</th></tr></thead><tbody>{data.rows.map(({shift:r,closed_by_name})=><tr key={r.shift_id}>
- <td>{formatBusinessTime(r.closed_at!)}<small>{r.shift_id}</small></td><td>{r.terminal_label??r.terminal_id}<small>{closed_by_name}</small></td><td>{formatWon(r.expected_won)}</td><td>{formatWon(r.counted_won??0)}</td><td>{formatWon(r.variance_won??0)}</td><td><button onClick={()=>setSelected(r.shift_id)}>View close details</button></td></tr>)}</tbody></table></div>
+ <div className="table-scroll" role="region" tabIndex={0} aria-label="Complete cash-close register"><table><thead><tr><th>Closed (Korea)</th><th>Terminal / operator</th><th>Expected</th><th>Counted</th><th>Variance</th></tr></thead><tbody>{data.rows.map(({shift:r,closed_by_name})=><tr key={r.shift_id}>
+ <td>{formatBusinessTime(r.closed_at!)}<small>{r.shift_id}</small><button className="table-link" onClick={()=>setSelected(r.shift_id)}>View close details</button></td><td>{r.terminal_label??r.terminal_id}<small>{closed_by_name}</small></td><td>{formatWon(r.expected_won)}</td><td>{formatWon(r.counted_won??0)}</td><td>{formatWon(r.variance_won??0)}</td></tr>)}</tbody></table></div>
  {!data.rows.length&&<p>No matching closed shifts.</p>}<HistoryPages offset={data.offset} total={data.total} length={data.rows.length} busy={loading} onPage={offset=>apply({...filters,offset})}/>
  <p className="muted">Dates apply to closing time. A shift may contain movements from more than one day; these totals are not the daily sales report.</p>
  </section>
- {detail&&<section className="panel form-stack" aria-label="Cash close details"><h2>Close {detail.shift.shift_id}</h2><p>Opened by {detail.opened_by_name}; closed by {detail.closed_by_name}.</p>
+ {detail&&<Dialog title="Cash close details" onClose={()=>setSelected(null)}><section className="form-stack"><h2>Close {detail.shift.shift_id}</h2><p>Opened by {detail.opened_by_name}; closed by {detail.closed_by_name}.</p>
  <p>Opening float {formatWon(detail.shift.opening_float_won)} + sales {formatWon(detail.shift.cash_sales_won)} − refund payouts {formatWon(detail.shift.cash_payouts_won)} + funding/manual in {formatWon(detail.shift.funding_in_won)} − funding/manual out {formatWon(detail.shift.funding_out_won)} = expected {formatWon(detail.shift.expected_won)}.</p>
- <p>Counted {formatWon(detail.shift.counted_won??0)}; variance {formatWon(detail.shift.variance_won??0)}.</p><p>{detail.shift.close_notes}</p><p>Independent review: {detail.approved_by_name??'Not recorded'}{detail.shift.approval_notes?` · ${detail.shift.approval_notes}`:''}</p></section>}
+ <p>Counted {formatWon(detail.shift.counted_won??0)}; variance {formatWon(detail.shift.variance_won??0)}.</p><p>{detail.shift.close_notes}</p><p>Independent review: {detail.approved_by_name??'Not recorded'}{detail.shift.approval_notes?` · ${detail.shift.approval_notes}`:''}</p></section></Dialog>}
  </>}
  </main>
 }

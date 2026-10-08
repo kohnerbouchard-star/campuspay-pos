@@ -27,7 +27,9 @@ export function SecurityScreen({ initialStudent,permissions,initialPurpose }: { 
   const [error, setError] = useState<SecurityActionFailure | null>(null)
   const cardRead = useRef('')
   const submitting = useRef(false)
+  const actionHeading = useRef<HTMLHeadingElement>(null)
   const recoveryRequired = Boolean(error?.needsSignIn || error?.needsReview)
+  useEffect(() => { if (student) { actionHeading.current?.focus(); actionHeading.current?.scrollIntoView({ block: 'start' }) } }, [student])
 
   function clearProtectedState() {
     setAuthorization(null)
@@ -106,8 +108,9 @@ export function SecurityScreen({ initialStudent,permissions,initialPurpose }: { 
     <div className="dashboard-grid">
       <SecurityStudentSearch selectedId={student?.student_id} disabled={busy || reader || recoveryRequired} onSelect={(value) => { clearProtectedState(); setStudent(value); setMessage(null); setError(null) }} />
       <section className="panel" aria-labelledby="protected-action-heading" aria-busy={busy}>
-        <div className="panel-heading"><div><p className="eyebrow">One student · one action</p><h2 id="protected-action-heading">PIN and card replacement</h2></div></div>
+        <div className="panel-heading"><div><p className="eyebrow">One student · one action</p><h2 ref={actionHeading} tabIndex={-1} id="protected-action-heading">PIN and card replacement</h2></div></div>
         {student ? <>
+          <button type="button" className="secondary-action" disabled={busy || reader || recoveryRequired} onClick={() => { const previousId = student.student_id; clearProtectedState(); setStudent(null); setMessage(null); setError(null); (document.getElementById(`security-student-${previousId}`) ?? document.getElementById('security-student-search'))?.focus() }}>Back to student search</button>
           <div className="student-summary"><strong>{student.display_name}</strong><span>{student.student_code}</span></div>
           <div className="segmented" aria-label="Protected action">{([['RESET_STUDENT_PIN', 'Reset PIN'], ['RESET_STUDENT_CARD', 'Replace card']] as const).filter(([value])=>permissions.includes(value==='RESET_STUDENT_PIN'?'credentials.reset':'credentials.card.replace')).map(([value, label]) => <button key={value} aria-pressed={purpose === value} className={purpose === value ? 'active' : ''} disabled={busy || reader || recoveryRequired} onClick={() => { clearProtectedState(); setPurpose(value); setMessage(null); setError(null) }}>{label}</button>)}</div>
           <p className="muted">{purpose === 'RESET_STUDENT_PIN' ? 'The student’s current PIN will stop working.' : 'The student’s current card will stop working when the replacement is activated.'} Active online store sessions will end.</p>

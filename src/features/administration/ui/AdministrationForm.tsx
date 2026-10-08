@@ -6,14 +6,14 @@ import { administrationReview } from '../review'
 import { useEffect, useId, useRef, useState } from 'react'
 import { AdministrationChangeSchema,type AdministrationChange,type StaffRecord,type TerminalRecord } from '../domain'
 export type AdministrationTarget = {kind:'CREATE'}|{kind:'STAFF';record:StaffRecord;initialActive?:boolean}|{kind:'TERMINAL';record:TerminalRecord;isCurrent?:boolean}
-export function AdministrationForm({target,busy,onSubmit,onCancel}:{target:AdministrationTarget;busy:boolean;onSubmit(input:AdministrationChange):Promise<void>;onCancel():void}) {
+export function AdministrationForm({target,busy,onSubmit,onCancel,focusOnMount=true}:{target:AdministrationTarget;busy:boolean;onSubmit(input:AdministrationChange):Promise<void>;onCancel():void;focusOnMount?:boolean}) {
  const id=useId(),[error,setError]=useState(''),[review,setReview]=useState<AdministrationChange|null>(null)
  const [selectedPreset,setSelectedPreset]=useState<AccessPreset>(target.kind==='STAFF'?target.record.preset:'staff')
  const summary=review?administrationReview(review,target.kind==='CREATE'?undefined:target.record):null
  useEffect(()=>{if(!review||busy)return;const timer=setTimeout(()=>{setReview(null);setError('Review expired. Re-enter the authorization PIN and review the current change.')},60000);return()=>clearTimeout(timer)},[review,busy])
  const [action,setAction]=useState(target.kind==='CREATE'?'CREATE_STAFF':target.kind==='STAFF'?'UPDATE_STAFF':'UPDATE_TERMINAL')
  const heading=useRef<HTMLHeadingElement>(null)
- useEffect(()=>{heading.current?.focus();heading.current?.scrollIntoView({block:'start'})},[])
+ useEffect(()=>{if(focusOnMount){heading.current?.focus();heading.current?.scrollIntoView({block:'start'})}},[focusOnMount])
  const pinNeeded=action==='CREATE_STAFF'||action==='RESET_STAFF_PIN'
  const presetRole={staff:'cashier',manager:'inventory_admin',accountant:'accountant',super_admin:'super_admin'} as const
  return <form aria-labelledby={`${id}-heading`} className="panel form-stack" onSubmit={async event=>{

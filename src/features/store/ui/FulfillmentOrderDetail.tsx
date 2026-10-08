@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { StaffOnlineOrder } from '@/features/store/domain'
 import { NEXT_ORDER_STATUS } from '@/features/store/fulfillment'
 import { orderStatusLabel, orderTime } from '@/features/store/presentation'
@@ -7,13 +7,16 @@ import { formatWon } from '@/lib/format/currency'
 import { OrderTimeline } from './OrderTimeline'
 import styles from './store.module.css'
 
-export function FulfillmentOrderDetail({ order, busy, canOperate, onAdvance }: { order: StaffOnlineOrder; busy: boolean; canOperate:boolean; onAdvance: () => void }) {
+export function FulfillmentOrderDetail({ order, busy, canOperate, onAdvance, focusRequest = 0, onBack }: { order: StaffOnlineOrder; busy: boolean; canOperate:boolean; onAdvance: () => void; focusRequest?: number; onBack?(): void }) {
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => { if (focusRequest) { heading.current?.focus(); heading.current?.scrollIntoView({ block: 'start' }) } }, [focusRequest])
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const next = NEXT_ORDER_STATUS[order.status]
   const picking = canOperate && order.status === 'PICKING'
   const allPicked = order.items.every((item) => picked.has(item.product_id))
   return <section className={styles.fulfillmentDetail} aria-labelledby="fulfillment-detail-title">
-    <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>Order detail</p><h2 id="fulfillment-detail-title">{order.order_number}</h2></div><span className={styles.status}>{orderStatusLabel(order.status)}</span></div>
+    <div className={styles.sectionTitle}><div><p className={styles.eyebrow}>Order detail</p><h2 ref={heading} tabIndex={-1} id="fulfillment-detail-title">{order.order_number}</h2></div><span className={styles.status}>{orderStatusLabel(order.status)}</span></div>
+    {onBack && <button className={styles.secondary} onClick={onBack}>Back to order queue</button>}
     <div className={styles.deliveryReview}><strong>{order.delivery_building} · Floor {order.delivery_floor} · Room {order.delivery_room}</strong><span>Recipient: {order.student_name}</span><small>Placed {orderTime(order.created_at)} · KST</small></div>
     <p className={styles.muted}>Picking checks stay in this page only. Reloading resets them; other staff see the server’s order status.</p>
     <h3>{picking ? 'Pick every item' : 'Items'}</h3>

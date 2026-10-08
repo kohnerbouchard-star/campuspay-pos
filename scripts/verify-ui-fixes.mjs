@@ -185,7 +185,7 @@ try{
   await review.getByRole('button',{name:'Save exact access',exact:true}).click();await expect(editor.getByRole('button',{name:'Retry employee refresh',exact:true})).toBeEnabled()
   await editor.getByRole('button',{name:'Close dialog',exact:true}).click()
   const summary=page.getByRole('region',{name:'Selected employee access',exact:true});await expect(summary.getByRole('alert')).toContainText('display is stale')
-  await page.getByRole('button',{name:'Open employee',exact:true}).click();await expect(summary.getByRole('alert')).toContainText('display is stale');await expect(summary.getByText('Current preset: Staff',{exact:true})).toHaveCount(0)
+  await page.getByRole('form').getByRole('button',{name:'Cancel',exact:true}).click();await page.getByRole('button',{name:'Open employee',exact:true}).click();await expect(summary.getByRole('alert')).toContainText('display is stale');await expect(summary.getByText('Current preset: Staff',{exact:true})).toHaveCount(0)
   const count=mutations(model).length;model.directoryFails=false;await summary.getByRole('button',{name:'Retry employee access refresh',exact:true}).click();await expect(summary.getByText('Current preset: Manager',{exact:true})).toBeVisible();assert.equal(mutations(model).length,count)
   await context.close();checks.push('Reselecting a stale directory record cannot relabel old permissions as current')
  }

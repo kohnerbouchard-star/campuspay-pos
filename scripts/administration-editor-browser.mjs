@@ -11,11 +11,12 @@ export async function runAdministrationEditorBrowser(ctx,admin){
  const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Two-operator editor fixture',role:'cashier',preset:'staff',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Synthetic two-operator browser fixture',verified:true})
  async function refresh(page){
   const response=page.waitForResponse(r=>r.url().includes('/api/administration?')&&r.request().method()==='GET')
-  await page.getByRole('button',{name:'Refresh directory',exact:true}).click();assert.equal((await response).status(),200)
+  await page.getByRole('button',{name:'Refresh directory',exact:true}).click();const result=await response;assert.equal(result.status(),200);return (await result.json()).data
  }
  async function select(page,id,kind){
+  if(await page.getByRole('form').count())await page.getByRole('form').getByRole('button',{name:'Cancel',exact:true}).click()
   await page.getByRole('row').filter({hasText:id}).getByRole('button',{name:kind==='STAFF'?'Open employee':'Manage terminal',exact:true}).click()
-  const form=page.getByRole('form'),heading=form.getByRole('heading',{level:2})
+  const form=page.getByRole('form'),heading=kind==='STAFF'?page.getByRole('region',{name:'Selected employee access',exact:true}).getByRole('heading',{level:2}):form.getByRole('heading',{level:2})
   await expect(heading).toBeFocused();await expect(heading).toBeInViewport()
   return form
  }
@@ -49,7 +50,7 @@ export async function runAdministrationEditorBrowser(ctx,admin){
   await expect(af.getByLabel('Staff role',{exact:true})).toHaveCount(0)
   await bf.getByLabel('Staff display name',{exact:true}).fill('Second operator profile')
   await bf.getByRole('checkbox',{name:/Active — allow/}).uncheck();await submit(b)
-  await refresh(a);await expect(a.getByRole('row').filter({hasText:code})).toContainText('Second operator profile')
+  await refresh(a);await expect(a.getByRole('region',{name:'Selected employee access',exact:true})).toContainText('Second operator profile')
   // Background refresh does not splice a fresh version into the existing draft.
   await expect(af.getByLabel('Staff role',{exact:true})).toHaveCount(0)
   await expect(af.getByRole('checkbox',{name:/Active — allow/})).toBeChecked()
@@ -74,7 +75,7 @@ export async function runAdministrationEditorBrowser(ctx,admin){
   af=await select(a,terminal.id,'TERMINAL');bf=await select(b,terminal.id,'TERMINAL')
   await bf.getByLabel('Terminal label',{exact:true}).fill('Second operator terminal')
   await bf.getByRole('checkbox',{name:/Active — allow/}).uncheck();await submit(b)
-  await refresh(a);await expect(a.getByRole('row').filter({hasText:terminal.id})).toContainText('Second operator terminal')
+  const refreshed=await refresh(a);assert.equal(refreshed.terminals.find(row=>row.terminal_id===terminal.id).label,'Second operator terminal')
   await expect(af.getByLabel('Terminal label',{exact:true})).toHaveValue('Original editor terminal')
   await submit(a,409)
   af=await select(a,terminal.id,'TERMINAL')
