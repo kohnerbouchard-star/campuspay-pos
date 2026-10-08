@@ -4,7 +4,7 @@
 
 ## Prepare your Windows computer
 
-Use **Docker Desktop in Linux containers mode**, Git for Windows Git Bash, and enough free disk space for a database backup and disposable restore. No WSL installation is required. You need the existing `campuspay_owner` password and the **existing** base64 backup encryption key; keep both out of chat, command arguments, screenshots, and logs. Docker stores an ephemeral copy of the source and encrypted backup in local Docker volumes. The disposable PostgreSQL has no host port.
+Use **Docker Desktop in Linux containers mode**, Git for Windows Git Bash with `winpty`, and enough free disk space for a database backup and disposable restore. No WSL installation is required. You need the existing `campuspay_owner` password and the **existing** base64 backup encryption key; keep both out of chat, command arguments, screenshots, and logs. Docker stores an ephemeral copy of the source and encrypted backup in local Docker volumes. The disposable PostgreSQL has no host port.
 
 Download and extract this ZIP to `~/Downloads/campuspay-release-d01-operator`. In Git Bash, create a fresh source checkout with byte-identical SQL files:
 
