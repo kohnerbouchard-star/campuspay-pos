@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process'
 import { photoContext, photoReason } from './product-photo-context.mjs'
 import { verifyPhotoDatabase, verifyPhotoMigration } from './product-photo-database.mjs'
 import { verifyPhotoBrowser } from './product-photo-browser.mjs'
+import { verifyPhotoNavigation } from './product-photo-navigation.mjs'
 const directory = '.validation/product-photos', checks = [], evidence = []
 let ctx, phase = 'setup'
 const report = { commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), tree: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(), checks, evidence }
@@ -22,6 +23,7 @@ try {
   await ctx.http(customer, product.id, 'DELETE', { requestId: randomUUID(), revision: 0, reason: photoReason }, 401)
   phase = 'migration and least privilege'; await verifyPhotoMigration(ctx, checks)
   phase = 'native API and failure transitions'; await verifyPhotoDatabase(ctx, admin, product, other, checks)
+  phase = 'photo navigation recovery'; await verifyPhotoNavigation(ctx, admin, product, checks)
   phase = 'actual desktop and mobile browsers'; report.browser = await verifyPhotoBrowser(ctx, admin, customer, product, checks, evidence)
   phase = 'protected financial invariants'; const after = await ctx.financialSnapshot(); report.after = after; assert.deepEqual(after, before)
   checks.push('Product rows, inventory, stock receipts, wallets, wallet ledger, sales and sale-item snapshots are byte-equivalent before/after all photo journeys')
