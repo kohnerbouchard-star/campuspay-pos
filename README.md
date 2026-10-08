@@ -1,6 +1,6 @@
 # CampusPay schema 39–40 operator package (Windows Git Bash + Docker Desktop)
 
-**Qualified source:** `kohnerbouchard-star/campuspay-pos` commit `d01d2992659dbab3d6aff95581dd6bed5f618daf`, tree `4c5583b65e2963ff71f6cd4f8212b10832e50e65`. This package contains no database credentials, backup key, SQL copy, Blob configuration, or deployment action. It invokes the repository's migration and encrypted backup scripts. Keep maintenance enabled and product photos disabled. Never rerun stock migration 050.
+**Qualified source:** `kohnerbouchard-star/campuspay-pos` commit `d01d2992659dbab3d6aff95581dd6bed5f618daf`, tree `4c5583b65e2963ff71f6cd4f8212b10832e50e65`. This package contains no database credentials, backup key, SQL copy, Blob configuration, or deployment action. It invokes the repository's migration and encrypted backup scripts. **The operator must confirm maintenance is enabled and product photos are disabled; this package cannot verify either setting.** Never rerun stock migration 050.
 
 ## Prepare your Windows computer
 
@@ -53,7 +53,13 @@ Do not continue if any step failed or maintenance is no longer enabled. Share on
 bash "$HOME/Downloads/campuspay-release-d01-operator/run-docker.sh" apply "$HOME/campuspay-release-d01-source"
 ```
 
-**Never repeat `apply` if the attempt starts and the result is missing or uncertain.** Run the read-only postflight, inspect exact history, and arrange a reviewed fix-forward procedure.
+**Never repeat `apply` if the attempt starts and the result is missing or uncertain.** If migration 39 committed but 40 failed, this is a partial schema-39 state and needs an explicit reviewed fix-forward plan. Use the read-only diagnostic command to report exact history without retrying a migration:
+
+```bash
+bash "$HOME/Downloads/campuspay-release-d01-operator/run-docker.sh" diagnose "$HOME/campuspay-release-d01-source"
+```
+
+If schema 40 is present but the original terminal result is uncertain, run the read-only postflight to verify grants and unchanged data before considering app release:
 
 ```bash
 bash "$HOME/Downloads/campuspay-release-d01-operator/run-docker.sh" postflight "$HOME/campuspay-release-d01-source"
