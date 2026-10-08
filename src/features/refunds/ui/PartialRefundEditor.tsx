@@ -2,6 +2,7 @@
 import { useId, useRef, useState } from 'react'
 import { apiFetch, ClientApiError } from '@/lib/api/client'
 import { formatWon } from '@/lib/format/currency'
+import { useCashReadiness } from './useCashReadiness'
 import { PartialQuoteInputSchema, PartialQuoteDecisionSchema, PostPartialRefundSchema, type PartialSnapshot, type PartialQuote, type PartialSelection, type PostPartialRefundInput } from '../partial-domain'
 type Props = { snapshot: PartialSnapshot; canPost: boolean; onSubmit: (v: PostPartialRefundInput) => Promise<void> }
 export function PartialRefundEditor({ snapshot, canPost, onSubmit }: Props) {
@@ -10,6 +11,7 @@ export function PartialRefundEditor({ snapshot, canPost, onSubmit }: Props) {
   const [verified, setVerified] = useState(false), [notes, setNotes] = useState(''), [reason, setReason] = useState('')
   const [returnReason, setReturnReason] = useState(''), working = useRef(false)
   const fieldId = useId()
+  const readiness = useCashReadiness('saleId', snapshot.sale.sale_id, Boolean(quote && quote.cash_due_won > 0))
   const isReturn = snapshot.sale.channel === 'ONLINE_STORE'
   const selections = (): PartialSelection[] => Object.entries(counts).filter(([,v]) => v.restock_quantity + v.write_off_quantity > 0).map(([original_allocation_id,v]) => ({ original_allocation_id,...v }))
   function edit(id: string, field: 'restock_quantity' | 'write_off_quantity', value: string) {
@@ -31,12 +33,12 @@ export function PartialRefundEditor({ snapshot, canPost, onSubmit }: Props) {
   return <section className="panel" aria-label="Inspected original lots"><h2>Select inspected goods by original lot</h2>
     <p>All selected goods, including damaged write-offs, must be physically back with staff. Match the stock receipt and lot below. Do not use this workflow for unverified missing goods or guess which lot was returned.</p>
     <form className="form-stack" onSubmit={async event => {
-      event.preventDefault(); if (!quote || !canPost || working.current) return
+      event.preventDefault(); if (!quote || !canPost || working.current || !readiness.isCurrent()) return
       const parsed = PostPartialRefundSchema.safeParse({ saleId: snapshot.sale.sale_id, idempotencyKey: crypto.randomUUID(), items: selections(),
         expectedRefundCount: quote.prior_refund_count, reasonCode: reason, notes, verified, ...(isReturn ? { returnReason } : {}) })
       if (!parsed.success) { setError('Confirm inspection, choose the reason and enter 10–500 characters of notes.'); return }
       working.current = true; setBusy(true); setError('')
-      try { await onSubmit(parsed.data) } finally { working.current = false; setBusy(false) }
+      try { if (await readiness.check()) await onSubmit(parsed.data) } finally { working.current = false; setBusy(false) }
     }}><fieldset className="form-fields" disabled={busy}><legend>Remaining original allocations</legend>
       {snapshot.allocations.filter(a => a.remaining_quantity > 0).map((a,index) => <div className="form-stack" key={a.original_allocation_id}>
         <strong>{a.product_name} · {a.remaining_quantity} remaining of {a.sold_quantity} sold from this lot</strong>
@@ -47,6 +49,7 @@ export function PartialRefundEditor({ snapshot, canPost, onSubmit }: Props) {
       <button className="secondary-action" type="button" onClick={() => void calculate()}>Review inspected refund</button>
       {quote && <section aria-label="Inspected refund review" aria-live="polite"><h3>Review refund: {formatWon(quote.refund_won)}</h3>
         <p>Wallet credit {formatWon(quote.wallet_credit_won)} · Cash still to hand over {formatWon(quote.cash_due_won)}</p>
+        {quote.cash_due_won > 0 && <><p role="status">{readiness.message}</p><button type="button" className="secondary-action" onClick={() => void readiness.check()}>Check cash readiness</button></>}
         <p>Original cost reversed {formatWon(quote.cogs_reversed_won)} · Saleable stock cost {formatWon(quote.restocked_cost_won)} · Write-off cost {formatWon(quote.write_off_cost_won)}</p>
         <p>Previously refunded {formatWon(quote.previous_refund_won)}. {quote.fully_returned ? 'This selection returns every remaining unit.' : 'Other units remain with the customer.'}</p>
         <p>No refund is posted by this calculation. It reserves nothing. Posting recalculates under locks and rejects a changed refund history. Original coupon redemption is retained.</p>
@@ -56,7 +59,7 @@ export function PartialRefundEditor({ snapshot, canPost, onSubmit }: Props) {
           <label className="field"><span>Inspection and refund notes</span><textarea required minLength={10} maxLength={500} value={notes} onChange={e => { setNotes(e.target.value); setVerified(false) }} /></label>
           <label><input type="checkbox" required checked={verified} onChange={e => setVerified(e.target.checked)} /> I verified the receipt, customer, physical goods, original lots and this exact refund.</label>
           <p>Posting credits the original wallet portion. It does not dispense cash. Any cash handover must be recorded separately, once.</p>
-          <button className="primary-action" disabled={!verified || !reason || notes.trim().length < 10 || (isReturn && !returnReason)}>Post inspected item refund</button>
+          <button className="primary-action" disabled={!readiness.allowed || !verified || !reason || notes.trim().length < 10 || (isReturn && !returnReason)}>Post inspected item refund</button>
         </>}
       </section>}
     </fieldset></form>{error && <p role="alert" className="error-message">{error}</p>}

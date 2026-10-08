@@ -16,7 +16,7 @@ try{
  const people={};for(const [code,role] of [['A-ST','cashier'],['A-MG','inventory_admin'],['A-AC','accountant'],['A-SA','super_admin'],['A-SB','super_admin']]){
   const id=(await db.query('insert into public.staff_profiles(employee_code,display_name,role) values($1,$1,$2) returning auth_user_id',[code,role])).rows[0].auth_user_id;people[code]={id,role};await db.query("insert into private.staff_credentials(staff_user_id,pin_hash) values($1,extensions.crypt($2,extensions.gen_salt('bf',4)))",[id,proof])
  }
- async function login(code){const t=terminal(),k=token();const s=(await db.query('select * from api.create_staff_session($1,$2,$3,$4)',[code,proof,k,t])).rows[0];assert.ok(s);return {...s,token:k,fingerprint:t}}
+ async function login(code){const t=terminal(),k=token(),modern=(await db.query("select to_regprocedure('api.create_staff_session(text,text,text,text,text)') signature")).rows[0].signature;const s=(await db.query(modern?'select * from api.create_staff_session($1,$2,$3,$4,$5)':'select * from api.create_staff_session($1,$2,$3,$4)',modern?[code,proof,k,t,token()]:[code,proof,k,t])).rows[0];assert.ok(s);return {...s,token:k,fingerprint:t}}
  const old=await login('A-ST');for(const f of newFiles)await db.query(fs.readFileSync('database/migrations/'+f,'utf8'))
  assert.ok((await db.query('select revoked_at from private.staff_sessions where id=$1',[old.session_id])).rows[0].revoked_at)
  const legacy=JSON.parse(fs.readFileSync('docs/access-baseline/legacy-mapping.json','utf8'))

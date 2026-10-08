@@ -80,7 +80,7 @@ try {
     assert.equal((await owner.query('select count(*) from private.cash_refund_payouts where refund_id=$1', [r.refund_id])).rows[0].count, '1')
     cashRefund = r
   }
-  checks.push('cash and split preserve original allocation, exclude change, require original operator/terminal, and record one cash payout')
+  checks.push('cash and split preserve original allocation, exclude change, require payout capability/original terminal, and record one cash payout')
   phase = 'stock-and-cost'
   const mixed = await sale({ items: [{ productId: water.id, quantity: 1 }, { productId: cookie.id, quantity: 1 }] })
   const mixedInput = input(mixed.detail); mixedInput.items[0].disposition = 'WRITE_OFF'

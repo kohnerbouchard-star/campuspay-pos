@@ -55,7 +55,7 @@ try {
   await db.query("insert into private.staff_credentials(staff_user_id,pin_hash) values($1,extensions.crypt($2,extensions.gen_salt('bf',12)))", [staff.auth_user_id, staffProof])
   await runtime()
   await expectRejection('select * from private.wallets limit 1', [], /permission denied/)
-  const session = await one('select * from api.create_staff_session($1,$2,$3,$4)', [employeeCode, staffProof, proof(), proof()])
+  const session = await one('select * from api.create_staff_session($1,$2,$3,$4,$5)', [employeeCode, staffProof, proof(), proof(), proof()])
   assert.equal(session.role, 'super_admin')
 
   stage = 'atomic E202 enrollment through runtime API'

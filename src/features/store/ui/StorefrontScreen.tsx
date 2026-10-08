@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ProductPhoto } from '@/features/product-photos/ProductPhoto'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { addProduct, changeQuantity, toCartLines, type CartState } from '@/features/pos/cart'
@@ -164,7 +165,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
         <label className={`${styles.search} ${styles.catalogSearch}`} htmlFor="store-search"><Icon name="search" size={20} /><span className={styles.srOnly}>Search products</span><input id="store-search" type="search" placeholder="Search snacks, drinks and more" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
         <div className={styles.categories} role="group" aria-label="Product categories">{categories.map((name) => <button key={name} aria-pressed={category === name} onClick={() => setCategory(name)}>{name === 'All' ? <Icon name="grid" size={18} /> : <ProductCategoryIcon category={name} size={18} />}{name}</button>)}</div>
         {loading ? <div className={styles.empty} role="status"><span className={styles.emptyIcon}><Icon name="bag" size={30} /></span>Loading your store…</div> : visible.length === 0 ? <div className={styles.empty}><span className={styles.emptyIcon}><Icon name={products.length === 0 ? 'bag' : 'search'} size={30} /></span><h3>{products.length === 0 ? 'The store is getting ready' : 'No matching items'}</h3><p>{products.length === 0 ? 'Check back soon for available products.' : 'Try another search or category.'}</p>{products.length > 0 && <button className={styles.secondary} onClick={() => { setSearch(''); setCategory('All') }}>Show all products</button>}</div> : <div className={styles.products}>{visible.map((product) => <article className={styles.product} key={product.id} data-category-tone={categoryTone(product.category)} data-sold-out={product.sold_out}>
-          <div className={styles.productVisual} aria-hidden="true"><span className={styles.productMedallion}><ProductCategoryIcon category={product.category} size={38} /></span></div>
+          <div className={styles.productVisual}><ProductPhoto photo={product.photo} name={product.name} category={product.category} variant="catalog" decorative/></div>
           <div className={styles.productInfo}><span className={styles.productCategory}>{product.category}</span><h3>{product.name}</h3><span className={styles.availability} data-stock={product.sold_out ? 'sold-out' : product.stock_on_hand <= 5 ? 'low' : 'available'}>{product.sold_out ? 'Sold out' : product.stock_on_hand <= 5 ? `Only ${product.stock_on_hand} left` : 'Available today'}</span><div className={styles.productBottom}><strong>{formatWon(product.selling_price_won)}</strong><button className={styles.addButton} disabled={product.sold_out || busy || pendingId !== null || review !== null || (cart[product.id] ?? 0) >= Math.min(product.stock_on_hand, 99)} aria-label={`Add ${product.name} to cart`} onClick={() => {
             setCart((current) => addProduct(current, { ...product, stock_on_hand: Math.min(product.stock_on_hand, 99) })); setAnnouncement(`${product.name} added to your cart.`)
           }}>Add <Icon name="plus" size={17} /></button></div></div>

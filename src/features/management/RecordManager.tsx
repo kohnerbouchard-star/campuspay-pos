@@ -1,4 +1,5 @@
 'use client'
+import { ProductPhotoEditor } from '@/features/product-photos/ProductPhotoEditor'
 import { useEffect, useRef, useState } from 'react'
 import type { LeaveState } from '@/components/ui/leave-state'
 import { apiFetch } from '@/lib/api/client'
@@ -8,12 +9,14 @@ import { RecordDirectorySchema, RecordChangeSchema, type RecordDirectory, type R
 import { useRecordOperation } from './use-record-operation'
 import { OperationFeedback } from './OperationFeedback'
 
-export function RecordManager({kind,userId,targetId,onChanged,onLeaveStateChange}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void|Promise<void>;onLeaveStateChange?(state:LeaveState):void}) {
+export function RecordManager({kind,userId,targetId,onChanged,onLeaveStateChange,onPhotoPendingChange}:{kind:RecordKind;userId:string;targetId?:string;onChanged?():void|Promise<void>;onLeaveStateChange?(state:LeaveState):void;onPhotoPendingChange?(pending:boolean):void}) {
   const editorHeading=useRef<HTMLHeadingElement>(null)
   const reviewDeadline=useRef(0)
   const [data,setData]=useState<RecordDirectory|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true)
   const [query,setQuery]=useState(''),[status,setStatus]=useState('ALL'),[offset,setOffset]=useState(0),[revision,setRevision]=useState(0)
   const [selected,setSelected]=useState<ManagedRecord|null>(null),[editing,setEditing]=useState(false),[confirm,setConfirm]=useState(false)
+  const [photoPending,setPhotoPending]=useState(false)
+  useEffect(()=>{onPhotoPendingChange?.(photoPending);return()=>onPhotoPendingChange?.(false)},[photoPending,onPhotoPendingChange])
   const [name,setName]=useState(''),[category,setCategory]=useState(''),[reorder,setReorder]=useState(0),[reason,setReason]=useState(''),[pin,setPin]=useState('')
   const refresh=async()=>{setSelected(null);setConfirm(false);setPin('');setLoading(true);setRevision(n=>n+1);await onChanged?.()}
   const operation=useRecordOperation(kind,userId,refresh)
@@ -35,8 +38,8 @@ export function RecordManager({kind,userId,targetId,onChanged,onLeaveStateChange
     },150)
     return()=>{active=false;clearTimeout(timer)}
   },[kind,query,status,offset,targetId,revision])
-  const locked=loading||!operation.ready||operation.busy||operation.blocked||!!operation.pending
-  useEffect(()=>{onLeaveStateChange?.(!operation.ready||operation.busy||operation.blocked||operation.pending?'pending':selected||confirm?'dirty':'clean')},[operation.ready,operation.busy,operation.blocked,operation.pending,selected,confirm,onLeaveStateChange])
+  const locked=photoPending||loading||!operation.ready||operation.busy||operation.blocked||!!operation.pending
+  useEffect(()=>{onLeaveStateChange?.(photoPending||!operation.ready||operation.busy||operation.blocked||operation.pending?'pending':selected||confirm?'dirty':'clean')},[photoPending,operation.ready,operation.busy,operation.blocked,operation.pending,selected,confirm,onLeaveStateChange])
   function select(row:ManagedRecord,edit=false){setSelected(structuredClone(row));setEditing(edit);setName(row.name);setCategory(row.category??'');setReorder(row.reorder_level??0);setReason('');setPin('');setError('')}
   useEffect(()=>{if(selected&&!confirm){editorHeading.current?.focus();editorHeading.current?.scrollIntoView({block:'start'})}},[selected,confirm])
   const action=editing?'UPDATE_PRODUCT':kind==='PRODUCT'?(selected?.active?'ARCHIVE_PRODUCT':'RESTORE_PRODUCT'):(selected?.active?'DEACTIVATE_STUDENT':'REACTIVATE_STUDENT')
@@ -63,7 +66,7 @@ export function RecordManager({kind,userId,targetId,onChanged,onLeaveStateChange
     {!targetId&&<div className="form-grid"><label className="field"><span>Find a product to manage</span><input type="search" maxLength={120} value={query} disabled={!!selected||operation.busy} onChange={e=>{setQuery(e.target.value);setOffset(0)}}/></label>
       <label className="field"><span>Product availability</span><select value={status} disabled={!!selected||operation.busy} onChange={e=>{setStatus(e.target.value);setOffset(0)}}><option value="ALL">Active and archived</option><option value="ACTIVE">Active only</option><option value="INACTIVE">Archived only</option></select></label></div>}
     {error&&<p className="error-message" role="alert">{error}</p>}
-    <button className="secondary-action" type="button" disabled={operation.busy} onClick={()=>{setSelected(null);setRevision(n=>n+1)}}>Refresh managed records</button>
+    <button className="secondary-action" type="button" disabled={operation.busy||photoPending} onClick={()=>{setSelected(null);setRevision(n=>n+1)}}>Refresh managed records</button>
     {loading?<p role="status">Loading current record status…</p>:data&&<>
       <div className="table-scroll" role="region" tabIndex={0} aria-label="Managed records"><table><thead><tr><th>Record</th><th>Status</th><th>{kind==='PRODUCT'?'Remaining stock':'Wallet balance'}</th><th>Actions</th></tr></thead><tbody>
       {data.records.map(row=><tr key={row.id}><td><strong>{row.name}</strong><small>{row.code}</small></td><td>{row.active?'Active':kind==='PRODUCT'?'Archived':'Inactive'}</td><td>{kind==='PRODUCT'?row.quantity_or_balance:row.quantity_or_balance===null?'Not assigned':formatWon(row.quantity_or_balance)}</td><td>
@@ -77,8 +80,9 @@ export function RecordManager({kind,userId,targetId,onChanged,onLeaveStateChange
     {selected&&!confirm&&<form className="form-stack management-editor" onSubmit={e=>{e.preventDefault();if(!locked){setError('');setPin('');reviewDeadline.current=Date.now()+60000;setConfirm(true)}}}>
       <h3 tabIndex={-1} ref={editorHeading}>{label}: {selected.name} ({selected.code})</h3><p>{explanation}</p>
       {editing&&<><label className="field"><span>Product name</span><input required maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label><label className="field"><span>Product category</span><input required maxLength={80} value={category} onChange={e=>setCategory(e.target.value)}/></label><label className="field"><span>Product reorder level</span><input type="number" min={0} max={1000000} required value={reorder} onChange={e=>setReorder(Number(e.target.value))}/></label></>}
+      {kind==='PRODUCT'&&editing&&<ProductPhotoEditor key={selected.id} productId={selected.id} name={selected.name} category={selected.category??''} userId={userId} onChanged={onChanged} onPendingChange={setPhotoPending}/>}
       <label className="field"><span>Reason for record change</span><textarea required minLength={10} maxLength={500} value={reason} onChange={e=>setReason(e.target.value)}/></label>
-      <div className="action-row"><button type="button" className="secondary-action" onClick={()=>{setSelected(null);setPin('')}}>Cancel record change</button><button className="primary-action" disabled={locked}>Review record change</button></div>
+      <div className="action-row"><button type="button" className="secondary-action" disabled={photoPending} onClick={()=>{setSelected(null);setPin('')}}>Cancel record change</button><button className="primary-action" disabled={locked}>Review record change</button></div>
     </form>}
     {selected&&confirm&&<ConfirmationDialog title={`${label}?`} description={explanation} confirmLabel={label} cancelLabel="Go back"
       destructive={!editing&&selected.active} confirmationText={!editing?selected.code:undefined} confirmDisabled={locked||(kind==='STUDENT'&&!/^[0-9]{4,16}$/.test(pin))} onCancel={()=>{setConfirm(false);setPin('')}} onConfirm={apply}>

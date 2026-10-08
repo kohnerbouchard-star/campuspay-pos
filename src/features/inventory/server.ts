@@ -1,4 +1,5 @@
 import 'server-only'
+import { withProductPhotos } from '@/features/product-photos/catalog'
 import { InventoryProductSchema } from '@/features/inventory/domain'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
@@ -69,8 +70,9 @@ export function recoverStockAdjustment(session: SessionContext, idempotencyKey: 
     z.array(z.object({ result: StockAdjustmentRecoverySchema })).length(1).transform(([row]) => row.result))
 }
 
-export function inventoryProducts(session: SessionContext) {
-  return callApiRpc('inventory_product_register', { p_session_id: session.session_id }, z.array(InventoryProductSchema))
+export async function inventoryProducts(session: SessionContext) {
+  const products = await callApiRpc('inventory_product_register', { p_session_id: session.session_id }, z.array(InventoryProductSchema))
+  return withProductPhotos(products, session.session_id)
 }
 
 export async function recoverStockReceipt(session: SessionContext, idempotencyKey: string) {

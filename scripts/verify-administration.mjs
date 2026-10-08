@@ -69,7 +69,11 @@ try{
  await request(cashier,'/api/cash/close',{requestKey:randomUUID(),shiftId:shift.shift_id,counts:{'1000':2},notes:'Verified synthetic cash count',verified:true})
  await request(admin,'/api/administration',terminalInput)
  await request(cashier,'/api/auth/session',undefined,401)
- await request(cashier,'/api/auth/login',{employeeCode:'1001',pin:staffPin},403)
+ // Disabled terminals use the same generic authentication failure as invalid credentials.
+ const disabledLogin=await request(cashier,'/api/auth/login',{employeeCode:'1001',pin:staffPin},401)
+ assert.deepEqual(disabledLogin,await request(new Map(),'/api/auth/login',{employeeCode:'UNKNOWN-LOGIN',pin:staffPin},401))
+ assert.equal(Number((await owner.query('select count(*) from private.staff_sessions where terminal_id=$1 and revoked_at is null',[term.id])).rows[0].count),0)
+ await request(cashier,'/api/auth/session',undefined,401)
  const current=(await snapshot()).current_terminal_id
  await request(admin,'/api/administration',{...common(),action:'REVOKE_TERMINAL_SESSIONS',targetId:current},403)
  const currentRecord=(await snapshot()).terminals.find(t=>t.terminal_id===current)

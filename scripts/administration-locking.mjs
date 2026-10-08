@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict'
-import {randomBytes,randomUUID} from 'node:crypto'
+import {randomUUID} from 'node:crypto'
 import fs from 'node:fs'
 import pg from 'pg'
 
 const signature='api.change_administration(uuid,uuid,text,uuid,jsonb,text,text)'
 const changeSql='select * from api.change_administration($1,$2,$3,$4,$5::jsonb,$6,$7)'
-const loginSql='select * from api.create_staff_session($1,$2,$3,$4)'
 const failure=e=>({ok:false,code:e.code??'UNKNOWN',message:e.message})
 const settle=p=>p.then(value=>({ok:true,value}),failure)
 
@@ -17,7 +16,6 @@ export async function runAdministrationLocking(ctx,admin){
  const actor=await request(admin,'/api/auth/session')
  const proof=ctx.staffPinProof(staffPin)
  const original=(await owner.query('select pg_get_functiondef($1::regprocedure) definition',[signature])).rows[0].definition
- const originalLogin=(await owner.query("select pg_get_functiondef('private.create_staff_session_access_legacy(text,text,text,text)'::regprocedure) definition")).rows[0].definition
  async function fixture(){
   const code='LOCK-'+randomUUID().slice(0,8)
   const created=await request(admin,'/api/administration',{action:'CREATE_STAFF',requestKey:randomUUID(),employeeCode:code,displayName:'Synthetic lock fixture',role:'cashier',preset:'staff',newPin:staffPin,confirmationPin:staffPin,adminPin:staffPin,notes:'Isolated lock-order regression fixture',verified:true})
@@ -61,9 +59,7 @@ export async function runAdministrationLocking(ctx,admin){
    if(action==='RESET_STAFF_PIN')payload={pin_proof:proof}
    if(action==='UPDATE_TERMINAL'){targetId=f.terminal.id;payload={label:'Disabled lock fixture',active:false,expected_active:f.terminal.active,expected_label:f.terminal.label}}
    if(action==='REVOKE_TERMINAL_SESSIONS')targetId=f.terminal.id
-   const invoke=()=>action==='LOGIN'
-    ? lifecycle.query(loginSql,[f.code,proof,randomBytes(32).toString('hex'),f.terminal.terminal_fingerprint])
-    : lifecycle.query(changeSql,[actor.session_id,key,action,targetId,JSON.stringify(payload),proof,'Controlled in-flight operation regression'])
+   const invoke=()=>lifecycle.query(changeSql,[actor.session_id,key,action,targetId,JSON.stringify(payload),proof,'Controlled in-flight operation regression'])
    const operate=()=>checkout
     ? worker.query('select * from api.confirm_payment($1,$2,null,10000)',[f.session.session_id,intentId])
     : worker.query('select * from api.open_cash_shift($1,$2,$3::jsonb,true)',[f.session.session_id,randomUUID(),JSON.stringify({'1000':2})])
@@ -119,13 +115,9 @@ export async function runAdministrationLocking(ctx,admin){
   await owner.query(old)
   await runCase('UPDATE_STAFF',{baseline:true})
  }finally{await owner.query(original)}
- const loginDrain='  perform 1 from private.staff_sessions ss where ss.terminal_id=(select id from private.terminals where terminal_fingerprint=p_terminal_fingerprint) and ss.revoked_at is null order by ss.id for update;'
- assert.ok(originalLogin.includes(loginDrain),'Forward login session-drain patch must be present')
- try{
-  await owner.query(originalLogin.replace(loginDrain,''))
-  await runCase('LOGIN',{baseline:true})
- }finally{await owner.query(originalLogin)}
- for(const action of ['UPDATE_STAFF','RESET_STAFF_PIN','REVOKE_STAFF_SESSIONS','UPDATE_TERMINAL','REVOKE_TERMINAL_SESSIONS','LOGIN'])await runCase(action)
+ // Login now uses snapshot verification/nonblocking finalization; its replacement
+ // concurrency and negative controls live in audit-login-checks.mjs.
+ for(const action of ['UPDATE_STAFF','RESET_STAFF_PIN','REVOKE_STAFF_SESSIONS','UPDATE_TERMINAL','REVOKE_TERMINAL_SESSIONS'])await runCase(action)
  await runCase('UPDATE_STAFF',{checkout:true})
  await runCase('REVOKE_STAFF_SESSIONS',{checkout:true})
  await runCase('UPDATE_STAFF',{adminFirst:true})

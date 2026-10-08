@@ -1,3 +1,5 @@
+import { configuredPhotoOrigin } from '@/features/product-photos/config'
+
 export function contentSecurityPolicy(nonce: string, development: boolean, https: boolean) {
   return [
     "default-src 'self'",
@@ -6,7 +8,7 @@ export function contentSecurityPolicy(nonce: string, development: boolean, https
     // React uses style attributes for progress widths and dialog geometry.
     // Script attributes remain blocked; stylesheet elements require a nonce.
     "style-src-attr 'unsafe-inline'",
-    "img-src 'self' blob: data:", "font-src 'self'", "object-src 'none'",
+    `img-src 'self' blob: data:${configuredPhotoOrigin() ? ` ${configuredPhotoOrigin()}` : ''}`, "font-src 'self'", "object-src 'none'",
     "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'",
     `connect-src 'self'${development ? ' ws: wss:' : ''}`,
     ...(https ? ['upgrade-insecure-requests'] : []),

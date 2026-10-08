@@ -1,0 +1,66 @@
+name: CampusPay refund and login audit fixes
+on:
+  pull_request:
+    branches: [feat/effective-access-workspaces-20261005]
+permissions:
+  contents: read
+jobs:
+  audit-fixes:
+    if: github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["fix/refund-readiness-login-contention-20261008", "fix/refund-readiness-submit-lock-20261008"]'), github.event.pull_request.head.ref)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: campuspay
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL_UNPOOLED: postgresql://postgres:ci-test-only@localhost:5432/campuspay
+      CAMPUSPAY_LOCAL_HTTP: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      CI_BROWSER: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Record exact source
+        run: |
+          mkdir -p .validation/audit-fixes
+          git rev-parse HEAD > .validation/audit-fixes/tested-commit.txt
+          git rev-parse 'HEAD^{tree}' > .validation/audit-fixes/tested-tree.txt
+      - run: npm ci
+      - run: npm run typecheck && npm run lint && npm test && npm run validate:static
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Native financial, authorization and login concurrency regressions
+        run: |
+          node scripts/verify-audit-fixes.mjs
+          node scripts/verify-refund-readiness-submit.mjs
+      - name: Existing full and partial refund regression suites
+        if: ${{ !cancelled() }}
+        run: |
+          node scripts/verify-sale-refunds.mjs
+          node scripts/verify-partial-refunds.mjs
+      - name: Runtime dependency audit
+        if: ${{ !cancelled() }}
+        run: npm run security:dependencies
+      - name: Capture complete audit without hiding the final gate
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: npm audit --audit-level=high --json > .validation/dependency-audit.json
+      - name: Enforce unchanged complete dependency policy
+        if: always()
+        run: node scripts/validate-complete-audit.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: refund-login-audit-fixes
+          path: .validation/
+          include-hidden-files: true
