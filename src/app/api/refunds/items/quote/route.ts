@@ -5,6 +5,6 @@ import { quoteInspectedRefund } from '@/features/refunds/partial-server'
 import { PartialQuoteInputSchema } from '@/features/refunds/partial-domain'
 export const dynamic = 'force-dynamic'
 export const POST = withApiRoute('/api/refunds/items/quote', async (request: Request) => {
-  const s = await authorizeRequest('reports.sales')
+  const s = await authorizeRequest('refunds.read')
   return ok(await quoteInspectedRefund(s,await parseJson(request,PartialQuoteInputSchema)))
 })

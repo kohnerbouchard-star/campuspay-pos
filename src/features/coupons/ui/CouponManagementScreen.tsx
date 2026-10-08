@@ -6,7 +6,7 @@ import type { CouponSummary } from '@/features/coupons/domain'
 import { CouponForm } from '@/features/coupons/ui/CouponForm'
 import { CouponTable } from '@/features/coupons/ui/CouponTable'
 
-export function CouponManagementScreen() {
+export function CouponManagementScreen({canManage}:{canManage:boolean}) {
   const [coupons, setCoupons] = useState<CouponSummary[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -32,14 +32,14 @@ export function CouponManagementScreen() {
     </header>
     {error && <p className="error-message">{error}</p>}
     <div className="dashboard-grid">
-      <CouponForm onSaved={() => void load()} />
+      {canManage && <CouponForm onSaved={() => void load()} />}
       <section className="panel coupon-policy-panel">
         <div className="panel-heading"><div><p className="eyebrow">Checkout policy</p><h2>Redemption controls</h2></div></div>
         <p>One coupon can be used per sale. Its discount applies to the full sale before payment is divided between MICA Money and cash.</p>
         <p>Coupons with a per-student use limit require MICA Money. Cash-only purchases can use coupons without a per-student limit.</p>
         <p>Coupon terms cannot be edited after use. Deactivate the old coupon and issue a new code instead.</p>
       </section>
-      <CouponTable coupons={coupons} onChanged={() => void load()} />
+      <CouponTable canManage={canManage} coupons={coupons} onChanged={() => void load()} />
     </div>
   </main>
 }

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 export const GET = withApiRoute('/api/coupons', async () => {
   try {
-    const session = await authorizeRequest('coupons.manage')
+    const session = await authorizeRequest('coupons.read')
     return ok(await listCoupons(session))
   } catch (error) {
     return failure(error)

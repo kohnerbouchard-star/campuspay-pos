@@ -11,7 +11,7 @@ let ctx,phase='initialize'
 const checks=[],dir='.validation/management'
 fs.mkdirSync(dir,{recursive:true})
 try {
- ctx=await refundTestContext();await ctx.start(false)
+ ctx=await refundTestContext();await ctx.start(false,{funding:true})
  const {owner,request,login,staffPin,pin}=ctx
  const admin=await login(),inventory=await login('2001'),cashier=await login('1001'),accountant=await login('3001')
  const adminSession=await request(admin,'/api/auth/session'),cashierSession=await request(cashier,'/api/auth/session')
@@ -37,7 +37,9 @@ try {
  const input=create()
  await post(new Map(),input,401)
  for(const who of [cashier,accountant]){await post(who,input,403);await request(who,'/api/management?kind=PRODUCT',undefined,403);await recovery(who,'PRODUCT',input.requestKey,403)}
- for(const who of [inventory,cashier,accountant])await request(who,'/api/management?kind=STUDENT',undefined,403)
+ await request(cashier,'/api/management?kind=STUDENT',undefined,403)
+ const readOnlyStudents=await request(inventory,'/api/management?kind=STUDENT');assert.ok(readOnlyStudents.records.every(r=>r.quantity_or_balance===null),'Student view never grants wallet data')
+ await request(accountant,'/api/management?kind=STUDENT')
  await request(admin,'/api/management',input,403,'https://untrusted.example')
  for(const extra of [{verified:false},{role:'super_admin'},{sellingPriceWon:-1},{stock:100},{action:'DELETE_PRODUCT'}])await post(inventory,{...input,...extra},400)
  await request(admin,'/api/management?kind=PRODUCT&offset=-1',undefined,400)
@@ -92,8 +94,9 @@ try {
  await request(customer,'/api/store/login',{cardNumber:card,pin})
  await post(customer,create(),401)
  const oldCustomer=await request(customer,'/api/store/session')
- const pendingWallet=await request(accountant,'/api/accounting/intents',{direction:'CREDIT',denominations:[1000],reasonCode:'FUNDS_RECEIVED',notes:'Synthetic pending credit',idempotencyKey:randomUUID()},201)
- await request(accountant,`/api/accounting/intents/${pendingWallet.intent_id}/card`,{cardRead:card})
+ await owner.query('update private.system_settings set funding_enabled=true where singleton')
+ const pendingWallet={requestKey:randomUUID()};await request(accountant,'/api/funding/prepare',{...pendingWallet,action:'NONCASH_CREDIT',denominations:[1000],sourceReference:'Synthetic verified source',notes:'Synthetic pending credit'})
+ await request(accountant,'/api/funding/card',{requestKey:pendingWallet.requestKey,cardRead:card})
  const deactivate=await edit('STUDENT',studentId,'DEACTIVATE_STUDENT',{adminPin:staffPin})
  for(const who of [inventory,cashier,accountant])await post(who,deactivate,403)
  const failedBefore=Number((await owner.query('select failed_attempts from private.staff_credentials where staff_user_id=$1',[adminSession.user_id])).rows[0].failed_attempts)
@@ -103,7 +106,7 @@ try {
  const studentBefore=await snapshot();await post(admin,deactivate)
  assert.equal((await current('STUDENT',studentId)).active,false);assert.equal(await snapshot(),studentBefore)
  const oldResponse=await ctx.raw(customer,'/api/store/session');assert.ok([401,403].includes(oldResponse.status))
- await request(accountant,`/api/accounting/intents/${pendingWallet.intent_id}/confirm`,{pin},403)
+ await request(accountant,'/api/funding/confirm',{requestKey:pendingWallet.requestKey,studentPin:pin,verified:true,approverCode:'9001',approverPin:staffPin},403)
  assert.equal(Number((await owner.query('select balance_won from private.wallets where student_id=$1',[studentId])).rows[0].balance_won),0)
  assert.ok((await ctx.raw(new Map(),'/api/store/login',{cardNumber:card,pin})).status>=400)
  await assert.rejects(()=>owner.query(`insert into private.customer_sessions(student_id,session_token_hash,ip_fingerprint,expires_at,max_expires_at) values($1,$2,$3,now()+interval '5 minutes',now()+interval '8 hours')`,[studentId,randomBytes(32).toString('hex'),randomBytes(32).toString('hex')]),/FORBIDDEN/)
@@ -112,8 +115,8 @@ try {
  assert.ok((await ctx.raw(customer,'/api/store/session')).status>=400)
  await request(customer,'/api/store/login',{cardNumber:card,pin})
  assert.equal((await request(customer,'/api/store/session')).student_id,studentId)
- await request(accountant,`/api/accounting/intents/${pendingWallet.intent_id}/recover`,{})
- checks.push('Student changes require current Super Admin PIN; deactivation revokes sessions and blocks pending legacy wallet posting and late session insertion; reactivation keeps identities/credentials without reviving old sessions')
+ await request(accountant,'/api/funding/recover',{requestKey:pendingWallet.requestKey})
+ checks.push('Student changes require current Super Admin PIN; deactivation revokes sessions and blocks pending canonical funding posting and late session insertion; reactivation keeps identities/credentials without reviving old sessions')
  phase='wallet and unfinished-order guards'
  // Controlled synthetic setup only; no production wallet is ever altered.
  for(const amount of [-1000,1000]){

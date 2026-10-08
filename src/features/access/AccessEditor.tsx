@@ -1,0 +1,53 @@
+'use client'
+import { useCallback,useEffect,useRef,useState } from 'react'
+import { apiFetch,ClientApiError } from '@/lib/api/client'
+import { Dialog } from '@/components/ui/Dialog'
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
+import { CAPABILITIES,PRESETS,PRESET_LABELS,PRESET_DESCRIPTIONS,accessDiff,type Capability,type AccessPreset } from '@/features/auth/capabilities'
+import { AccessSnapshotSchema,AccessRecoverySchema,AccessResultSchema,AccessChangeSchema,PresetDefaultsSchema,type AccessChange,type AccessSnapshot } from './domain'
+import { PermissionMatrix } from './PermissionMatrix'
+import { EffectiveAccess } from './EffectiveAccess'
+const key='campuspay:access-change:v1'
+const label=(name:Capability)=>CAPABILITIES.find(c=>c.name===name)?.label??name
+export function AccessEditor({targetId,currentUserId,enabled,canReadAudit,onClose,onChanged}:{targetId:string;currentUserId:string;enabled:boolean;canReadAudit:boolean;onClose():void;onChanged():void|Promise<void>}){
+ const [snapshot,setSnapshot]=useState<AccessSnapshot|null>(null),[preset,setPreset]=useState<AccessPreset>('staff'),[permissions,setPermissions]=useState<Capability[]>([])
+ const [defaults,setDefaults]=useState<Partial<Record<AccessPreset,Capability[]>>>({}),[tab,setTab]=useState<'Preset'|'Customize Access'|'Effective Access'>('Preset')
+ const [error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[ready,setReady]=useState(false),[pending,setPending]=useState<string|null>(null),[review,setReview]=useState<AccessChange|null>(null)
+ const flight=useRef(false)
+ const [refreshFailed,setRefreshFailed]=useState(false)
+ const refresh=useCallback(async()=>{const [raw,d]=await Promise.all([apiFetch<unknown>(`/api/administration/access/${targetId}`),apiFetch<unknown>('/api/administration/access/defaults')]);const s=AccessSnapshotSchema.parse(raw);setSnapshot(s);setPreset(s.preset);setPermissions(s.permissions);setDefaults(Object.fromEntries(PresetDefaultsSchema.parse(d).map(x=>[x.preset,x.permissions])))},[targetId])
+ useEffect(()=>{let current=true;void Promise.resolve().then(async()=>{try{const raw=sessionStorage.getItem(key);if(raw&&current)setPending(AccessRecoverySchema.parse(JSON.parse(raw)).requestKey);await refresh();if(current)setReady(true)}catch(e){if(current)setError(e instanceof Error?e.message:'Access or recovery storage could not load. No changes can be submitted.')}});return()=>{current=false}},[refresh])
+ useEffect(()=>{if(!review||busy)return;const timer=setTimeout(()=>{setReview(null);setError('Review expired. Re-enter your current PIN and review this change again.')},60000);return()=>clearTimeout(timer)},[review,busy])
+ const diff=snapshot?accessDiff(snapshot.permissions,permissions):{added:[],removed:[]}
+ const customized=defaults[preset]?accessDiff(defaults[preset]!,permissions):{added:[],removed:[]}
+ const canChange=enabled&&ready&&!busy&&!pending&&targetId!==currentUserId
+ function clear(){sessionStorage.removeItem(key);if(sessionStorage.getItem(key)!==null)throw new Error('Recovery could not be cleared');setPending(null);setReview(null)}
+ async function accept(raw:unknown){const result=AccessResultSchema.parse(raw);if(result.outcome==='AUTH_FAILED')throw new Error('Authentication failed');clear();setNotice(result.outcome==='CLOSED'?'No access change committed. The request is closed.':`Access updated. ${result.sessions_revoked} sessions revoked. Reference ${result.audit_reference}.`);await refreshConfirmedDisplay()}
+ // Notify the parent even when the editor's own GET fails after a confirmed
+ // (or recovered) result. Neither refresh is a financial/access mutation.
+ async function refreshConfirmedDisplay(){
+  try{await Promise.all([refresh(),Promise.resolve(onChanged())]);setReady(true);setRefreshFailed(false);setError('')}
+  catch{setReady(false);setRefreshFailed(true);setError('The access change is confirmed. Refresh this employee before making another change.')}
+ }
+ async function save(v:AccessChange){if(flight.current||pending)return;flight.current=true;setBusy(true);setError('');
+  try{const raw=JSON.stringify({requestKey:v.requestKey});sessionStorage.setItem(key,raw);if(sessionStorage.getItem(key)!==raw)throw new Error('Recovery unavailable');setPending(v.requestKey)}catch{setError('Safe recovery storage is unavailable. Nothing submitted.');setReady(false);flight.current=false;setBusy(false);return}
+  try{await accept(await apiFetch<unknown>(`/api/administration/access/${v.targetId}`,{method:'POST',body:JSON.stringify(v)}))}catch(e){if(e instanceof ClientApiError&&e.status<500){try{clear()}catch{setReady(false)}setError(e.message)}else{setReview(null);setError('Access result is unconfirmed. Recover the original request before any further change.')}}finally{flight.current=false;setBusy(false)}
+ }
+ async function recover(){if(!pending||flight.current)return;flight.current=true;setBusy(true);setError('');try{await accept(await apiFetch<unknown>('/api/administration/access/recover',{method:'POST',body:JSON.stringify({requestKey:pending})}))}catch(e){setError(e instanceof Error?e.message:'Recovery unconfirmed')}finally{flight.current=false;setBusy(false)}}
+ return <Dialog title="Employee Access" className="access-dialog" busy={busy} onClose={onClose}>
+  {snapshot&&<><h2>{snapshot.display_name} · {snapshot.employee_code}</h2><p>Preset: <strong>{PRESET_LABELS[preset]}</strong> · {customized.added.length||customized.removed.length?'Customized':'Preset defaults'}</p></>}
+  {error&&<p role="alert" className="error-message">{error}</p>}{notice&&<p role="status">{notice}</p>}
+  {refreshFailed&&<button className="secondary-action" disabled={busy} onClick={()=>{if(flight.current)return;flight.current=true;setBusy(true);void refreshConfirmedDisplay().finally(()=>{flight.current=false;setBusy(false)})}}>Retry employee refresh</button>}
+  {pending&&<section className="uncertain-result"><h3>Access result needs confirmation</h3><button className="primary-action" disabled={busy} onClick={()=>void recover()}>Recover access result</button></section>}
+  {snapshot&&<><div className="segmented" aria-label="Employee access views">{(['Preset','Customize Access','Effective Access'] as const).map(t=><button key={t} disabled={busy} aria-pressed={tab===t} onClick={()=>setTab(t)}>{t}</button>)}</div>
+  {tab==='Preset'&&<section className="form-stack"><label className="field"><span>Preset</span><select value={preset} disabled={!canChange} onChange={e=>setPreset(e.target.value as AccessPreset)}>{PRESETS.map(p=><option key={p} value={p}>{PRESET_LABELS[p]}</option>)}</select></label><p>{PRESET_DESCRIPTIONS[preset]}</p><p>Choosing a preset changes its label. Existing permissions stay in place until you explicitly apply and review defaults.</p><button className="secondary-action" disabled={!canChange||!defaults[preset]} onClick={()=>{setPermissions([...(defaults[preset]??[])]);setNotice('Defaults selected for review. Access has not changed.')}}>Reset to {PRESET_LABELS[preset]} defaults</button><EffectiveAccess permissions={defaults[preset]??[]}/></section>}
+  {tab==='Customize Access'&&<PermissionMatrix permissions={permissions} disabled={!canChange} onChange={setPermissions} onExplain={setNotice}/>}
+  {tab==='Effective Access'&&<><p>{diff.added.length||diff.removed.length||preset!==snapshot.preset?'Proposed effective access; changes are pending review.':'Current stored effective access.'}</p><EffectiveAccess permissions={permissions}/></>}
+  {targetId===currentUserId&&<p className="notice">Your own access is protected. Another authorized Super Admin must review any change.</p>}
+  {!enabled&&<p className="notice">Administration activation is disabled. Current access remains available for review.</p>}
+  {canChange&&<form className="form-stack" onSubmit={e=>{e.preventDefault();const f=e.currentTarget,v=new FormData(f);const proposed=AccessChangeSchema.safeParse({requestKey:crypto.randomUUID(),targetId,expectedRevision:snapshot.revision,previousPreset:snapshot.preset,previousPermissions:snapshot.permissions,newPreset:preset,permissions,adminPin:String(v.get('pin')??''),reason:String(v.get('reason')??''),confirmed:true});if(!proposed.success){setError('Check your PIN, reason and permission prerequisites.');return}const pin=f.elements.namedItem('pin');if(pin instanceof HTMLInputElement)pin.value='';setReview(proposed.data)}}><label className="field"><span>Reason for access change</span><textarea name="reason" required minLength={10} maxLength={500}/></label><label className="field"><span>Your current Super Admin PIN</span><input name="pin" type="password" required inputMode="numeric" pattern="[0-9]+" minLength={4} maxLength={16} autoComplete="current-password"/></label><button className="primary-action" disabled={!diff.added.length&&!diff.removed.length&&preset===snapshot.preset}>Review access changes</button></form>}
+  {canReadAudit&&<details className="record-more"><summary>Access audit history</summary>{snapshot.history.length?snapshot.history.map(h=><article key={h.reference_number}><h3>{h.reference_number}</h3><p>{h.actor_name} · {h.created_at}</p><p>{h.previous_preset} → {h.new_preset}; {h.sessions_revoked} sessions revoked.</p><p>{h.reason}</p><p>Added: {accessDiff(h.previous_permissions,h.new_permissions).added.map(label).join(', ')||'None'}</p><p>Removed: {accessDiff(h.previous_permissions,h.new_permissions).removed.map(label).join(', ')||'None'}</p></article>):<p>No custom access changes recorded.</p>}</details>}
+  </>}
+  {review&&snapshot&&<ConfirmationDialog title="Save employee access?" description={`${snapshot.display_name} (${snapshot.employee_code}). Active sessions will be revoked; fresh sign-in is required.`} confirmLabel="Save exact access" confirmationText={snapshot.employee_code} destructive={diff.removed.length>0} onCancel={()=>setReview(null)} onConfirm={()=>save(review)}><p>Preset: {PRESET_LABELS[snapshot.preset]} → {PRESET_LABELS[preset]}</p><h3>Added</h3><ul>{diff.added.map(c=><li key={c}>{label(c)}</li>)}</ul><h3>Removed</h3><ul>{diff.removed.map(c=><li key={c}>{label(c)}</li>)}</ul><p>Reason: {review.reason}</p></ConfirmationDialog>}
+ </Dialog>
+}

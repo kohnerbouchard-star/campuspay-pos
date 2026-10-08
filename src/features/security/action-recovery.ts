@@ -49,7 +49,7 @@ export function securityActionFailure(
   }
   if (stage === 'authorize' && (failure.code === 'INVALID_PIN' || failure.code === 'RATE_LIMITED')) {
     return {
-      message: 'Super Admin approval was denied. Check the employee ID and PIN, or allow a temporary lock to clear. No student credential was changed.',
+      message: 'Independent approval was denied. Check the employee ID and PIN, or allow a temporary lock to clear. No student credential was changed.',
       needsSignIn: false,
       needsReview: false,
     }

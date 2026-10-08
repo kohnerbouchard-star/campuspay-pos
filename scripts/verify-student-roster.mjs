@@ -19,7 +19,7 @@ try {
   await client.query("insert into public.staff_profiles(auth_user_id,employee_code,display_name,role) values($1,'ROSTERQA_ADMIN','Roster QA Admin','super_admin'),($2,'ROSTERQA_CASH','Roster QA Cashier','cashier')", [owner, cashier])
   await client.query("insert into private.terminals(id,terminal_fingerprint,label) values($1,$2,'Roster QA terminal')", [terminal, randomBytes(32).toString('hex')])
   for (const [id, actor, code, role] of [[ownerSession,owner,'ROSTERQA_ADMIN','super_admin'],[cashierSession,cashier,'ROSTERQA_CASH','cashier']]) {
-    await client.query("insert into private.staff_sessions(id,auth_user_id,employee_code_snapshot,role_snapshot,terminal_id,session_token_hash,expires_at) values($1,$2,$3,$4,$5,$6,now()+interval '15 minutes')", [id,actor,code,role,terminal,randomBytes(32).toString('hex')])
+    await client.query("insert into private.staff_sessions(id,auth_user_id,employee_code_snapshot,role_snapshot,terminal_id,session_token_hash,access_revision,expires_at) values($1,$2,$3,$4,$5,$6,(select a.revision from private.staff_access a where a.user_id=$2),now()+interval '15 minutes')", [id,actor,code,role,terminal,randomBytes(32).toString('hex')])
   }
   const counts = [[6,18],[7,15],[8,19],[9,24],[10,24],[11,18],[12,17]]
   let ordinal = 0

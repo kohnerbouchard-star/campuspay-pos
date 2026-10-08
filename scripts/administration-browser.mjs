@@ -9,10 +9,10 @@ export async function runAdministrationBrowser(ctx,cookies){
  await context.addCookies([...cookies].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
  const capture=async name=>{for(const width of widths){await page.setViewportSize({width,height:900});await page.screenshot({path:`${dir}/${name}-${width}.png`,fullPage:true});screenshots++;assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No page overflow')}}
  async function fillAccount(){
-  await page.getByRole('button',{name:'Create named staff account',exact:true}).click()
+  await page.getByRole('button',{name:'Create employee',exact:true}).click()
   await page.getByLabel('Employee code (permanent)',{exact:true}).fill('BROWSER-'+randomUUID().slice(0,8))
   await page.getByLabel('Staff display name',{exact:true}).fill('Verified browser fixture')
-  await page.getByLabel('Staff role',{exact:true}).selectOption('cashier')
+  await page.getByLabel('Access preset',{exact:true}).selectOption('staff')
   const pin=String(randomInt(10000000,100000000))
   await page.getByLabel('New staff PIN',{exact:true}).fill(pin);await page.getByLabel('Confirm new staff PIN',{exact:true}).fill(pin)
   await page.getByLabel('Reason and verification evidence',{exact:true}).fill('Synthetic browser acceptance; verified identity')
@@ -20,8 +20,8 @@ export async function runAdministrationBrowser(ctx,cookies){
   await page.getByRole('checkbox',{name:'I verified the person or terminal and approve this exact change.',exact:true}).check()
  }
  try{
-  await page.goto(ctx.base+'/administration');await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeEnabled();await capture('directory')
-  await page.getByRole('button',{name:'Create named staff account',exact:true}).click();await capture('account-form');await page.getByRole('button',{name:'Cancel',exact:true}).click()
+  await page.goto(ctx.base+'/administration');await expect(page.getByRole('button',{name:'Create employee',exact:true})).toBeEnabled();await capture('directory')
+  await page.getByRole('button',{name:'Create employee',exact:true}).click();await capture('account-form');await page.getByRole('button',{name:'Cancel',exact:true}).click()
   const before=Number((await ctx.owner.query('select count(*) from public.staff_profiles')).rows[0].count)
   await fillAccount()
   await page.route('**/api/administration',async route=>{
@@ -34,10 +34,10 @@ export async function runAdministrationBrowser(ctx,cookies){
   const stored=JSON.parse(await page.evaluate(()=>sessionStorage.getItem('campuspay:administration-operation:v1')))
   assert.deepEqual(Object.keys(stored),['requestKey']);assert.match(stored.requestKey,/^[0-9a-f-]{36}$/)
   await capture('unconfirmed-change');await page.reload()
-  await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeDisabled()
+  await expect(page.getByRole('button',{name:'Create employee',exact:true})).toBeDisabled()
   await page.getByRole('button',{name:'Recover administrative result',exact:true}).click()
   await expect(page.getByText(/Change recorded\. 0 sessions signed out\./)).toBeVisible()
-  await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeEnabled()
+  await expect(page.getByRole('button',{name:'Create employee',exact:true})).toBeEnabled()
   assert.equal(Number((await ctx.owner.query('select count(*) from public.staff_profiles')).rows[0].count),before+1)
   assert.equal(await page.evaluate(()=>sessionStorage.getItem('campuspay:administration-operation:v1')),null)
   await capture('recovered-change')
@@ -50,9 +50,9 @@ export async function runAdministrationBrowser(ctx,cookies){
   await expect(page.getByRole('button',{name:'Recover administrative result',exact:true})).toHaveCount(0)
   assert.equal(Number((await ctx.owner.query('select count(*) from public.staff_profiles')).rows[0].count),before+2)
   await page.getByRole('button',{name:'Refresh directory',exact:true}).click()
-  await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeEnabled()
+  await expect(page.getByRole('button',{name:'Create employee',exact:true})).toBeEnabled()
   await page.evaluate(()=>sessionStorage.setItem('campuspay:administration-operation:v1','corrupt pending operation'))
-  await page.reload();await expect(page.getByRole('button',{name:'Create named staff account',exact:true})).toBeDisabled()
+  await page.reload();await expect(page.getByRole('button',{name:'Create employee',exact:true})).toBeDisabled()
   const warning=page.getByRole('alert').filter({hasText:'Recovery storage is unreadable or unavailable'})
   await expect(warning).toBeVisible();await expect(warning).toContainText('Recovery storage is unreadable or unavailable')
   assert.deepEqual(errors,[])

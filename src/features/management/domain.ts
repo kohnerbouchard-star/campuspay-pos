@@ -19,7 +19,7 @@ export const RecordChangeSchema = z.discriminatedUnion('action', [
 export type RecordChange = z.infer<typeof RecordChangeSchema>
 export const RecordRecoverySchema = z.object({kind:RecordKindSchema,requestKey:z.string().uuid()}).strict()
 export const ManagedRecordSchema = z.object({id:z.string().uuid(),code:z.string(),name:z.string(),active:z.boolean(),updated_at:z.string().datetime({offset:true}),
-  quantity_or_balance:z.number().int(),selling_price_won:z.number().int().nullable(),category:z.string().nullable(),reorder_level:z.number().int().nullable(),blocker:z.string().nullable()})
+  quantity_or_balance:z.number().int().nullable(),selling_price_won:z.number().int().nullable(),category:z.string().nullable(),reorder_level:z.number().int().nullable(),blocker:z.string().nullable()})
 export type ManagedRecord = z.infer<typeof ManagedRecordSchema>
 export const RecordDirectorySchema = z.object({kind:RecordKindSchema,total:z.number().int().nonnegative(),records:z.array(ManagedRecordSchema)})
 export type RecordDirectory = z.infer<typeof RecordDirectorySchema>

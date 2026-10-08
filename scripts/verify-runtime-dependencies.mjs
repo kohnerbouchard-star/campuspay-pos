@@ -1,0 +1,22 @@
+// Resolve from the production importers, not a coincidental top-level package.
+import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+const nextRequire = createRequire(require.resolve('next'))
+const sharp = nextRequire('sharp')
+assert.equal(sharp.versions.sharp, '0.35.5')
+assert.equal(sharp.versions.vips, '8.18.7')
+assert.equal(sharp.versions.rsvg, '2.63.2')
+const png = await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="red"/></svg>')).resize(4, 4).png().toBuffer()
+const metadata = await sharp(png).metadata()
+assert.equal(metadata.format, 'png')
+assert.equal(metadata.width, 4)
+assert.equal(metadata.height, 4)
+const postcssRequire = createRequire(nextRequire.resolve('postcss'))
+assert.equal(postcssRequire('source-map-js/package.json').version, '1.2.2')
+const { SourceMapGenerator, SourceMapConsumer } = postcssRequire('source-map-js')
+const generator = new SourceMapGenerator({ file: 'output.css' })
+generator.addMapping({ generated: { line: 1, column: 0 }, original: { line: 2, column: 1 }, source: 'input.css' })
+const consumer = new SourceMapConsumer(generator.toJSON())
+assert.deepEqual(consumer.originalPositionFor({ line: 1, column: 0 }), { source: 'input.css', line: 2, column: 1, name: null })
+console.log(JSON.stringify({ status: 'PASS', sharp: sharp.versions.sharp, libvips: sharp.versions.vips, librsvg: sharp.versions.rsvg, sourceMapJs: '1.2.2', svgDecodeResizePng: true, sourceMapRoundtrip: true }))

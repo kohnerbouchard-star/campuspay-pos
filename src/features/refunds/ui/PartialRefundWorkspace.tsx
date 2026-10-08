@@ -8,18 +8,25 @@ import { PartialSnapshotSchema, type PartialSnapshot, type PostPartialRefundInpu
 import { clearRefundRecovery, readRefundRecovery, saveRefundRecovery } from '../storage'
 import { PartialRefundEditor } from './PartialRefundEditor'
 import { RefundReceipt } from './RefundReceipt'
-export function PartialRefundWorkspace({ enabled, allowReturns, canPost, userId }: { enabled: boolean; allowReturns: boolean; canPost: boolean; userId: string }) {
+export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayout, userId }: { enabled: boolean; allowReturns: boolean; canPost: boolean; canPayout:boolean; userId: string }) {
   const [reference,setReference] = useState(''), [snapshot,setSnapshot] = useState<PartialSnapshot | null>(null)
   const [receipt,setReceipt] = useState<RefundRecord | null>(null), [pending,setPending] = useState<ReturnType<typeof readRefundRecovery>>(null)
   const [ready,setReady] = useState(false), [busy,setBusy] = useState(false), [error,setError] = useState(''), [message,setMessage] = useState('')
   const working = useRef(false)
+  // Payouts are immutable. A directory read started before confirmation must
+  // never erase a handover already confirmed by the payout/receipt endpoint.
+  const confirmedPayouts = useRef(new Map<string, RefundRecord>())
+  function preservePayout(value: RefundRecord) {
+    const confirmed = confirmedPayouts.current.get(value.refund_id)
+    return confirmed?.sale_id === value.sale_id && confirmed.cash_paid_won > value.cash_paid_won ? confirmed : value
+  }
   useEffect(() => {
     const timer = setTimeout(() => { try { setPending(readRefundRecovery(sessionStorage)); setReady(true) } catch { setError('Recovery storage is unreadable. Posting is blocked; resolve the saved request first.') } },0)
     return () => clearTimeout(timer)
   },[])
   async function load(ref: string, offset = 0) {
     const value = PartialSnapshotSchema.nullable().parse(await apiFetch<unknown>(`/api/refunds/items?reference=${encodeURIComponent(ref)}&offset=${offset}`))
-    setSnapshot(value); if (!value) setMessage('No original sale was found.')
+    setSnapshot(value ? { ...value, refunds: value.refunds.map(preservePayout) } : null); if (!value) setMessage('No original sale was found.')
   }
   async function lookup(offset = 0, ref = reference.trim()) {
     if (working.current || pending) return
@@ -55,19 +62,27 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, userId 
     finally { working.current = false; setBusy(false) }
     if (confirmed) await refreshConfirmed(saleId)
   }
+  function updateReceipt(value: RefundRecord) {
+    value = preservePayout(value)
+    if (value.cash_paid_won > 0) confirmedPayouts.current.set(value.refund_id, value)
+    setReceipt(current => current?.refund_id === value.refund_id ? value : current)
+    setSnapshot(current => current?.sale.sale_id === value.sale_id ? {
+      ...current, refunds: current.refunds.map(record => record.refund_id === value.refund_id ? value : record),
+    } : current)
+  }
   const eligible = snapshot && snapshot.allocations.some(a => a.remaining_quantity > 0) && !snapshot.refunds.some(r => r.scope === 'FULL')
     && (snapshot.sale.channel === 'POS' || (allowReturns && snapshot.returns_enabled && ['OUT_FOR_DELIVERY','DELIVERED'].includes(snapshot.sale.order_status ?? '')))
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Original-tender item corrections</p><h1>Item refunds and returns</h1><p>Repeated partial refunds with original-lot inspection. Each refund remains a separate immutable receipt.</p><Link href="/refunds">Full-sale refunds and net-day reports</Link></div></header>
     {!enabled && <p role="status">New item-level posting is disabled. Existing receipts and recovery remain available after the migration is installed.</p>}
-    {!canPost && <p>Accountant read-only access. Only Super Admin can post or record a cash handover.</p>}
+    {!canPost && <p>Refund issue access is not assigned. This view does not grant cash payout access.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}
-    {pending && <section className="panel"><h2>Unresolved item refund</h2><p>Only opaque sale/request identifiers are stored. Recover before another refund.</p><button className="primary-action" disabled={busy || !canPost} onClick={() => void recover()}>Recover item refund result</button></section>}
+    {pending && <section className="panel"><h2>Unresolved item refund</h2><p>Only opaque sale/request identifiers are stored. Recover before another refund.</p>{canPost?<button className="primary-action" disabled={busy} onClick={() => void recover()}>Recover item refund result</button>:<p>Use the original operator with assigned refund access to check this request.</p>}</section>}
     <section className="panel"><h2>Find original sale</h2><form className="toolbar" onSubmit={e => { e.preventDefault(); void lookup() }}><label className="field"><span>Receipt or order reference</span><input required maxLength={100} disabled={busy || Boolean(pending)} value={reference} onChange={e => setReference(e.target.value)} /></label><button className="secondary-action" disabled={busy || Boolean(pending)}>Load item refund history</button></form>
       {snapshot && <><h3>{snapshot.sale.receipt_number}</h3><p>{snapshot.sale.student_name ?? 'Cash customer'} · {snapshot.sale.student_code ?? 'No wallet'}{snapshot.sale.year_group ? ` · Y${snapshot.sale.year_group}` : ''}</p><p>Original paid: {formatWon(snapshot.sale.total_won)} · Total refunded: {formatWon(snapshot.refunded_won)} · {snapshot.refund_count} refund receipts</p><p>{snapshot.sale.order_status ?? 'POS sale'}</p></>}
     </section>
     {snapshot && enabled && snapshot.enabled && ready && !pending && !busy && eligible && <PartialRefundEditor key={`${snapshot.sale.sale_id}:${snapshot.refund_count}`} snapshot={snapshot} canPost={canPost} onSubmit={submit} />}
     {snapshot && !eligible && <p>No eligible remaining goods for this workflow. Pre-dispatch cancellation uses the full-sale workflow; completed quantities cannot be refunded twice.</p>}
-    {receipt && !pending && <RefundReceipt key={receipt.refund_id} refund={receipt} userId={canPost ? userId : ''} onUpdate={setReceipt} />}
+    {receipt && !pending && <RefundReceipt key={receipt.refund_id} refund={receipt} userId={canPayout ? userId : ''} onUpdate={updateReceipt} />}
     {snapshot && <section className="panel"><h2>All refund receipts for this sale</h2><p>Showing {snapshot.refunds.length ? snapshot.offset+1 : 0}–{snapshot.offset+snapshot.refunds.length} of {snapshot.refund_count}. Select a receipt to review its own cash handover, not the latest receipt.</p>
       {snapshot.refunds.map(r => <p key={r.refund_id} style={{ overflowWrap:'anywhere' }}><button className="secondary-action" disabled={busy || Boolean(pending)} onClick={() => setReceipt(r)}>Open refund {r.refund_id}</button> {r.scope === 'PARTIAL' ? 'Item-level' : 'Full-sale'} · {formatWon(r.total_won)}</p>)}
       <button disabled={busy || Boolean(pending) || snapshot.offset===0} onClick={() => void lookup(Math.max(0,snapshot.offset-50),snapshot.sale.sale_id)}>Previous refunds</button>

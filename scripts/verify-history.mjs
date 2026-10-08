@@ -8,7 +8,7 @@ import { chromium,expect } from '@playwright/test'
 import { refundTestContext } from './refund-test-context.mjs'
 let ctx,phase='setup',browser;const checks=[]
 try{
- ctx=await refundTestContext();await ctx.start(false,{cash:true})
+ ctx=await refundTestContext();await ctx.start(false,{cash:true,funding:true})
  const {owner,request,login,pin}=ctx,admin=await login(),accountant=await login('3001'),cashier=await login('1001'),inventory=await login('2001')
  const code='HISTORY-'+randomUUID().slice(0,8),card='HISTORY'+randomBytes(12).toString('hex'),name='History QA student'
  await request(admin,'/api/students',{studentCode:code,displayName:name,cardRead:card,pin,confirmationPin:pin,idempotencyKey:randomUUID()},201)
@@ -16,11 +16,12 @@ try{
  const walletUrl=`/api/accounting/students/${student}/history`
  const day=(await owner.query("select (clock_timestamp() at time zone 'Asia/Seoul')::date::text as business_date")).rows[0].business_date
  const footprint=async()=>JSON.stringify((await owner.query("select (select md5(string_agg(to_jsonb(l)::text,'' order by l.id)) from private.wallet_ledger l) ledger,(select md5(string_agg(to_jsonb(w)::text,'' order by w.student_id)) from private.wallets w) wallets,(select md5(string_agg(to_jsonb(c)::text,'' order by c.shift_id)) from private.cash_shift_closes c) closes")).rows[0])
+ await owner.query('update private.system_settings set funding_enabled=true where singleton')
  phase='wallet fixture'
  for(let n=0;n<101;n++){
-  const last=n===100,intent=await request(accountant,'/api/accounting/intents',{direction:last?'DEBIT':'CREDIT',denominations:[1000],reasonCode:last?'PURCHASE_CORRECTION':'FUNDS_RECEIVED',notes:last?'Unique history deduction':'Synthetic historical funding receipt',idempotencyKey:randomUUID()},201)
-  await request(accountant,`/api/accounting/intents/${intent.intent_id}/card`,{cardRead:card})
-  await request(accountant,`/api/accounting/intents/${intent.intent_id}/confirm`,{pin})
+  const last=n===100,key=randomUUID();await request(accountant,'/api/funding/prepare',{requestKey:key,action:last?'ADMIN_DEBIT':'NONCASH_CREDIT',denominations:[1000],sourceReference:'Verified isolated history source',notes:last?'Unique history deduction':'Synthetic historical funding receipt'})
+  await request(accountant,'/api/funding/card',{requestKey:key,cardRead:card})
+  await request(accountant,'/api/funding/confirm',{requestKey:key,studentPin:pin,approverCode:'9001',approverPin:ctx.staffPin,verified:true})
  }
  phase='wallet history';const before=await footprint(),pages=[]
  for(const offset of [0,50,100])pages.push(await request(accountant,`${walletUrl}?offset=${offset}`))
@@ -53,8 +54,8 @@ try{
  checks.push('52 closed shifts across pages, all-filter export independent of page, and cashier-only terminal scope')
  phase='browser';browser=await chromium.launch({headless:true});const context=await browser.newContext(),page=await context.newPage(),errors=[]
  page.on('pageerror',e=>errors.push(e.message));await context.addCookies([...accountant].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
- await page.goto(ctx.base+'/accounting');await page.getByLabel('Search name or student ID',{exact:true}).fill(code)
- await page.getByRole('row').filter({hasText:name}).getByRole('button',{name:'View history',exact:true}).click()
+ await page.goto(ctx.base+'/students');await page.getByLabel('Search students',{exact:true}).fill(code)
+ await page.getByRole('row').filter({hasText:name}).getByRole('button').click();await page.getByRole('button',{name:'Wallet History',exact:true}).click()
  const dialog=page.getByRole('dialog',{name:`${name} · Wallet history`,exact:true})
  await expect(dialog.getByText('1–50 of 101',{exact:true})).toBeVisible()
  await dialog.getByRole('button',{name:'Next history page',exact:true}).click();await expect(dialog.getByText('51–100 of 101',{exact:true})).toBeVisible()

@@ -31,7 +31,7 @@ try {
   }
   const first=await sale(), input=selection(first)
   phase='gates';let before=await financialState()
-  await preview(admin,input,403)
+  await preview(admin,input,409)
   await ctx.start(false,{partialPreview:true});admin=await login('9001',admin)
   assert.equal((await preview(admin,input)).outcome,'DISABLED')
   await owner.query('update private.system_settings set partial_refund_preview_enabled=true where singleton')

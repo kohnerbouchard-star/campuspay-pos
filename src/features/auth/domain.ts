@@ -1,9 +1,11 @@
 import { z } from 'zod'
+import { CAPABILITY_NAMES, PRESETS } from './capabilities'
 
 export const StaffRoleSchema = z.enum(['cashier', 'inventory_admin', 'accountant', 'super_admin'])
 export type StaffRole = z.infer<typeof StaffRoleSchema>
 
 export const PermissionSchema = z.enum([
+  ...CAPABILITY_NAMES,
   'pos.read', 'pos.checkout',
   'coupons.redeem', 'coupons.manage',
   'inventory.read', 'inventory.receive', 'inventory.adjust', 'inventory.product.manage', 'inventory.price.manage',
@@ -21,6 +23,8 @@ export const SessionContextSchema = z.object({
   employee_code: z.string(),
   display_name: z.string(),
   role: StaffRoleSchema,
+  preset: z.enum(PRESETS),
+  access_revision: z.number().int().positive(),
   permissions: z.array(PermissionSchema),
   expires_at: z.string(),
 })

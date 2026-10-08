@@ -82,3 +82,146 @@ export async function runOperationsBrowser(ctx,cookies,receipt){
   fs.writeFileSync(dir+'/browser.json',JSON.stringify({widths,screenshotCount,recoveryChecks,unexpectedBrowserErrors:errors,layoutFindings:[],exactAccessibleNamesVerified:true,liveDataUsed:false},null,2))
  }catch(e){fs.writeFileSync(dir+'/navigation-failure.json',JSON.stringify({phase,path:new URL(page.url()).pathname,pendingRequests:[...pendingRequests.values()],completedRecoveryChecks:recoveryChecks,errors},null,2));await page.screenshot({path:dir+'/last-failure.png',fullPage:true,timeout:5000}).catch(()=>{});throw e}finally{await context.close();await browser.close()}
 }
+
+export async function runCashEligibilityBrowser(ctx){
+ const browser=await chromium.launch({headless:true}),contexts=[],checks=[],errors=[]
+ const key='campuspay:cash-operation:v1',posts=[]
+ let page,phase='setup',releaseOld,oldDone
+ const newPage=async cookies=>{
+  const context=await browser.newContext({viewport:{width:390,height:900}});contexts.push(context)
+  await context.addCookies([...cookies].filter(([,v])=>v).map(([name,value])=>({name,value,url:ctx.base})))
+  const p=await context.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>errors.push(e.message))
+  p.on('request',r=>{if(r.method()==='POST'&&new URL(r.url()).pathname.startsWith('/api/cash/'))posts.push({path:new URL(r.url()).pathname,body:r.postDataJSON()})})
+  return p
+ }
+ const pending=()=>page.evaluate(k=>sessionStorage.getItem(k),key)
+ const fillCount=async()=>{await page.getByLabel('₩1,000 pieces',{exact:true}).fill('1');await page.getByLabel('Close notes and any variance explanation').fill('Verified synthetic physical drawer count');await page.getByRole('checkbox',{name:'I physically counted this drawer and verified these quantities.'}).check()}
+ const closeDocument=shiftId=>({shiftId,requestKey:ctx.randomUUID(),counts:{'1000':1},notes:'Verified synthetic physical drawer count',verified:true})
+ try{
+  const owner=await ctx.login(),opening=await ctx.request(owner,'/api/cash/open',{requestKey:ctx.randomUUID(),counts:{'1000':1},verified:true})
+  phase='non-owner'
+  const nonOwner=await ctx.login('1001',new Map(owner));page=await newPage(nonOwner);await page.goto(ctx.base+'/cash')
+  await expect(page.getByText(/This drawer was opened by another operator/)).toBeVisible()
+  await expect(page.getByRole('button',{name:'Confirm drawer close',exact:true})).toHaveCount(0)
+  assert.equal(await pending(),null);assert.equal(posts.length,0)
+  const denied=closeDocument(opening.shift_id)
+  await ctx.request(nonOwner,'/api/cash/close',denied,403)
+  const unresolved={requestKey:denied.requestKey,operation:'CLOSE',shiftId:opening.shift_id}
+  await ctx.request(nonOwner,'/api/cash/recover',unresolved,403)
+  assert.equal(Number((await ctx.owner.query('select count(*) from private.cash_shift_closes where shift_id=$1',[opening.shift_id])).rows[0].count),0)
+  checks.push('non-owner has no close form, POST or new browser key; direct close/recovery remain forbidden')
+  phase='existing-unresolved'
+  await page.evaluate(([k,v])=>sessionStorage.setItem(k,JSON.stringify(v)),[key,unresolved]);await page.reload()
+  await page.getByRole('button',{name:'Recover cash result',exact:true}).click()
+  await expect(page.locator('p.error-message[role="alert"]')).toHaveText('Recovery could not be confirmed. Reconnect on the original terminal as the original operator.')
+  assert.deepEqual(JSON.parse(await pending()),unresolved)
+  assert.deepEqual(posts.map(p=>p.path),['/api/cash/recover'])
+  checks.push('pre-existing unresolved key is retained after denied recovery; no replacement close is submitted')
+  await page.context().close()
+
+  phase='read-only'
+  page=await newPage(await ctx.login('DRAWER-VIEW',new Map(owner)));await page.goto(ctx.base+'/cash')
+  await expect(page.getByText(/Accountant review view/)).toBeVisible()
+  await expect(page.getByRole('button',{name:'Confirm drawer close',exact:true})).toHaveCount(0)
+  assert.equal(await pending(),null);assert.equal(posts.length,1)
+  checks.push('cash reader receives no close action or request key');await page.context().close()
+
+  phase='wrong-terminal'
+  const elsewhere=await ctx.login('DRAWER-OVERRIDE');page=await newPage(elsewhere)
+  await page.route('**/api/cash?*',async route=>{
+   const response=await route.fetch(),body=await response.json();assert.equal(response.status(),200)
+   assert.notEqual(body.data.terminal_id,opening.terminal_id);body.data.current_shift=opening
+   await route.fulfill({response,json:body})
+  })
+  await page.goto(ctx.base+'/cash');await expect(page.getByText('Refresh the cash register. This is not an open drawer at the current terminal.',{exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Confirm drawer close',exact:true})).toHaveCount(0)
+  assert.equal(await pending(),null);assert.equal(posts.length,1)
+  await ctx.request(elsewhere,'/api/cash/close',closeDocument(opening.shift_id),403)
+  checks.push('mismatched terminal snapshot blocks UI; explicit override cannot bypass server terminal binding');await page.context().close()
+
+  phase='owner-stale-refresh'
+  const returned=await ctx.login('9001',new Map(owner));page=await newPage(returned);await page.goto(ctx.base+'/cash');await fillCount()
+  const submit=page.getByRole('button',{name:'Confirm drawer close',exact:true}),count=page.getByLabel('₩1,000 pieces',{exact:true})
+  await expect(submit).toBeEnabled()
+  let oldStartedResolve,oldDoneResolve,refreshNumber=0
+  const oldStarted=new Promise(resolve=>{oldStartedResolve=resolve})
+  oldDone=new Promise(resolve=>{oldDoneResolve=resolve})
+  const oldGate=new Promise(resolve=>{releaseOld=resolve})
+  const reject=route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({ok:false,error:{code:'INTERNAL_ERROR',message:'Synthetic unavailable snapshot'}})})
+  const delayed=async route=>{
+   refreshNumber++
+   if(refreshNumber===2)return reject(route)
+   if(refreshNumber!==1)return route.continue()
+   try{const response=await route.fetch();oldStartedResolve();await oldGate;await route.fulfill({response});oldDoneResolve(null)}
+   catch(error){oldStartedResolve();oldDoneResolve(error)}
+  }
+  await page.route('**/api/cash?*',delayed)
+  await page.getByRole('button',{name:'Refresh cash register',exact:true}).click();await oldStarted
+  await expect(count).toBeDisabled();await expect(count).toHaveValue('1')
+  // Dispatch past the disabled controls to verify the handler itself guards storage/POST.
+  await count.evaluate(input=>input.closest('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})))
+  assert.equal(await pending(),null);assert.equal(posts.length,1)
+  await page.getByRole('button',{name:'Refresh cash register',exact:true}).click()
+  await expect(page.locator('p.error-message[role="alert"]')).toHaveText('Cash controls could not be loaded. Verify the migration and connection.')
+  releaseOld();assert.equal(await oldDone,null);await expect(count).toBeDisabled()
+  await count.evaluate(input=>input.closest('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})))
+  assert.equal(await pending(),null);assert.equal(posts.length,1)
+  await page.getByRole('button',{name:'Refresh cash register',exact:true}).click();await expect(submit).toBeEnabled();await expect(count).toHaveValue('1')
+  await page.unroute('**/api/cash?*',delayed)
+  await expect(page.getByLabel('Close notes and any variance explanation')).toHaveValue('Verified synthetic physical drawer count')
+  checks.push('refresh immediately disables counts; late superseded success cannot undo newer failure; no key/POST and draft retained until fresh success')
+
+  phase='pagination-away-and-back'
+  const paged=async route=>{const response=await route.fetch(),body=await response.json();body.data.total_closed=100;await route.fulfill({response,json:body})}
+  await page.route('**/api/cash?*',paged)
+  await page.getByRole('button',{name:'Refresh cash register',exact:true}).click();await expect(submit).toBeEnabled()
+  await expect(page.getByRole('button',{name:'Next closes',exact:true})).toBeEnabled();await page.unroute('**/api/cash?*',paged)
+  let nextStartedResolve,nextDoneResolve
+  const nextStarted=new Promise(resolve=>{nextStartedResolve=resolve}),nextGate=new Promise(resolve=>{releaseOld=resolve})
+  oldDone=new Promise(resolve=>{nextDoneResolve=resolve})
+  const pagination=async route=>{
+   if(new URL(route.request().url()).searchParams.get('offset')!=='50')return reject(route)
+   try{const response=await route.fetch();nextStartedResolve();await nextGate;await route.fulfill({response});nextDoneResolve(null)}
+   catch(error){nextStartedResolve();nextDoneResolve(error)}
+  }
+  await page.route('**/api/cash?*',pagination)
+  await page.getByRole('button',{name:'Next closes',exact:true}).click();await nextStarted
+  await page.getByRole('button',{name:'Previous closes',exact:true}).click()
+  await expect(count).toBeDisabled();await expect(count).toHaveValue('1')
+  await expect(page.locator('p.error-message[role="alert"]')).toHaveText('Cash controls could not be loaded. Verify the migration and connection.')
+  await count.evaluate(input=>input.closest('form').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})))
+  assert.equal(await pending(),null);assert.equal(posts.length,1)
+  releaseOld();assert.equal(await oldDone,null);await expect(count).toBeDisabled()
+  await page.unroute('**/api/cash?*',pagination)
+  await page.getByRole('button',{name:'Refresh cash register',exact:true}).click();await expect(submit).toBeEnabled()
+  checks.push('rapid pagination away/back cannot revalidate cached counts; delayed older response and failed current read create no key or POST')
+
+  phase='committed-close-recovery-with-failed-snapshot'
+  await page.route('**/api/cash/close',async route=>{const response=await route.fetch();assert.equal(response.status(),200);await reject(route)},{times:1})
+  await submit.click();await expect(page.locator('p.error-message[role="alert"]')).toHaveText('Result unconfirmed. Recover this request before opening or closing another shift.')
+  const saved=JSON.parse(await pending());assert.equal(saved.shiftId,opening.shift_id);assert.equal(saved.operation,'CLOSE')
+  await page.route('**/api/cash?*',reject);await page.reload()
+  await expect(page.locator('p.error-message[role="alert"]')).toHaveText('Cash controls could not be loaded. Verify the migration and connection.')
+  assert.deepEqual(JSON.parse(await pending()),saved)
+  await page.getByRole('button',{name:'Recover cash result',exact:true}).click()
+  await expect(page.getByRole('status').filter({hasText:'The original operation is confirmed.'})).toBeVisible()
+  assert.equal(await pending(),null)
+  assert.equal(posts.filter(p=>p.path==='/api/cash/close').length,1)
+  assert.deepEqual(posts.filter(p=>p.path==='/api/cash/recover').at(-1).body,saved)
+  assert.equal(Number((await ctx.owner.query('select count(*) from private.cash_shift_closes where shift_id=$1',[opening.shift_id])).rows[0].count),1)
+  checks.push('lost committed close survives reload; original recovery works despite failed snapshot, exactly one close');await page.context().close()
+
+  phase='explicit-override'
+  const openingOwner=await ctx.login('9001',new Map(owner)),second=await ctx.request(openingOwner,'/api/cash/open',{requestKey:ctx.randomUUID(),counts:{'1000':1},verified:true})
+  const override=await ctx.login('DRAWER-OVERRIDE',new Map(owner)),session=await ctx.request(override,'/api/auth/session')
+  assert.equal(session.role,'cashier');assert.ok(session.permissions.includes('cash.drawer.override'));assert.notEqual(session.user_id,second.opened_by)
+  page=await newPage(override);await page.goto(ctx.base+'/cash');await fillCount();await page.getByRole('button',{name:'Confirm drawer close',exact:true}).click()
+  await expect(page.getByRole('status').filter({hasText:'Drawer closed. The count and variance are recorded.'})).toBeVisible()
+  const rows=(await ctx.owner.query('select closed_by,variance_won::text from private.cash_shift_closes where shift_id=$1',[second.shift_id])).rows
+  assert.deepEqual(rows,[{closed_by:session.user_id,variance_won:'0'}]);assert.equal(await pending(),null)
+  checks.push('ordinary role with explicit override closes another operator drawer at same terminal exactly once')
+  assert.deepEqual(errors,[])
+  fs.writeFileSync('.validation/operations/eligibility.json',JSON.stringify({checks,unexpectedBrowserErrors:errors,liveDataUsed:false},null,2))
+ }catch(e){fs.writeFileSync('.validation/operations/eligibility-failure.json',JSON.stringify({phase,error:e.message,checks,errors},null,2));throw e}
+ finally{releaseOld?.();await oldDone;for(const c of contexts)await c.close();await browser.close()}
+}

@@ -29,15 +29,21 @@ export async function runOldSchemaCheck({ owner, ownerUrl, env, staff, h }) {
       await new Promise(resolve => setTimeout(resolve, 500))
     }
     const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', origin: base }, body: JSON.stringify({ employeeCode: '9001', pin: '12345678' }) })
-    assert.equal(login.status, 200)
+    assert.equal(login.status, 503, 'Old role bundles must never become effective authority in the new app')
+    assert.ok(!login.headers.getSetCookie().some(value=>value.startsWith('campuspay_session=')), 'No staff session cookie is issued without stored effective access')
     const cookie = login.headers.getSetCookie().map(value => value.split(';')[0]).join('; ')
-    assert.equal((await fetch(`${base}/api/pos/catalog`, { headers: { cookie } })).status, 200, 'Older database credentials and existing catalog still work')
-    const response = await fetch(`${base}/api/pos/payment-policy`, { headers: { cookie } })
-    assert.equal(response.status, 503)
-    const result = await response.json()
+    assert.equal((await fetch(`${base}/api/pos/catalog`, { headers: { cookie } })).status, 401, 'No protected catalog loads through failed legacy authentication')
+    const result = await login.json()
     assert.deepEqual(result, { ok: false, error: { code: 'DATABASE_UPGRADE_REQUIRED', message: 'CampusPay needs a database update before this version can be used.' } })
-    fs.writeFileSync('.validation/old-schema-results.json', JSON.stringify({ passed: true, migrations, catalogStatus: 200, paymentPolicyStatus: 503, safeError: result.error }, null, 2))
-    console.log('PASS: actual pre-refresh schema authenticates staff and serves catalog, missing payment capability returns a safe database-update error')
+    const legacyToken=randomUUID(),legacyTerminal=randomUUID()
+    const legacy=(await old.query('select * from api.create_staff_session($1,$2,$3,$4)',['9001',h('STAFF_PIN_PEPPER','staff-pin:12345678'),h('SESSION_HMAC_SECRET',legacyToken),h('TERMINAL_COOKIE_SECRET',legacyTerminal)])).rows[0]
+    const existing=await fetch(`${base}/api/pos/catalog`,{headers:{cookie:`campuspay_session=${legacyToken}; campuspay_terminal=${legacyTerminal}`}})
+    assert.equal(existing.status,503,'An existing legacy session cannot bypass effective-access readiness')
+    assert.deepEqual(await existing.json(),result)
+    // Retain the real missing payment-RPC boundary independently of authentication.
+    await assert.rejects(old.query('select * from api.terminal_payment_policy_v2($1::uuid)',[legacy.session_id]),error=>error.code==='42883')
+    fs.writeFileSync('.validation/old-schema-results.json', JSON.stringify({ passed: true, migrations, loginStatus:503, staffCookieIssued:false, catalogStatus:401, legacySessionStatus:503, missingPaymentRpc:'42883', safeError: result.error }, null, 2))
+    console.log('PASS: actual older schema fails closed with a safe database-update error, issues no staff cookie, denies protected records and retains the missing payment-RPC check')
   } finally {
     if (server && server.exitCode === null) { const exited = once(server, 'exit'); server.kill('SIGTERM'); await exited }
     if (log !== undefined) fs.closeSync(log)

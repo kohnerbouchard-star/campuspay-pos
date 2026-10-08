@@ -1,4 +1,6 @@
+import { PRESET_LABELS } from '@/features/auth/capabilities'
 import type { AdministrationChange, StaffRecord, TerminalRecord } from './domain'
+// Historical role descriptions retained for migration evidence, never authority or preset UX.
 export const ROLE_DESCRIPTIONS = {
   cashier:'Take sales, prepare online orders and operate permitted cash-drawer tasks when activated. No product management, user management or wallet corrections.',
   inventory_admin:'Manage products, stock and coupons; prepare online orders; request PIN/card assistance with Super Admin approval. No wallet adjustments.',
@@ -8,8 +10,8 @@ export const ROLE_DESCRIPTIONS = {
 export function administrationReview(change:AdministrationChange, previous?:StaffRecord|TerminalRecord) {
   const code=previous&&'employee_code' in previous?previous.employee_code:previous&&'terminal_id' in previous?previous.terminal_id:''
   switch(change.action){
-    case 'CREATE_STAFF':return {label:'Create staff account',destructive:false,token:undefined,description:`Create ${change.displayName} (${change.employeeCode}) as ${change.role.replaceAll('_',' ')}. This creates staff access, not a student wallet.`}
-    case 'UPDATE_STAFF':return {label:change.active?'Save staff access':'Deactivate staff account',destructive:!change.active||!!(previous&&'role' in previous&&previous.role!==change.role),token:code,description:`${change.displayName} (${code}) will be ${change.active?'active':'inactive'} with role ${change.role.replaceAll('_',' ')}. Their sessions will end. Staff identity and transaction history remain. Your own account and the last administrator are protected.`}
+    case 'CREATE_STAFF':return {label:'Create staff account',destructive:false,token:undefined,description:`Create ${change.displayName} (${change.employeeCode}) with the ${PRESET_LABELS[change.preset]} preset. This creates staff access, not a student wallet.`}
+    case 'UPDATE_STAFF':return {label:change.active?'Save staff profile':'Deactivate staff account',destructive:!change.active||!!(previous&&'role' in previous&&previous.role!==change.role),token:code,description:`${change.displayName} (${code}) will be ${change.active?'active':'inactive'} with their currently assigned effective access. Their sessions will end. Staff identity and transaction history remain. Your own account and the last administrator are protected.`}
     case 'RESET_STAFF_PIN':return {label:'Reset staff PIN',destructive:true,token:code,description:`The previous PIN for ${code} will stop working and their sessions will end. Hand the new PIN only to the verified staff member. No student credentials change.`}
     case 'REVOKE_STAFF_SESSIONS':return {label:'Sign out staff sessions',destructive:true,token:code,description:`End the current sessions for ${code}. Their account and PIN remain active, so they can sign in again. No transaction history is removed.`}
     case 'UPDATE_TERMINAL':{const statusChanged=!!(previous&&'active' in previous&&previous.active!==change.active);return {label:statusChanged?(change.active?'Reactivate register':'Deactivate register'):'Save register settings',destructive:statusChanged,token:statusChanged?code:undefined,description:`Set the register label to ${change.label} and access to ${change.active?'active':'inactive'}. Deactivation requires any open cash drawer to be closed. Register history is preserved.`}}

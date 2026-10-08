@@ -16,7 +16,12 @@ export function useInactivityLock(protection: Protection = null, timeoutMs = POS
   const lock = useCallback(async () => {
     if (locking.current) return
     locking.current = true
-    try { await logout() } catch { /* Server expiry remains authoritative. */ }
+    try { await logout() }
+    catch {
+      // Hide the unattended workspace, but do not claim server revocation.
+      window.location.replace(`/login?next=${encodeURIComponent(returnPath)}&logout=unconfirmed`)
+      return
+    }
     window.location.replace(`/login?next=${encodeURIComponent(returnPath)}&expired=1`)
   }, [returnPath])
   const noteActivity = useCallback(() => {

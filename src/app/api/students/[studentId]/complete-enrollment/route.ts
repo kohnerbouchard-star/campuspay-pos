@@ -9,7 +9,7 @@ import { failure, ok, parseJson } from '@/lib/api/response'
 export const dynamic = 'force-dynamic'
 export const POST = withApiRoute('/api/students/[studentId]/complete-enrollment', async (request: Request, context: { params: Promise<{ studentId: string }> }) => {
   try {
-    const session = await authorizeRequest('students.manage')
+    const session = await authorizeRequest('students.enroll')
     const { studentId } = await context.params
     if (!z.string().uuid().safeParse(studentId).success) throw new ApiError(400, 'BAD_REQUEST', 'Choose a valid student account')
     return ok(await completeRosterEnrollment(session, studentId, await parseJson(request, CompleteEnrollmentSchema)))

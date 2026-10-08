@@ -18,6 +18,7 @@ export async function runCompletionBrowser({base,login,makeRoster,state,newCard,
   console.log('Completion browser checkpoint: select student')
   await page.getByRole('button',{name:new RegExp(student.code)}).click()
   console.log('Completion browser checkpoint: open enrollment')
+  await page.getByText('More student actions',{exact:true}).click()
   await page.getByRole('link',{name:'Complete enrollment',exact:true}).click()
   await page.getByRole('heading',{name:'Complete enrollment',exact:true}).waitFor()
   console.log('Completion browser checkpoint: identity and scanner')

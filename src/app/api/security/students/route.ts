@@ -7,7 +7,7 @@ import { failure, ok } from '@/lib/api/response'
 export const dynamic = 'force-dynamic'
 export const GET = withApiRoute('/api/security/students', async (request: Request) => {
   try {
-    const session = await authorizeRequest('security.credentials.request')
+    const session = await authorizeRequest('credentials.read')
     const query = new URL(request.url).searchParams.get('q')?.trim() ?? ''
     if (query.length > 120) throw new ApiError(400, 'BAD_REQUEST', 'Search must be 120 characters or fewer')
     return ok(await searchSecurityStudents(session, query))

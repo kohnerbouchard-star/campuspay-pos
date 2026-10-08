@@ -10,7 +10,7 @@ import { formatWon } from '@/lib/format/currency'
 import { FulfillmentOrderDetail } from './FulfillmentOrderDetail'
 import styles from './store.module.css'
 
-export function OrderFulfillmentScreen() {
+export function OrderFulfillmentScreen({canOperate}:{canOperate:boolean}) {
   const { orders, error, setError, loading, refreshing, needsRefresh, selectedId, setSelectedId, refresh, fetchingRef, updatingRef } = useFulfillmentQueue()
   const [announcement, setAnnouncement] = useState('')
   const [busy, setBusy] = useState(false)
@@ -18,7 +18,7 @@ export function OrderFulfillmentScreen() {
   const [search, setSearch] = useState('')
   async function advance(order: StaffOnlineOrder) {
     const next = NEXT_ORDER_STATUS[order.status]
-    if (!next || updatingRef.current || fetchingRef.current || needsRefresh) return
+    if (!canOperate || !next || updatingRef.current || fetchingRef.current || needsRefresh) return
     updatingRef.current = true; setBusy(true); setError(null)
     try {
       await advanceOnlineOrder(order.order_id, next.status)
@@ -38,6 +38,6 @@ export function OrderFulfillmentScreen() {
     <div className={styles.categories} role="group" aria-label="Filter orders by status">{['OPEN', ...ORDER_STEPS].map((status) => <button key={status} aria-pressed={filter === status} onClick={() => { setFilter(status); setSelectedId(null) }}>{status === 'OPEN' ? 'All open' : orderStatusLabel(status)} <span>{status === 'OPEN' ? open.length : orders.filter((order) => order.status === status).length}</span></button>)}</div>
     {loading && <p className={styles.notice} role="status">Loading the fulfillment queue…</p>}
     {!loading && visible.length === 0 && <section className={styles.empty}><h2>{search ? 'No matching orders' : 'All caught up'}</h2><p>{search ? 'Try a different order number, student, or room.' : 'Orders in this stage will appear here. Refresh to check for new orders.'}</p></section>}
-    {visible.length > 0 && <div className={styles.queueLayout}><div className={styles.queueTable}><table><thead><tr><th scope="col">Order &amp; student</th><th scope="col">Destination</th><th scope="col">Status / total</th></tr></thead><tbody>{visible.map((order) => <tr key={order.order_id} data-selected={order.order_id === selected?.order_id}><td><button className={styles.orderSelect} aria-pressed={order.order_id === selected?.order_id} onClick={() => setSelectedId(order.order_id)}><strong>{order.order_number}</strong><span>{order.student_name}</span></button><small>{orderTime(order.created_at)} · {order.items.reduce((total, item) => total + item.quantity, 0)} items</small></td><td>{order.delivery_building}<small>Floor {order.delivery_floor} · Room {order.delivery_room}</small></td><td><span className={styles.queueStatus}>{orderStatusLabel(order.status)}</span><strong className={styles.queueAmount}>{formatWon(order.total_won)}</strong></td></tr>)}</tbody></table></div>{selected && <FulfillmentOrderDetail key={selected.order_id} order={selected} busy={busy || refreshing || needsRefresh} onAdvance={() => void advance(selected)} />}</div>}
+    {visible.length > 0 && <div className={styles.queueLayout}><div className={styles.queueTable}><table><thead><tr><th scope="col">Order &amp; student</th><th scope="col">Destination</th><th scope="col">Status / total</th></tr></thead><tbody>{visible.map((order) => <tr key={order.order_id} data-selected={order.order_id === selected?.order_id}><td><button className={styles.orderSelect} aria-pressed={order.order_id === selected?.order_id} onClick={() => setSelectedId(order.order_id)}><strong>{order.order_number}</strong><span>{order.student_name}</span></button><small>{orderTime(order.created_at)} · {order.items.reduce((total, item) => total + item.quantity, 0)} items</small></td><td>{order.delivery_building}<small>Floor {order.delivery_floor} · Room {order.delivery_room}</small></td><td><span className={styles.queueStatus}>{orderStatusLabel(order.status)}</span><strong className={styles.queueAmount}>{formatWon(order.total_won)}</strong></td></tr>)}</tbody></table></div>{selected && <FulfillmentOrderDetail key={selected.order_id} order={selected} canOperate={canOperate} busy={busy || refreshing || needsRefresh} onAdvance={() => void advance(selected)} />}</div>}
   </main>
 }

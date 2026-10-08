@@ -116,8 +116,8 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await page.setViewportSize(viewports[0])
   }
 
-  async function assertDialogFocus(page) {
-    const dialog = page.getByRole('dialog')
+  async function assertDialogFocus(page, name) {
+    const dialog = name ? page.getByRole('dialog', { name, exact: true }) : page.getByRole('dialog')
     await dialog.waitFor({ state: 'visible' })
     for (const key of ['Tab', 'Shift+Tab']) {
       for (let i = 0; i < 8; i++) {
@@ -179,8 +179,8 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await adminPage.goto(`${base}/security?studentId=${visualStudentId}`)
     await adminPage.getByRole('heading', { name: 'Security', exact: true }).waitFor()
     await captureAll(adminPage, 'security')
-    await adminPage.getByLabel('Super Admin employee ID', { exact: true }).fill('9001')
-    await adminPage.getByLabel('Super Admin PIN', { exact: true }).fill('12345678')
+    await adminPage.getByLabel('Approving employee ID', { exact: true }).fill('9002')
+    await adminPage.getByLabel('Approving employee PIN', { exact: true }).fill('12345678')
     await adminPage.getByRole('button', { name: 'Authorize protected action', exact: true }).click()
     await adminPage.getByLabel('Student enters new PIN', { exact: true }).fill('739264')
     await adminPage.getByLabel('Student confirms new PIN', { exact: true }).fill('739264')
@@ -189,7 +189,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await adminPage.getByText(/Student PIN reset\. Receipt:/).waitFor()
     currentPin = '739264'
     await adminPage.getByRole('button', { name: 'Replace card', exact: true }).click()
-    await adminPage.getByLabel('Super Admin PIN', { exact: true }).fill('12345678')
+    await adminPage.getByLabel('Approving employee PIN', { exact: true }).fill('12345678')
     await adminPage.getByRole('button', { name: 'Authorize protected action', exact: true }).click()
     await adminPage.getByRole('button', { name: 'Scan replacement card', exact: true }).click()
     await adminPage.keyboard.type(`REPLACEMENT${suffix}`, { delay: 8 })
@@ -287,7 +287,7 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     for (const [route, code, heading, name] of [
       ['/orders', '1001', 'Online orders', 'staff-orders'],
       ['/inventory', '2001', 'Inventory', 'inventory'],
-      ['/accounting', '3001', 'Accounting', 'accounting'],
+      ['/students', '3001', 'Students', 'students'],
       ['/coupons', '2001', 'Coupons', 'coupons'],
       ['/reports', '3001', 'Reports', 'reports'],
       ['/reports', '2001', 'Reports', 'inventory-reports'],
@@ -358,23 +358,29 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
       if (route === '/inventory') {
         await page.clock.fastForward(180000)
         assert.ok(page.url().includes('/inventory'), 'Receiving remains available beyond two minutes')
-        for (const [button, screenshot] of [['Receive stock', 'inventory-receipt'], ['Inventory lots', 'inventory-lots'], ['Add product', 'inventory-product'], ['Change price', 'inventory-price'], ['Remove stock', 'inventory-adjustment']]) {
-          await page.getByRole('button', { name: button, exact: true }).first().click()
-          await captureAll(page, screenshot)
+        await page.getByRole('button',{name:'Bottled Water',exact:true}).click()
+        await page.getByRole('button',{name:'Receive Stock',exact:true}).click()
+        await captureAll(page,'inventory-receipt')
+        await page.getByRole('button',{name:'Back to products',exact:true}).click()
+        for (const [button,screenshot] of [['View Lots','inventory-lots'],['Change Price','inventory-price'],['Adjust Stock','inventory-adjustment']]) {
+          const more=page.locator('section.panel').filter({has:page.getByRole('heading',{name:'Bottled Water',exact:true})}).getByText('More',{exact:true})
+          if(!await more.evaluate(e=>e.closest('details').open))await more.click()
+          await page.getByRole('button',{name:button,exact:true}).click();await captureAll(page,screenshot)
+          await page.getByRole('button',{name:'Back to products',exact:true}).click()
         }
+        await page.getByRole('button',{name:'Add product',exact:true}).click();await captureAll(page,'inventory-product')
       }
-      if (route === '/accounting') {
+      if (route === '/students') {
         await page.clock.fastForward(180000)
-        assert.ok(page.url().includes('/accounting'), 'Accounting remains available beyond two minutes')
-        const demoWallet = page.getByRole('row').filter({ has: page.getByText('Demo Student', { exact: true }) })
-        await demoWallet.getByRole('button', { name: 'View history', exact: true }).click()
-        await page.getByRole('dialog', { name: 'Demo Student · Wallet history', exact: true }).waitFor()
-        await settled(page)
-        await assertDialogFocus(page)
-        await captureAll(page, 'accounting-wallet-history')
-        await page.getByRole('button', { name: 'Close dialog', exact: true }).click()
-        await page.getByRole('button', { name: 'Sales & payments', exact: true }).click()
-        await captureAll(page, 'accounting-sales')
+        assert.ok(page.url().includes('/students'), 'Student financial records remain available beyond two minutes')
+        await page.getByRole('button',{name:/Demo Student/}).first().click()
+        await page.getByRole('button',{name:'Wallet History',exact:true}).click()
+        const historyDialog = page.getByRole('dialog', { name: 'Demo Student · Wallet history', exact: true })
+        await historyDialog.waitFor()
+        await settled(page);await assertDialogFocus(page, 'Demo Student · Wallet history');await captureAll(page,'students-wallet-history')
+        await historyDialog.getByRole('button',{name:'Close dialog',exact:true}).click()
+        await page.goto(base+'/reports');await page.getByRole('heading',{name:'Reports',exact:true}).waitFor()
+        await captureAll(page,'finance-sales')
       }
       await page.context().close()
     }

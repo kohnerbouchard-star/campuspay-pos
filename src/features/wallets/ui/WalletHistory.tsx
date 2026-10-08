@@ -8,7 +8,7 @@ import { Money } from '@/components/ui/Money'
 import { formatBusinessTime } from '@/lib/format/business-time'
 import { WalletHistoryPageSchema,emptyHistoryFilters,historyParams,type HistoryFilters,type WalletHistoryPage } from '@/features/history/domain'
 import { HistoryControls,HistoryPages } from '@/features/history/ui/HistoryControls'
-export function WalletHistory({student,onClose}:{student:StudentWalletSummary;onClose():void}){
+export function WalletHistory({student,onClose}:{student:Pick<StudentWalletSummary,'student_id'|'student_code'|'display_name'>;onClose():void}){
  const [filters,setFilters]=useState<HistoryFilters>({...emptyHistoryFilters}),[data,setData]=useState<WalletHistoryPage|null>(null)
  const [error,setError]=useState(''),[loading,setLoading]=useState(true),[revision,setRevision]=useState(0)
  const url=`/api/accounting/students/${student.student_id}/history`

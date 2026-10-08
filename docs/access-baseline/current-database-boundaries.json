@@ -1,0 +1,627 @@
+[
+  {
+    "function": "api.access_defaults",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'staff.access.manage');",
+      "if not private.is_access_administrator(s.auth_user_id) then raise exception 'FORBIDDEN';end if;"
+    ]
+  },
+  {
+    "function": "api.administration_snapshot",
+    "authorization_checks": [
+      "s:=private.assert_session_any(p_session_id,array['staff.read','terminals.read']);",
+      "'staff_total',case when private.has_capability(s.auth_user_id,'staff.read') then (select count(*) from public.staff_profiles) else 0 end,",
+      "'terminal_total',case when private.has_capability(s.auth_user_id,'terminals.read') then (select count(*) from private.terminals) else 0 end,",
+      "'staff',case when private.has_capability(s.auth_user_id,'staff.read') then coalesce((select jsonb_agg(to_jsonb(x) order by x.employee_code,x.user_id) from",
+      "'terminals',case when private.has_capability(s.auth_user_id,'terminals.read') then coalesce((select jsonb_agg(to_jsonb(x) order by x.last_seen_at desc,x.terminal_id) from"
+    ]
+  },
+  {
+    "function": "api.approve_cash_variance",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'cash.variance.review');",
+      "if a.approved_by<>s.auth_user_id or a.notes<>btrim(p_notes) then raise exception 'CONFLICT'; end if;",
+      "insert into private.cash_shift_approvals(shift_id,approved_by,notes) values(p_shift_id,s.auth_user_id,btrim(p_notes));"
+    ]
+  },
+  {
+    "function": "api.bootstrap_demo",
+    "authorization_checks": [
+      "auth_user_id, employee_code_snapshot, role_snapshot, terminal_id,",
+      "role_snapshot = excluded.role_snapshot,"
+    ]
+  },
+  {
+    "function": "api.cancel_payment_intent",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  {
+    "function": "api.cash_history_page",
+    "authorization_checks": [
+      "where sh.closed_at is not null and (private.has_capability(v_session.auth_user_id,'cash.history.all') or sh.terminal_id=v_session.terminal_id)",
+      "'scope',case when private.has_capability(v_session.auth_user_id,'cash.history.all') then 'ALL_TERMINALS' else 'CURRENT_TERMINAL' end,"
+    ]
+  },
+  {
+    "function": "api.cash_register_snapshot",
+    "authorization_checks": [
+      "(select id,closed_at from private.cash_shifts where closed_at is not null and (private.has_capability(s.auth_user_id,'cash.history.all') or terminal_id=s.terminal_id) order by closed_at desc,id limit 50 offset p_offset) x),'[]'::jsonb),",
+      "'total_closed',(select count(*) from private.cash_shifts where closed_at is not null and (private.has_capability(s.auth_user_id,'cash.history.all') or terminal_id=s.terminal_id)));"
+    ]
+  },
+  {
+    "function": "api.catalog",
+    "authorization_checks": [
+      "perform private.assert_session_any(p_session_id, array['pos.read','inventory.read']);"
+    ]
+  },
+  {
+    "function": "api.change_administration",
+    "authorization_checks": [
+      "-- assert_session updates the actor's terminal. Also covers same-terminal",
+      "s:=private.assert_session(p_session_id,case when p_action like '%TERMINAL%' then 'terminals.manage' else 'staff.manage' end);",
+      "if p_action='CREATE_STAFF' and not private.is_access_administrator(s.auth_user_id) then raise exception 'FORBIDDEN';end if;",
+      "actor:=private.verify_staff_pin(s.employee_code_snapshot,p_admin_pin_proof,null);",
+      "if (target.role='super_admin' or exists(select 1 from private.staff_access where user_id=target.auth_user_id and 'staff.access.manage'=any(permissions))) and not private.is_access_administrator(s.auth_user_id) then raise exception 'FORBIDDEN';end if;",
+      "if private.is_access_administrator(target.auth_user_id) and not active_value and not exists(select 1 from public.staff_profiles p where p.auth_user_id<>target.auth_user_id and private.is_access_administrator(p.auth_user_id)) then raise exception 'LAST_ADMIN_REQUIRED';end if;"
+    ]
+  },
+  {
+    "function": "api.change_employee_access",
+    "authorization_checks": [
+      "if s.id is null or not private.is_access_administrator(s.auth_user_id) then raise exception 'FORBIDDEN';end if;",
+      "s:=private.assert_session(p_session_id,'staff.access.manage');",
+      "actor:=private.verify_staff_pin(s.employee_code_snapshot,p_admin_pin_proof,'super_admin');",
+      "if private.is_access_administrator(p_target_id) and (p_new_preset<>'super_admin' or not 'staff.access.manage'=any(proposed))",
+      "and not exists(select 1 from public.staff_profiles p where p.auth_user_id<>p_target_id and private.is_access_administrator(p.auth_user_id)) then raise exception 'LAST_ADMIN_REQUIRED';end if;"
+    ]
+  },
+  {
+    "function": "api.change_record",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,case when p_kind='STUDENT' then 'students.status.manage' when p_action='CHANGE_PRODUCT_PRICE' then 'inventory.price.manage' else 'inventory.product.manage' end);",
+      "actor:=private.verify_staff_pin(s.employee_code_snapshot,p_admin_pin_proof,null);",
+      "if not private.has_capability(s.auth_user_id,'inventory.price.manage') then raise exception 'FORBIDDEN';end if;"
+    ]
+  },
+  {
+    "function": "api.close_cash_shift",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'cash.shift.manage');",
+      "if not private.has_capability(s.auth_user_id,'pos.checkout') and not (select funding_required from private.system_settings where singleton) then raise exception 'FUNDING_DISABLED'; end if;",
+      "if sh.terminal_id<>s.terminal_id or (sh.opened_by<>s.auth_user_id and not private.has_capability(s.auth_user_id,'cash.drawer.override')) then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  {
+    "function": "api.complete_student_enrollment",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'students.enroll');"
+    ]
+  },
+  {
+    "function": "api.confirm_payment",
+    "authorization_checks": [
+      "v_session:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  {
+    "function": "api.confirm_wallet_adjustment",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'wallet.adjust');"
+    ]
+  },
+  {
+    "function": "api.create_coupon",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'coupons.manage');"
+    ]
+  },
+  {
+    "function": "api.create_elevation",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'credentials.read');",
+      "perform private.assert_session(p_session_id,case p_purpose when 'RESET_STUDENT_PIN' then 'credentials.reset' else 'credentials.card.replace' end);",
+      "v_approver := private.verify_staff_pin(p_approver_employee_code, p_approver_pin_proof, null); if v_approver.auth_user_id is null then return; end if;",
+      "if v_approver.auth_user_id=v_session.auth_user_id or not private.has_capability(v_approver.auth_user_id,'credentials.approve') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  {
+    "function": "api.create_payment_intent",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'pos.checkout');",
+      "and not private.has_capability(v_session.auth_user_id, 'coupons.redeem') then"
+    ]
+  },
+  {
+    "function": "api.create_wallet_adjustment_intent",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'wallet.adjust');"
+    ]
+  },
+  {
+    "function": "api.daily_reconciliation",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'reconciliation.read');"
+    ]
+  },
+  {
+    "function": "api.deactivate_coupon",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'coupons.manage');"
+    ]
+  },
+  {
+    "function": "api.employee_access",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'staff.access.manage');",
+      "if not private.is_access_administrator(s.auth_user_id) then raise exception 'FORBIDDEN';end if;",
+      "'history',case when private.has_capability(s.auth_user_id,'audit.read') then coalesce((select jsonb_agg(to_jsonb(e) order by e.created_at desc) from"
+    ]
+  },
+  {
+    "function": "api.enroll_student",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'students.enroll');"
+    ]
+  },
+  {
+    "function": "api.export_funding",
+    "authorization_checks": [
+      "and (private.has_capability(v_session.auth_user_id,'wallet.read') or (o.terminal_id=v_session.terminal_id and o.wallet_delta_won=0))"
+    ]
+  },
+  {
+    "function": "api.finalize_payment_tender",
+    "authorization_checks": [
+      "v_session:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  {
+    "function": "api.funding_history",
+    "authorization_checks": [
+      "v_session:=private.funding_session(p_session_id); v_finance:=private.has_capability(v_session.auth_user_id,'wallet.read');"
+    ]
+  },
+  {
+    "function": "api.inventory_lots",
+    "authorization_checks": [
+      "perform private.assert_session_any(p_session_id, array['inventory.read','reports.inventory']);"
+    ]
+  },
+  {
+    "function": "api.inventory_product_register",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'inventory.read');"
+    ]
+  },
+  {
+    "function": "api.list_coupons",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'coupons.read');"
+    ]
+  },
+  {
+    "function": "api.list_coupons_v2",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'coupons.read');"
+    ]
+  },
+  {
+    "function": "api.open_cash_shift",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'cash.shift.manage');",
+      "if not private.has_capability(s.auth_user_id,'pos.checkout') and not (select funding_enabled from private.system_settings where singleton) then raise exception 'FUNDING_DISABLED'; end if;"
+    ]
+  },
+  {
+    "function": "api.partial_refund_snapshot",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'refunds.read');"
+    ]
+  },
+  {
+    "function": "api.post_partial_refund",
+    "authorization_checks": [
+      "ss:=private.assert_session(p_session_id,'refunds.issue');"
+    ]
+  },
+  {
+    "function": "api.prepare_funding",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,private.funding_capability(p_action));",
+      "if v_shift.opened_by<>v_session.auth_user_id and not private.has_capability(v_session.auth_user_id,'cash.drawer.override') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  {
+    "function": "api.prepare_student_funding",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'wallet.fund');"
+    ]
+  },
+  {
+    "function": "api.preview_partial_refund",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'refunds.read');"
+    ]
+  },
+  {
+    "function": "api.quote_coupon",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'coupons.redeem');"
+    ]
+  },
+  {
+    "function": "api.quote_partial_refund",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'refunds.read');"
+    ]
+  },
+  {
+    "function": "api.receive_stock",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'inventory.receive');"
+    ]
+  },
+  {
+    "function": "api.record_directory",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,case when p_kind='PRODUCT' then 'inventory.read' else 'students.read' end);",
+      "case when private.has_capability((select auth_user_id from private.staff_sessions where id=p_session_id),'wallet.read') then w.balance_won else null end quantity_or_balance,"
+    ]
+  },
+  {
+    "function": "api.record_refund_cash_payout",
+    "authorization_checks": [
+      "ss:=private.assert_session(p_session_id,'refunds.cash_payout');"
+    ]
+  },
+  {
+    "function": "api.recover_administration",
+    "authorization_checks": [
+      "s:=private.assert_session_any(p_session_id,array['staff.manage','terminals.manage']);"
+    ]
+  },
+  {
+    "function": "api.recover_cash_operation",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'cash.shift.manage');",
+      "if not private.has_capability(s.auth_user_id,'pos.checkout') and not (select funding_required from private.system_settings where singleton) then raise exception 'FUNDING_DISABLED'; end if;",
+      "if p_shift_id is not null and not exists(select 1 from private.cash_shifts where id=p_shift_id and terminal_id=s.terminal_id and (opened_by=s.auth_user_id or private.has_capability(s.auth_user_id,'cash.drawer.override'))) then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  {
+    "function": "api.recover_employee_access",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'staff.access.manage');",
+      "if p_key is null or not private.is_access_administrator(s.auth_user_id) then raise exception 'FORBIDDEN';end if;"
+    ]
+  },
+  {
+    "function": "api.recover_funding",
+    "authorization_checks": [
+      "if v_intent.request_key is not null then perform private.assert_session(p_session_id,private.funding_capability(v_intent.action)); end if;"
+    ]
+  },
+  {
+    "function": "api.recover_payment_intent",
+    "authorization_checks": [
+      "ss:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  {
+    "function": "api.recover_record_operation",
+    "authorization_checks": [
+      "s:=private.assert_session_any(p_session_id,case when p_kind='PRODUCT' then array['inventory.product.manage','inventory.price.manage'] else array['students.status.manage'] end);"
+    ]
+  },
+  {
+    "function": "api.recover_sale_refund",
+    "authorization_checks": [
+      "ss:=private.assert_session(p_session_id,'refunds.issue');"
+    ]
+  },
+  {
+    "function": "api.recover_stock_receipt",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'inventory.receive');"
+    ]
+  },
+  {
+    "function": "api.recover_student_completion",
+    "authorization_checks": [
+      "v_session:=private.assert_session(p_session_id,'students.enroll');"
+    ]
+  },
+  {
+    "function": "api.recover_wallet_adjustment",
+    "authorization_checks": [
+      "ss:=private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  {
+    "function": "api.refund_day_summary",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'refunds.read');"
+    ]
+  },
+  {
+    "function": "api.refund_record",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'refunds.read');"
+    ]
+  },
+  {
+    "function": "api.refund_sale_detail",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'refunds.read');"
+    ]
+  },
+  {
+    "function": "api.remove_stock",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'inventory.adjust');"
+    ]
+  },
+  {
+    "function": "api.report_coupons",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'reports.coupons');"
+    ]
+  },
+  {
+    "function": "api.report_inventory",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'reports.inventory');"
+    ]
+  },
+  {
+    "function": "api.report_sales",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'reports.sales');"
+    ]
+  },
+  {
+    "function": "api.report_wallets",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'reports.wallets');"
+    ]
+  },
+  {
+    "function": "api.reset_student_card",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'credentials.card.replace');"
+    ]
+  },
+  {
+    "function": "api.reset_student_pin",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'credentials.reset');"
+    ]
+  },
+  {
+    "function": "api.scan_funding_card",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,private.funding_capability(v_intent.action));"
+    ]
+  },
+  {
+    "function": "api.scan_payment_card",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'pos.checkout');"
+    ]
+  },
+  {
+    "function": "api.scan_wallet_adjustment_card",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'wallet.adjust');"
+    ]
+  },
+  {
+    "function": "api.search_security_students",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'credentials.read');"
+    ]
+  },
+  {
+    "function": "api.search_student_wallets",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'wallet.read');"
+    ]
+  },
+  {
+    "function": "api.search_student_wallets_v2",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  {
+    "function": "api.search_students",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'students.read');",
+      "return query select s.id, s.student_code, s.display_name, s.active, case when private.has_capability(v_session.auth_user_id,'wallet.read') then w.balance_won else null::bigint end,"
+    ]
+  },
+  {
+    "function": "api.search_students_v2",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'students.read');",
+      "return query select s.id, s.student_code, s.display_name, s.active, case when private.has_capability(v_session.auth_user_id,'wallet.read') then w.balance_won else null::bigint end,"
+    ]
+  },
+  {
+    "function": "api.set_terminal_payment_policy",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'settings.payments.manage');"
+    ]
+  },
+  {
+    "function": "api.staff_online_orders",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id, 'orders.read');"
+    ]
+  },
+  {
+    "function": "api.student_funding_readiness",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'wallet.fund');",
+      "and (sh.opened_by=s.auth_user_id or private.has_capability(s.auth_user_id,'cash.drawer.override'))),"
+    ]
+  },
+  {
+    "function": "api.student_wallet_history",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  {
+    "function": "api.student_wallet_history_page",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,'wallet.read');"
+    ]
+  },
+  {
+    "function": "api.terminal_payment_policy_v2",
+    "authorization_checks": [
+      "s:=private.assert_session_any(p_session_id,array['pos.read','settings.payments.manage']);",
+      "t.cash_enabled and coalesce(t.cash_ends_at>clock_timestamp(),false),t.cash_event_name,private.has_capability(s.auth_user_id,'settings.payments.manage'),t.cash_ends_at,"
+    ]
+  },
+  {
+    "function": "api.update_online_order_status",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'orders.fulfill');"
+    ]
+  },
+  {
+    "function": "private.assert_session",
+    "authorization_checks": [
+      "CREATE OR REPLACE FUNCTION private.assert_session(p_session_id uuid, p_permission text)",
+      "if not found or not v_profile.active or v_profile.role <> v_session.role_snapshot then",
+      "if p_permission is not null and not private.has_capability(v_profile.auth_user_id, p_permission) then"
+    ]
+  },
+  {
+    "function": "private.assert_session_any",
+    "authorization_checks": [
+      "CREATE OR REPLACE FUNCTION private.assert_session_any(p_session_id uuid, p_permissions text[])",
+      "s:=private.assert_session(p_session_id,null);",
+      "foreach n in array p_permissions loop if private.has_capability(s.auth_user_id,n) then return s; end if; end loop;"
+    ]
+  },
+  {
+    "function": "private.authorize_session_access_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(v_session.id, p_permission);"
+    ]
+  },
+  {
+    "function": "private.cash_session",
+    "authorization_checks": [
+      "return private.assert_session(p_session_id,'cash.read');end $function$"
+    ]
+  },
+  {
+    "function": "private.change_product_price_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'inventory.price.manage');"
+    ]
+  },
+  {
+    "function": "private.complete_student_enrollment_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'students.enroll');"
+    ]
+  },
+  {
+    "function": "private.confirm_funding_legacy",
+    "authorization_checks": [
+      "perform private.assert_session(p_session_id,private.funding_capability(v_intent.action));",
+      "v_approver:=private.verify_staff_pin(p_approver_code,p_approver_proof,null);",
+      "not private.has_capability(v_approver.auth_user_id,case when v_intent.wallet_delta_won<>0 then 'wallet.approve' else 'cash.movement.approve' end) then raise exception 'FORBIDDEN'; end if;",
+      "-- assert_session. A funding operation affects only its bound terminal shift.",
+      "if v_shift.opened_by<>v_session.auth_user_id and not private.has_capability(v_session.auth_user_id,'cash.drawer.override') then raise exception 'FORBIDDEN'; end if;",
+      "jsonb_build_object('action',v_intent.action,'wallet_delta_won',v_intent.wallet_delta_won,'cash_delta_won',v_intent.cash_delta_won,'approved_by',v_approver.auth_user_id));"
+    ]
+  },
+  {
+    "function": "private.confirm_payment_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'pos.checkout');"
+    ]
+  },
+  {
+    "function": "private.confirm_wallet_adjustment_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'wallet.adjust');"
+    ]
+  },
+  {
+    "function": "private.consume_elevation",
+    "authorization_checks": [
+      "if not found or v_token.approved_by=p_session.auth_user_id or not private.has_capability(v_token.approved_by,'credentials.approve') then raise exception 'FORBIDDEN'; end if;"
+    ]
+  },
+  {
+    "function": "private.create_product_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'inventory.product.manage');"
+    ]
+  },
+  {
+    "function": "private.create_staff_session_access_legacy",
+    "authorization_checks": [
+      "perform 1 from private.staff_sessions ss where ss.terminal_id=(select id from private.terminals where terminal_fingerprint=p_terminal_fingerprint) and ss.revoked_at is null order by ss.id for update; v_profile := private.verify_staff_pin(p_employee_code, p_pin_proof, null); if v_profile.auth_user_id is null then return; end if;",
+      "auth_user_id, employee_code_snapshot, role_snapshot, terminal_id,"
+    ]
+  },
+  {
+    "function": "private.finalize_payment_tender_legacy",
+    "authorization_checks": [
+      "s:=private.assert_session(p_session_id,'pos.checkout');"
+    ]
+  },
+  {
+    "function": "private.funding_session",
+    "authorization_checks": [
+      "return private.assert_session_any(p_session_id,array['wallet.read','wallet.fund','wallet.correct','wallet.reverse','cash.movement.record']);end $function$"
+    ]
+  },
+  {
+    "function": "private.has_capability",
+    "authorization_checks": [
+      "CREATE OR REPLACE FUNCTION private.has_capability(p_user_id uuid, p_capability text)"
+    ]
+  },
+  {
+    "function": "private.is_access_administrator",
+    "authorization_checks": [
+      "CREATE OR REPLACE FUNCTION private.is_access_administrator(p_user_id uuid)"
+    ]
+  },
+  {
+    "function": "private.post_sale_reversal",
+    "authorization_checks": [
+      "ss:=private.assert_session(p_session_id,'refunds.issue');"
+    ]
+  },
+  {
+    "function": "private.receive_stock_legacy",
+    "authorization_checks": [
+      "v_session := private.assert_session(p_session_id, 'inventory.receive');"
+    ]
+  },
+  {
+    "function": "private.role_has_permission",
+    "authorization_checks": [
+      "CREATE OR REPLACE FUNCTION private.role_has_permission(p_role staff_role, p_permission text)"
+    ]
+  },
+  {
+    "function": "private.verify_staff_pin",
+    "authorization_checks": [
+      "CREATE OR REPLACE FUNCTION private.verify_staff_pin(p_employee_code text, p_pin_proof text, p_required_role staff_role DEFAULT NULL::staff_role)"
+    ]
+  }
+]

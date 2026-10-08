@@ -4,6 +4,9 @@ import { Icon, type IconName } from '@/components/ui/Icon'
 import styles from './navigation.module.css'
 
 const WORKSPACE_ICONS: Readonly<Record<string, IconName>> = {
+  '/register': 'register',
+  '/finance': 'chart',
+  '/admin': 'shield',
   '/pos': 'register',
   '/orders': 'bag',
   '/students': 'users',

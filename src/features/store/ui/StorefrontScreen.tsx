@@ -10,6 +10,7 @@ import type { CustomerProfile, DeliveryLocation, OnlineOrderReceipt } from '@/fe
 import { customerLoginPath } from '@/features/store/navigation'
 import { customerProfile, isCustomerSessionError, storeErrorMessage } from '@/features/store/presentation'
 import { formatWon } from '@/lib/format/currency'
+import { StoreRequestTimeoutError } from '@/features/store/request-timeout'
 import { ClientApiError } from '@/lib/api/client'
 import { clearPendingOrder, readPendingOrder, savePendingOrder } from '@/features/store/order-recovery'
 import { Icon } from '@/components/ui/Icon'
@@ -21,6 +22,8 @@ import styles from './store.module.css'
 export function StorefrontScreen({ initialSession }: { initialSession: CustomerProfile }) {
   const router = useRouter()
   const processing = useRef(false)
+  const operation = useRef(0)
+  const recoverySection = useRef<HTMLElement>(null)
   const [products, setProducts] = useState<CatalogProduct[]>([])
   const [locations, setLocations] = useState<DeliveryLocation[]>([])
   const [cart, setCart] = useState<CartState>({})
@@ -62,6 +65,12 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
     return () => { active = false }
   }, [router, refreshCount, initialSession.student_id])
 
+  useEffect(() => {
+    return () => { operation.current += 1 }
+  }, [initialSession.student_id])
+
+  useEffect(() => { if (pendingId && !busy) recoverySection.current?.focus() }, [pendingId, busy])
+
   function handleError(caught: unknown) {
     if (isCustomerSessionError(caught)) { router.replace(customerLoginPath('/store', true)); router.refresh(); return }
     setError(storeErrorMessage(caught))
@@ -69,32 +78,44 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
 
   async function recoverOrder() {
     if (!pendingId || processing.current) return
+    const attempt = ++operation.current
+    const requestKey = pendingId
     processing.current = true; setBusy(true); setError(null)
     try {
-      const next = await recoverCustomerOrder(pendingId)
+      const next = await recoverCustomerOrder(requestKey)
+      if (attempt !== operation.current) return
       clearPendingOrder(session.student_id)
       setPendingId(null); setUncertain(false); setReview(null); setCart({})
       if (next) {
         setReceipt(next)
         setSession(current => ({ ...current, balance_won: next.balance_after_won, debt_won: next.debt_after_won }))
       } else setAnnouncement('The earlier order was not placed. That request is now closed; you can start a new order.')
-    } catch (caught) { handleError(caught) }
-    finally { processing.current = false; setBusy(false) }
+    } catch (caught) {
+      if (attempt !== operation.current) return
+      setUncertain(true)
+      if (isCustomerSessionError(caught)) handleError(caught)
+      else setError(caught instanceof StoreRequestTimeoutError
+        ? 'Recovery timed out. The order result is still unknown. Your original reference is saved; use Recover order again.'
+        : 'The earlier order still needs confirmation. Your original reference is saved; retry recovery, not checkout.')
+    } finally { if (attempt === operation.current) { processing.current = false; setBusy(false) } }
   }
 
   async function reviewOrder(input: OrderProposal) {
-    if (processing.current) return
+    if (processing.current || pendingId || uncertain || readPendingOrder(session.student_id)) return
+    const attempt = ++operation.current
     processing.current = true; setBusy(true); setError(null)
     try {
       const quote = await quoteCustomerOrder(input.items, input.couponCode)
+      if (attempt !== operation.current) return
       setReview({ input, quote, idempotencyKey: crypto.randomUUID() }); setUncertain(false)
       setAnnouncement('Your order is ready to review. Check the total before placing it.')
-    } catch (caught) { handleError(caught) }
-    finally { processing.current = false; setBusy(false) }
+    } catch (caught) { if (attempt === operation.current) handleError(caught) }
+    finally { if (attempt === operation.current) { processing.current = false; setBusy(false) } }
   }
 
   async function submitOrder() {
-    if (!review || processing.current) return
+    if (!review || processing.current || pendingId || uncertain || readPendingOrder(session.student_id)) return
+    const attempt = ++operation.current
     processing.current = true; setBusy(true); setError(null)
     try { savePendingOrder(session.student_id, review) }
     catch {
@@ -103,24 +124,28 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
     }
     try {
       const next = await placeOnlineOrder({ ...review.input, idempotencyKey: review.idempotencyKey, expectedTotalWon: review.quote.total_won })
+      if (attempt !== operation.current) return
       clearPendingOrder(session.student_id)
       setReceipt(next); setCart({}); setReview(null); setUncertain(false); setPendingId(null)
       setSession((current) => ({ ...current, balance_won: next.balance_after_won, debt_won: next.debt_after_won }))
       setAnnouncement(`Order ${next.order_number} placed. Your wallet was charged ${formatWon(next.total_won)}.`)
       // A refresh failure must not turn an authoritative paid receipt into a failure.
       void Promise.all([fetchStoreCatalog(), fetchCustomerSession()]).then(([catalog, customer]) => {
-        setProducts(catalog); setSession(customerProfile(customer))
+        if (attempt === operation.current) { setProducts(catalog); setSession(customerProfile(customer)) }
       }).catch(() => undefined)
     } catch (caught) {
+      if (attempt !== operation.current) return
       if (!(caught instanceof ClientApiError) || caught.status >= 500) {
         setPendingId(review.idempotencyKey)
-        setUncertain(true); setError('Your order result is not yet confirmed. Recover the result below before placing another order.')
+        setUncertain(true); setError(caught instanceof StoreRequestTimeoutError
+          ? 'Checkout timed out. Your order may already be placed and charged. Recover the original result below; do not place a replacement order.'
+          : 'Your order result is not yet confirmed. Recover the result below before placing another order.')
       } else if (uncertain) {
         // A later failure cannot prove the earlier request failed. Keep its UUID across reauthentication.
         if (isCustomerSessionError(caught)) handleError(caught)
         else setError('The earlier order still needs confirmation. Check My orders or retry this same order when the connection is restored.')
       } else { clearPendingOrder(session.student_id); setReview(null); if (isCustomerSessionError(caught)) handleError(caught); else setError(`${storeErrorMessage(caught)} Nothing was charged.`) }
-    } finally { processing.current = false; setBusy(false) }
+    } finally { if (attempt === operation.current) { processing.current = false; setBusy(false) } }
   }
 
   return <StoreShell session={session}>
@@ -131,7 +156,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
     </div>
     <span className={styles.srOnly} role="status" aria-live="polite">{announcement}</span>
     {error && <div className={uncertain ? "uncertain-result" : styles.error} role="alert">{error}{!busy && !uncertain && <button className={styles.textButton} onClick={() => { setLoading(true); setRefreshCount((count) => count + 1) }}>Refresh store</button>}</div>}
-    {pendingId && <section className="uncertain-result" role="alert"><strong>Order result unknown.</strong><p>Recover the earlier result before placing another order. If it was not placed, recovery safely closes that request.</p><button className={styles.primary} disabled={busy} onClick={() => void recoverOrder()}>{busy ? 'Checking order…' : 'Recover order'}</button><Link href="/store/orders">Check My orders</Link></section>}
+    {pendingId && <section ref={recoverySection} tabIndex={-1} aria-label="Order recovery" className="uncertain-result" role="alert" aria-busy={busy}><strong>Order result unknown.</strong><p>Recover the earlier result before placing another order. If it was not placed, recovery safely closes that request.</p><p>Saved recovery reference: <code style={{ overflowWrap: 'anywhere' }}>{pendingId}</code></p><button className={styles.primary} disabled={busy} onClick={() => void recoverOrder()}>{busy ? 'Checking order…' : 'Recover order'}</button><Link href="/store/orders">Check My orders</Link></section>}
     {receipt && <section className={styles.receipt} role="status"><div><p className={styles.eyebrow}><Icon name="check" size={16} />Order confirmed</p><h2>{receipt.order_number}</h2><p>{receipt.delivery_building} · Floor {receipt.delivery_floor} · Room {receipt.delivery_room}</p></div><div><strong>{formatWon(receipt.total_won)}</strong><span>MICA Money payment complete</span><Link href="/store/orders">Track your order →</Link></div></section>}
     <div className={styles.shopLayout}>
       <section aria-labelledby="shop-title">
@@ -145,7 +170,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
           }}>Add <Icon name="plus" size={17} /></button></div></div>
         </article>)}</div>}
       </section>
-      {!loading && !pendingId && <StoreCart key={receipt?.order_id ?? 'new-cart'} lines={lines} products={products} locations={locations} session={session} busy={busy} review={review} uncertain={uncertain} onQuantity={(product, delta) => setCart((current) => changeQuantity(current, product.id, delta, Math.min(product.stock_on_hand, 99)))} onReview={reviewOrder} onPlace={submitOrder} onAdjust={() => { clearPendingOrder(session.student_id); setReview(null); setError(null) }} />}
+      {!loading && !pendingId && <StoreCart key={receipt?.order_id ?? 'new-cart'} lines={lines} products={products} locations={locations} session={session} busy={busy} review={review} uncertain={uncertain} onQuantity={(product, delta) => setCart((current) => changeQuantity(current, product.id, delta, Math.min(product.stock_on_hand, 99)))} onReview={reviewOrder} onPlace={submitOrder} onAdjust={() => { if (!processing.current && !pendingId && !uncertain && !readPendingOrder(session.student_id)) { setReview(null); setError(null) } }} />}
     </div>
   </StoreShell>
 }

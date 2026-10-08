@@ -5,11 +5,12 @@ import { sql } from 'drizzle-orm'
 import { database } from '@/lib/db/client'
 import { normalizeDatabaseValue } from '@/lib/db/normalize'
 import { toApiError } from '@/lib/api/errors'
-import { compatibilityError } from '@/lib/db/compatibility'
+import { compatibilityError, requireEffectiveAccessResult } from '@/lib/db/compatibility'
 
 type RpcArgument = { readonly name: string; readonly cast: string }
 
 const RPCS = {
+  recover_stock_adjustment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   record_directory: [{name:'p_session_id',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_query',cast:'text'},{name:'p_status',cast:'text'},{name:'p_offset',cast:'integer'},{name:'p_target_id',cast:'uuid'}],
   change_record: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'},{name:'p_action',cast:'text'},{name:'p_target_id',cast:'uuid'},{name:'p_payload',cast:'jsonb'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_notes',cast:'text'}],
   recover_record_operation: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_kind',cast:'text'}],
@@ -45,6 +46,12 @@ const RPCS = {
   complete_student_enrollment: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }, { name: 'p_expected_code', cast: 'text' }, { name: 'p_expected_name', cast: 'text' }, { name: 'p_expected_year', cast: 'integer' }, { name: 'p_expected_academic_year', cast: 'text' }, { name: 'p_identity_verified', cast: 'boolean' }, { name: 'p_card_fingerprint', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   recover_student_completion: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_student_id', cast: 'uuid' }, { name: 'p_idempotency_key', cast: 'uuid' }],
   search_students_v2: [{ name: 'p_session_id', cast: 'uuid' }, { name: 'p_query', cast: 'text' }, { name: 'p_year_group', cast: 'integer' }, { name: 'p_offset', cast: 'integer' }],
+  employee_access: [{name:'p_session_id',cast:'uuid'},{name:'p_target_id',cast:'uuid'}],
+  access_defaults: [{name:'p_session_id',cast:'uuid'}],
+  change_employee_access: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_target_id',cast:'uuid'},{name:'p_expected_revision',cast:'bigint'},{name:'p_previous_preset',cast:'text'},{name:'p_previous_permissions',cast:'text[]'},{name:'p_new_preset',cast:'text'},{name:'p_new_permissions',cast:'text[]'},{name:'p_admin_pin_proof',cast:'text'},{name:'p_reason',cast:'text'},{name:'p_confirmed',cast:'boolean'}],
+  recover_employee_access: [{name:'p_session_id',cast:'uuid'},{name:'p_key',cast:'uuid'}],
+  student_funding_readiness: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'}],
+  prepare_student_funding: [{name:'p_session_id',cast:'uuid'},{name:'p_student_id',cast:'uuid'},{name:'p_key',cast:'uuid'},{name:'p_payload',cast:'jsonb'}],
   create_staff_session: [{ name: 'p_employee_code', cast: 'text' }, { name: 'p_pin_proof', cast: 'text' }, { name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }],
   authorize_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }, { name: 'p_permission', cast: 'text' }],
   revoke_staff_session: [{ name: 'p_session_token_hash', cast: 'text' }, { name: 'p_terminal_fingerprint', cast: 'text' }],
@@ -132,7 +139,9 @@ export async function callApiRpc<T>(
 
     const result = await database().execute(statementFor(name, args))
     const rows = result.rows
-    return schema.parse(normalizeDatabaseValue(rows))
+    const normalized = normalizeDatabaseValue(rows)
+    requireEffectiveAccessResult(normalized, name)
+    return schema.parse(normalized)
   } catch (error) {
     throw receiptConflict(error, name) ?? compatibilityError(error, databaseFunction(name)) ?? toApiError(error)
   }

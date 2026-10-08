@@ -9,15 +9,15 @@ import { CompleteEnrollmentSchema, CompletionDecisionSchema, completionEnabled, 
 
 export function isRosterIssuanceEnabled() { return completionEnabled(process.env.ROSTER_ISSUANCE_ENABLED) }
 function requireIssuer(session: SessionContext) {
-  if (session.role !== 'super_admin' || !session.permissions.includes('students.manage')) {
-    throw new ApiError(403, 'FORBIDDEN', 'Only Super Admin can complete student enrollment')
+  if (!session.permissions.includes('students.enroll')) {
+    throw new ApiError(403, 'FORBIDDEN', 'Authorized enrollment staff can complete student enrollment')
   }
 }
 const decision = z.array(CompletionDecisionSchema).length(1).transform(([row]) => row)
 
 export function completeRosterEnrollment(session: SessionContext, studentId: string, input: CompleteEnrollmentInput) {
   requireIssuer(session)
-  if (!isRosterIssuanceEnabled()) throw new ApiError(403, 'FORBIDDEN', 'Initial roster card issuance is disabled for this installation')
+  if (!isRosterIssuanceEnabled()) throw new ApiError(409, 'CONFLICT', 'Initial roster card issuance is disabled for this installation')
   const parsed = CompleteEnrollmentSchema.parse(input)
   return callApiRpc('complete_student_enrollment', {
     p_session_id: session.session_id, p_student_id: studentId,

@@ -4,6 +4,6 @@ import { cashEnabled } from '@/features/cash/server'
 import { CashScreen } from '@/features/cash/ui/CashScreen'
 export const dynamic = 'force-dynamic'
 export default async function Page() {
- const s = await requireAnyPagePermission(['pos.checkout','reports.sales'],'/cash')
- return <WorkspaceFrame session={s} title="Cash register"><CashScreen enabled={cashEnabled()} role={s.role} userId={s.user_id} /></WorkspaceFrame>
+ const s = await requireAnyPagePermission(['cash.read'],'/cash')
+ return <WorkspaceFrame session={s} title="Cash register"><CashScreen enabled={cashEnabled()} permissions={s.permissions} userId={s.user_id} /></WorkspaceFrame>
 }

@@ -8,8 +8,8 @@ import { useReceiptRecovery } from './useReceiptRecovery'
 function emptyForm() {
   return { supplierName: '', supplierInvoice: '', purchaseDate: new Date().toLocaleDateString('en-CA', { timeZone: BUSINESS_TIMEZONE }), shippingWon: 0, otherCostsWon: 0, discountWon: 0, notes: '', productId: '', quantity: 1, purchaseUnitCostWon: 0, expirationDate: '' }
 }
-export function ReceiptForm({ products, onSaved }: { products: CatalogProduct[]; onSaved(): void }) {
-  const [draft, setForm] = useState(emptyForm)
+export function ReceiptForm({ products, onSaved, initialProductId='' }: { products: CatalogProduct[]; onSaved(): void;initialProductId?:string }) {
+  const [draft, setForm] = useState(()=>({...emptyForm(),productId:initialProductId}))
   const recovery = useReceiptRecovery(() => { setForm(emptyForm()); onSaved() })
   const stored = recovery.saved?.input, line = stored?.lines[0]
   const form = stored && line ? { supplierName: stored.supplierName, supplierInvoice: stored.supplierInvoice, purchaseDate: stored.purchaseDate, shippingWon: stored.shippingWon, otherCostsWon: stored.otherCostsWon, discountWon: stored.discountWon, notes: stored.notes ?? '', productId: line.productId, quantity: line.quantity, purchaseUnitCostWon: line.purchaseUnitCostWon, expirationDate: line.expirationDate ?? '' } : draft

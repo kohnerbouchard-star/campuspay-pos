@@ -1,21 +1,33 @@
 import type { CartLine, CatalogProduct } from '@/features/pos/domain'
+import { boundedQuantity, quantityLimit } from '@/features/pos/quantity'
 
 export type CartState = Readonly<Record<string, number>>
 
 export function addProduct(cart: CartState, product: CatalogProduct): CartState {
-  if (product.sold_out) return cart
-  const next = Math.min((cart[product.id] ?? 0) + 1, product.stock_on_hand)
-  return { ...cart, [product.id]: next }
+  return changeQuantity(cart, product.id, product.sold_out ? 0 : 1, product.sold_out ? 0 : product.stock_on_hand)
 }
 
 export function changeQuantity(cart: CartState, productId: string, delta: number, max: number): CartState {
-  const next = Math.max(0, Math.min((cart[productId] ?? 0) + delta, max))
+  if (!Number.isFinite(delta)) return cart
+  const next = boundedQuantity((cart[productId] ?? 0) + delta, max)
+  if (next === (cart[productId] ?? 0)) return cart
   if (next === 0) {
     const copy = { ...cart }
     delete copy[productId]
     return copy
   }
   return { ...cart, [productId]: next }
+}
+
+/** Reconcile refreshed stock without retaining absent, sold-out or oversized lines. */
+export function reconcileCart(cart: CartState, products: CatalogProduct[]): CartState {
+  const byId = new Map(products.map(product => [product.id, product]))
+  let next = cart
+  for (const id of Object.keys(cart)) {
+    const product = byId.get(id)
+    next = changeQuantity(next, id, 0, !product || product.sold_out ? 0 : quantityLimit(product.stock_on_hand))
+  }
+  return next
 }
 
 export function toCartLines(cart: CartState): CartLine[] {

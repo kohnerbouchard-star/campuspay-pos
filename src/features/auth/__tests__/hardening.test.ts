@@ -30,7 +30,7 @@ describe('staff workspace policy and least-privilege reports', () => {
     expect(SESSION_HEARTBEAT_MS).toBe(60000)
   })
   it('allows any report permission without adding permissions to a role', () => {
-    const reports = WORKSPACE_LINKS.find(link => link.href === '/reports')!
+    const reports = WORKSPACE_LINKS.find(link => link.href === '/finance')!
     for (const permission of REPORT_PERMISSIONS) expect(canAccessWorkspace([permission], reports)).toBe(true)
     expect(canAccessWorkspace(ROLE_PERMISSIONS.inventory_admin, reports)).toBe(true)
     expect(canAccessWorkspace(ROLE_PERMISSIONS.cashier, reports)).toBe(false)

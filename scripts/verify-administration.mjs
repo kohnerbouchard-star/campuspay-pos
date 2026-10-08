@@ -9,17 +9,17 @@ import { runAdministrationBrowser } from './administration-browser.mjs'
 let ctx,phase='setup';const checks=[]
 try{
  ctx=await refundTestContext();await ctx.start(false)
- const {owner,request,raw,login,staffPin}=ctx
+ const {owner,request,login,staffPin}=ctx
  let admin=await login();let cashier=await login('1001');const accountant=await login('3001'),other=await login('9101'),inventory=await login('2001')
  const readonly=async()=>JSON.stringify((await owner.query("select (select count(*) from private.students) students,(select count(*) from private.wallets) wallets,(select sum(balance_won) from private.wallets) balance,(select count(*) from private.student_cards) cards,(select count(*) from private.student_credentials) pins")).rows[0])
  const before=await readonly(),newPin=String(randomInt(10000000,100000000))
  const common=()=>({requestKey:randomUUID(),adminPin:staffPin,notes:'Synthetic identity and authorized role verified',verified:true})
- const create=()=>({...common(),action:'CREATE_STAFF',employeeCode:'QA-'+randomUUID().slice(0,8),displayName:'Named synthetic staff member',role:'cashier',newPin,confirmationPin:newPin})
+ const create=()=>({...common(),action:'CREATE_STAFF',employeeCode:'QA-'+randomUUID().slice(0,8),displayName:'Named synthetic staff member',role:'cashier',preset:'staff',newPin,confirmationPin:newPin})
  const input=create()
  const snapshot=async()=>request(admin,'/api/administration')
  const profile=async id=>(await snapshot()).staff.find(s=>s.user_id===id)
  const update=async(id,fields={})=>{const s=await profile(id);assert.ok(s);return {...common(),action:'UPDATE_STAFF',targetId:id,displayName:s.display_name,role:s.role,active:s.active,expectedUpdatedAt:s.updated_at,...fields}}
- phase='default-off';await request(admin,'/api/administration',input,403)
+ phase='default-off';await request(admin,'/api/administration',input,409)
  await ctx.start(false,{administration:true,cash:true});admin=await login('9001',admin)
  assert.equal((await snapshot()).enabled,false);await request(admin,'/api/administration',input,409)
  await owner.query('update private.system_settings set administration_enabled=true where singleton')
@@ -41,7 +41,7 @@ try{
  assert.match(credential,/^\$2[aby]\$12\$/)
  const staffCookies=new Map();await request(staffCookies,'/api/auth/login',{employeeCode:input.employeeCode,pin:newPin})
  checks.push('current-admin PIN failure persists, concurrent create executes once, case collisions and changed/cross-actor replay rejected')
- phase='staff-edit';const edited=await update(created.target_id,{displayName:'Approved synthetic accountant',role:'accountant'})
+ phase='staff-edit';const edited=await update(created.target_id,{displayName:'Approved synthetic staff profile'})
  const editedResult=await request(admin,'/api/administration',edited);assert.equal(editedResult.sessions_revoked,1)
  await request(staffCookies,'/api/auth/session',undefined,401)
  await request(admin,'/api/administration',{...edited,requestKey:randomUUID()},409)

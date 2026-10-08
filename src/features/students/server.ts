@@ -2,24 +2,19 @@ import 'server-only'
 import { z } from 'zod'
 import type { SessionContext } from '@/features/auth/domain'
 import { EnrollmentDecisionSchema, EnrollmentResultSchema, ManagedStudentSchema, RosterQuerySchema, RosterStudentSchema, type EnrollmentInput } from '@/features/students/domain'
+import { requireCapability } from '@/features/auth/server/capability-guard'
 import { ApiError } from '@/lib/api/errors'
 import { fingerprintCard } from '@/lib/crypto/card-fingerprint'
 import { studentPinProof } from '@/lib/crypto/student-pin'
 import { callApiRpc } from '@/lib/db/rpc'
 
-function requireSuperAdmin(session: SessionContext) {
-  if (session.role !== 'super_admin' || !session.permissions.includes('students.manage')) {
-    throw new ApiError(403, 'FORBIDDEN', 'Only Super Admin can manage MICA Money students')
-  }
-}
-
 export function searchStudents(session: SessionContext, query: string) {
-  requireSuperAdmin(session)
+  requireCapability(session, 'students.read')
   return callApiRpc('search_students', { p_session_id: session.session_id, p_query: query }, z.array(ManagedStudentSchema))
 }
 
 export function searchRosterStudents(session: SessionContext, input: z.infer<typeof RosterQuerySchema>) {
-  requireSuperAdmin(session)
+  requireCapability(session, 'students.read')
   const parsed = RosterQuerySchema.parse(input)
   return callApiRpc('search_students_v2', {
     p_session_id: session.session_id, p_query: parsed.query,
@@ -28,7 +23,7 @@ export function searchRosterStudents(session: SessionContext, input: z.infer<typ
 }
 
 export async function enrollStudent(session: SessionContext, input: EnrollmentInput) {
-  requireSuperAdmin(session)
+  requireCapability(session, 'students.enroll')
   const decision = await callApiRpc('enroll_student', {
     p_session_id: session.session_id,
     p_student_code: input.studentCode,

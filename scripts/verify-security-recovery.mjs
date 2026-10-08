@@ -35,14 +35,14 @@ try {
   page.on('pageerror', error => pageErrors.push(error.message))
   await context.addCookies([...admin].filter(([, value]) => value).map(([name, value]) => ({ name, value, url: ctx.base })))
   await page.goto(`${ctx.base}/security?studentId=${student.id}`)
-  const codeField = page.getByLabel('Super Admin employee ID', { exact: true })
-  const pinField = page.getByLabel('Super Admin PIN', { exact: true })
+  const codeField = page.getByLabel('Approving employee ID', { exact: true })
+  const pinField = page.getByLabel('Approving employee PIN', { exact: true })
   const authorize = page.getByRole('button', { name: 'Authorize protected action', exact: true })
   const actionAlert = page.getByRole('region', { name: 'PIN and card replacement', exact: true }).getByRole('alert')
-  const fillApproval = async () => { await codeField.fill('9001'); await pinField.fill(ctx.staffPin) }
+  const fillApproval = async () => { await codeField.fill('9101'); await pinField.fill(ctx.staffPin) }
   phase = 'browser approval denial'
   await codeField.fill('9001'); await pinField.fill(invalidPin); await authorize.click()
-  await expect(actionAlert).toContainText('Super Admin approval was denied')
+  await expect(actionAlert).toContainText('Independent approval was denied')
   await expect(page.getByRole('link', { name: 'Sign in to staff account' })).toHaveCount(0)
   await expect(pinField).toHaveValue('')
   assert.equal(await auditCount(), initialCount)

@@ -15,7 +15,8 @@ export async function runEnrollmentChecks({ owner, request, login, jar, catalog,
   await request(jar(), '/api/students', input, 401)
   for (const code of ['1001', '2001', '3001']) {
     const denied = await login(code)
-    await request(denied, '/api/students', undefined, 403)
+    if(code==='1001')await request(denied, '/api/students', undefined, 403)
+    else{const viewed=await request(denied,'/api/students');if(code==='2001')assert.ok(viewed.every(s=>s.balance_won===null))}
     await request(denied, '/api/students', input, 403)
   }
   let admin = await login('9001')
@@ -110,13 +111,14 @@ export async function runEnrollmentChecks({ owner, request, login, jar, catalog,
 
   // Card replacement retains one-use, student-bound elevation and invalidates old store access.
   admin = await login('9001')
-  const stepUp = await request(admin, '/api/security/step-up', { superAdminEmployeeCode: '9001', superAdminPin: '12345678', purpose: 'RESET_STUDENT_CARD', studentId: enrolled.student_id })
+  const credentialOperator = await login('2001')
+  const stepUp = await request(credentialOperator, '/api/security/step-up', { superAdminEmployeeCode: '9001', superAdminPin: '12345678', purpose: 'RESET_STUDENT_CARD', studentId: enrolled.student_id })
   const replacementCard = `REPLACED${suffix}`
-  await request(admin, `/api/security/students/${enrolled.student_id}/card-reset`, { authorizationToken: stepUp.authorizationToken, newCardRead: replacementCard })
+  await request(credentialOperator, `/api/security/students/${enrolled.student_id}/card-reset`, { authorizationToken: stepUp.authorizationToken, newCardRead: replacementCard })
   await request(customer, '/api/store/session', undefined, 401)
   await request(jar(), '/api/store/login', { cardNumber: input.cardRead, pin }, 401)
   await request(jar(), '/api/store/login', { cardNumber: replacementCard, pin })
-  await request(admin, `/api/security/students/${enrolled.student_id}/card-reset`, { authorizationToken: stepUp.authorizationToken, newCardRead: `SECOND${suffix}` }, 403)
+  await request(credentialOperator, `/api/security/students/${enrolled.student_id}/card-reset`, { authorizationToken: stepUp.authorizationToken, newCardRead: `SECOND${suffix}` }, 403)
 
   // Runtime callers cannot bypass role authorization or null-proof validation.
   const adminSession = await request(admin, '/api/auth/session')

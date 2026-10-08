@@ -46,7 +46,7 @@ try {
   const roster = async () => (await owner.query("select (select count(*) from private.students) students,(select count(*) from private.student_cards) cards,(select count(*) from private.student_credentials) credentials")).rows[0]
   const rosterBefore = await roster(), first = await sale(), firstInput = all(await snapshot(first))
   phase = 'authorization and default-off gates'
-  await post(firstInput, admin, 403)
+  await post(firstInput, admin, 409)
   await ctx.start(true, { partialRefunds: true, returns: true, cash: true }); admin = await login('9001', admin)
   assert.equal((await post(firstInput)).outcome, 'DISABLED')
   // Fixture-only setup; never executed on the school database.
