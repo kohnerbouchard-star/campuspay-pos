@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CardScanResult, PaymentIntent, PaymentReceipt } from '@/features/pos/domain'
 import { CardReaderCapture } from '@/features/terminal/CardReaderCapture'
 import { cancelPaymentIntent, recoverPaymentIntent, submitCard, submitStudentPin, submitTenderPlan } from '@/features/pos/client'
+import { confirmedReceipt } from '@/features/pos/confirmed-receipt'
 import { previewTender } from '@/features/pos/tender'
 import { formatWon } from '@/lib/format/currency'
 import { ClientApiError } from '@/lib/api/client'
@@ -13,7 +14,7 @@ import { SplitContribution } from '@/features/pos/ui/SplitContribution'
 import { Dialog } from '@/components/ui/Dialog'
 
 export function PaymentDialog({ intent, onClose, onComplete }: {
-  intent: PaymentIntent; onClose(): void; onComplete(receipt: PaymentReceipt, items?: ReceiptLine[]): void
+  intent: PaymentIntent; onClose(): void; onComplete(receipt: PaymentReceipt, items: ReceiptLine[]): void
 }) {
   const [plan, setPlan] = useState(intent)
   const [expired, setExpired] = useState(false)
@@ -23,6 +24,7 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
   const [cashInput, setCashInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [uncertain, setUncertain] = useState(false)
+  const [approvedReceipt, setApprovedReceipt] = useState<PaymentReceipt | null>(null)
   const [unavailable, setUnavailable] = useState(false)
   const pending = useRef(false)
   const errorRef = useRef<HTMLDivElement>(null)
@@ -62,9 +64,9 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
     setStep('processing')
     try {
       if (uncertain) {
-        const recovered = await recoverPaymentIntent(intent.intent_id)
+        const recovered = confirmedReceipt(await recoverPaymentIntent(intent.intent_id), approvedReceipt ?? undefined)
         forgetPendingPayment()
-        if (recovered.receipt) onComplete(recovered.receipt, recovered.items)
+        if (recovered?.receipt) onComplete(recovered.receipt, recovered.items)
         else onClose()
       } else { await cancelPaymentIntent(intent.intent_id); forgetPendingPayment(); onClose() }
     }
@@ -75,18 +77,23 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
   }
 
   async function confirm() {
-    if (pending.current || !valid || unavailable || (expired && !uncertain)) return
+    if (pending.current || uncertain || approvedReceipt || !valid || unavailable || expired) return
     if (!rememberPendingPayment(intent.intent_id)) { setError('This browser cannot safely keep track of payments. Use another browser before taking payment.'); return }
     pending.current = true; setStep('processing'); setError(null)
+    let approved: PaymentReceipt | undefined
     try {
       const receipt = await submitStudentPin(intent.intent_id, wallet ? pin : null, cash ? tender.cashReceivedWon : null)
-      forgetPendingPayment(); setPin(''); onComplete(receipt)
+      approved = receipt; setApprovedReceipt(receipt); setPin('')
+      const confirmed = confirmedReceipt(await recoverPaymentIntent(intent.intent_id), receipt)
+      if (!confirmed?.receipt) throw new Error('Confirmed sale details are unavailable.')
+      forgetPendingPayment(); onComplete(confirmed.receipt, confirmed.items)
     } catch (caught) {
-      const knownRejection = !uncertain && caught instanceof ClientApiError && caught.status < 500
+      const knownRejection = !approved && !uncertain && caught instanceof ClientApiError && caught.status < 500
       if (knownRejection) forgetPendingPayment()
       setUncertain(!knownRejection)
       setError(knownRejection
         ? `${caught.message}. Nothing has been charged and no sale was created.`
+        : approved ? 'Payment was approved, but its receipt details could not be retrieved. Recover the original payment to finish the receipt. Do not charge it again.'
         : 'Do not start another transaction until this result is recovered. Keep this sale open and recover the original payment result.')
       if (knownRejection) setPin('')
       setUnavailable(caught instanceof ClientApiError && ['SESSION_EXPIRED', 'WALLET_LIMIT', 'COUPON_UNAVAILABLE', 'COUPON_STUDENT_LIMIT', 'PRICE_CHANGED', 'RATE_LIMITED', 'CASH_DISABLED'].includes(caught.code))
@@ -99,7 +106,7 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
     <div className="payment-heading"><span>Sale total</span><strong className="payment-total">{formatWon(intent.total_won)}</strong></div>
     {intent.discount_won > 0 && <p className="payment-discount">{intent.coupon_name} · {formatWon(intent.discount_won)} saved</p>}
     {step === 'card' && !expired && <div className="reader-state" role="status"><span className="reader-dot" />Reader ready. Scan one card to continue.</div>}
-    {step === 'review' && error && <div ref={errorRef} tabIndex={-1} className={uncertain ? 'uncertain-result form-stack' : 'error-message'} role="alert"><strong>{uncertain ? 'Payment result unknown' : 'Payment not completed'}</strong><p>{error}</p>{uncertain && <><button type="button" className="secondary-action" onClick={() => void close()}>Recover payment result</button><a href="/login?next=%2Fpos&amp;expired=1">Sign in again to recover payment</a></>}</div>}
+    {step === 'review' && error && <div ref={errorRef} tabIndex={-1} className={uncertain ? 'uncertain-result form-stack' : 'error-message'} role="alert"><strong>{approvedReceipt ? 'Payment approved · receipt details pending' : uncertain ? 'Payment result unknown' : 'Payment not completed'}</strong><p>{error}</p>{uncertain && <><button type="button" className="secondary-action" onClick={() => void close()}>Recover payment result</button><a href="/login?next=%2Fpos&amp;expired=1">Sign in again to recover payment</a></>}</div>}
     {student && <div className="student-summary">
       <strong>{student.student_display_name}</strong>
       <div><span>Current MICA Money balance</span><b>{formatWon(student.current_balance_won)}</b></div>
@@ -118,8 +125,8 @@ export function PaymentDialog({ intent, onClose, onComplete }: {
         <div className="quick-amounts"><button type="button" disabled={uncertain} onClick={() => setCashInput(String(plan.cash_tender_won))}>Exact</button>{quickAmounts.map(amount => <button key={amount} type="button" disabled={uncertain} onClick={() => setCashInput(String(amount))}>{formatWon(amount)}</button>)}</div>
         <p id="cash-feedback" className={cashInput && !tender.validCash ? 'error-message' : 'muted'} role="status">{cashInput && !tender.validCash ? `Cash received must be at least ${formatWon(plan.cash_tender_won ?? 0)}.` : `Change to give: ${formatWon(tender.changeWon ?? 0)}`}</p>
       </>}
-      {wallet && <label className="field"><span>Student PIN</span><input autoFocus inputMode="numeric" type="password" autoComplete="off" value={pin} onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0, 12))} /></label>}
-      <button className="primary-action" disabled={!valid || unavailable || (expired && !uncertain)}>{uncertain ? 'Retry payment confirmation' : plan.tender_mode === 'SPLIT' ? 'Complete Split Payment' : plan.tender_mode === 'CASH' ? 'Complete Cash Payment' : 'Pay with MICA Money'}</button>
+      {wallet && <label className="field"><span>Student PIN</span><input autoFocus inputMode="numeric" type="password" autoComplete="off" value={pin} disabled={uncertain} onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0, 12))} /></label>}
+      <button className="primary-action" disabled={uncertain || !!approvedReceipt || !valid || unavailable || expired}>{uncertain ? 'Recover payment result above' : plan.tender_mode === 'SPLIT' ? 'Complete Split Payment' : plan.tender_mode === 'CASH' ? 'Complete Cash Payment' : 'Pay with MICA Money'}</button>
       {!uncertain && <button type="button" className="secondary-action" onClick={() => void close()}>Adjust payment or cancel sale</button>}
     </form>}
     {step === 'card' && error && <p className="error-message" role="alert">{error}</p>}

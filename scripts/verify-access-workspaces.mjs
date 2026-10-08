@@ -113,13 +113,13 @@ try {
    if(await record.locator('details.record-more').count())await record.getByText('More student actions',{exact:true}).click()
    assert.equal(await record.getByRole('link',{name:'Reset PIN',exact:true}).count(),Number(test.permissions.includes('credentials.reset')))
    assert.equal(await record.getByRole('button',{name:'Manage Status',exact:true}).count(),Number(test.permissions.includes('students.status.manage')))
-   assert.equal(await page.getByRole('button',{name:'+ Enroll student',exact:true}).count(),Number(test.permissions.includes('students.enroll')))
+   assert.equal(await page.getByRole('button',{name:'+ Enroll student',exact:true,includeHidden:true}).count(),Number(test.permissions.includes('students.enroll')))
    if(test.permissions.includes('wallet.fund')){
     await record.getByRole('button',{name:'Add Funds',exact:true}).click()
     const dialog=page.getByRole('dialog',{name:'Add Funds · Demo Student',exact:true})
     await expect(dialog).toBeVisible();await expect(dialog.getByRole('heading',{name:'Student funding unavailable',exact:true})).toBeVisible()
     await expect(dialog.getByText('Drawer open',{exact:true})).toBeVisible()
-    await page.getByRole('button',{name:'Close dialog',exact:true}).click()
+    await dialog.getByRole('button',{name:'Close dialog',exact:true}).click()
    }
   }
   if(test.code==='ACCESS-ADMIN-VIEW'){

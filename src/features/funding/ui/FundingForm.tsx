@@ -1,14 +1,17 @@
 'use client'
-import { useId,useState } from 'react'
+import { useEffect,useId,useState } from 'react'
+import type { LeaveState } from '@/components/ui/leave-state'
 import { ALLOWED_DENOMINATIONS_WON } from '@/features/wallets/domain'
 import { DENOMINATIONS } from '@/features/cash/domain'
 import { formatWon } from '@/lib/format/currency'
 import { FUNDING_LABELS,PrepareFundingSchema,type FundingAction,type PrepareFunding } from '../domain'
-export function FundingForm({actions,busy,available=true,onPrepare}:{actions:readonly FundingAction[];busy:boolean;available?:boolean;onPrepare(v:PrepareFunding):void}){
+export function FundingForm({actions,busy,available=true,onPrepare,onLeaveStateChange}:{actions:readonly FundingAction[];busy:boolean;available?:boolean;onPrepare(v:PrepareFunding):void;onLeaveStateChange?(state:LeaveState):void}){
  const id=useId(),[action,setAction]=useState<FundingAction>(actions[0]??'CASH_DEPOSIT'),[units,setUnits]=useState<number[]>([]),[error,setError]=useState('')
+ const [edited,setEdited]=useState(false)
+ useEffect(()=>{onLeaveStateChange?.(edited||units.length>0?'dirty':'clean')},[edited,units.length,onLeaveStateChange])
  const wallet=['CASH_DEPOSIT','NONCASH_CREDIT','ADMIN_DEBIT'].includes(action),cash=['PAID_IN','PAID_OUT','CASH_DROP'].includes(action)
- return <form className="panel form-stack" onSubmit={event=>{
-  event.preventDefault();const data=new FormData(event.currentTarget),get=(name:string)=>String(data.get(name)??'')
+ return <form className="panel form-stack" onChange={()=>setEdited(true)} onSubmit={event=>{
+  event.preventDefault();if(busy||!available)return;const data=new FormData(event.currentTarget),get=(name:string)=>String(data.get(name)??'')
   const input={requestKey:crypto.randomUUID(),action,sourceReference:get('source'),notes:get('notes'),
    ...(wallet?{denominations:units}:{}),...(action==='CASH_DEPOSIT'?{cashReceivedWon:Number(get('received'))}:{}),
    ...(action==='REVERSE_FUNDING'?{originalReference:get('original')}:{}),...(cash?{counts:Object.fromEntries(DENOMINATIONS.map(d=>[String(d),Number(get(String(d))||0)]))}:{})}

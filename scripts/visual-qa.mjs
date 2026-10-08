@@ -116,8 +116,8 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
     await page.setViewportSize(viewports[0])
   }
 
-  async function assertDialogFocus(page) {
-    const dialog = page.getByRole('dialog')
+  async function assertDialogFocus(page, name) {
+    const dialog = name ? page.getByRole('dialog', { name, exact: true }) : page.getByRole('dialog')
     await dialog.waitFor({ state: 'visible' })
     for (const key of ['Tab', 'Shift+Tab']) {
       for (let i = 0; i < 8; i++) {
@@ -375,9 +375,10 @@ export async function runVisualQa({ base, login, request, jar, owner }) {
         assert.ok(page.url().includes('/students'), 'Student financial records remain available beyond two minutes')
         await page.getByRole('button',{name:/Demo Student/}).first().click()
         await page.getByRole('button',{name:'Wallet History',exact:true}).click()
-        await page.getByRole('dialog', { name: 'Demo Student · Wallet history', exact: true }).waitFor()
-        await settled(page);await assertDialogFocus(page);await captureAll(page,'students-wallet-history')
-        await page.getByRole('button',{name:'Close dialog',exact:true}).click()
+        const historyDialog = page.getByRole('dialog', { name: 'Demo Student · Wallet history', exact: true })
+        await historyDialog.waitFor()
+        await settled(page);await assertDialogFocus(page, 'Demo Student · Wallet history');await captureAll(page,'students-wallet-history')
+        await historyDialog.getByRole('button',{name:'Close dialog',exact:true}).click()
         await page.goto(base+'/reports');await page.getByRole('heading',{name:'Reports',exact:true}).waitFor()
         await captureAll(page,'finance-sales')
       }

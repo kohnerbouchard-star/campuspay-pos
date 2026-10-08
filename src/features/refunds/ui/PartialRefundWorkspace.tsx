@@ -13,13 +13,20 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
   const [receipt,setReceipt] = useState<RefundRecord | null>(null), [pending,setPending] = useState<ReturnType<typeof readRefundRecovery>>(null)
   const [ready,setReady] = useState(false), [busy,setBusy] = useState(false), [error,setError] = useState(''), [message,setMessage] = useState('')
   const working = useRef(false)
+  // Payouts are immutable. A directory read started before confirmation must
+  // never erase a handover already confirmed by the payout/receipt endpoint.
+  const confirmedPayouts = useRef(new Map<string, RefundRecord>())
+  function preservePayout(value: RefundRecord) {
+    const confirmed = confirmedPayouts.current.get(value.refund_id)
+    return confirmed?.sale_id === value.sale_id && confirmed.cash_paid_won > value.cash_paid_won ? confirmed : value
+  }
   useEffect(() => {
     const timer = setTimeout(() => { try { setPending(readRefundRecovery(sessionStorage)); setReady(true) } catch { setError('Recovery storage is unreadable. Posting is blocked; resolve the saved request first.') } },0)
     return () => clearTimeout(timer)
   },[])
   async function load(ref: string, offset = 0) {
     const value = PartialSnapshotSchema.nullable().parse(await apiFetch<unknown>(`/api/refunds/items?reference=${encodeURIComponent(ref)}&offset=${offset}`))
-    setSnapshot(value); if (!value) setMessage('No original sale was found.')
+    setSnapshot(value ? { ...value, refunds: value.refunds.map(preservePayout) } : null); if (!value) setMessage('No original sale was found.')
   }
   async function lookup(offset = 0, ref = reference.trim()) {
     if (working.current || pending) return
@@ -55,6 +62,14 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
     finally { working.current = false; setBusy(false) }
     if (confirmed) await refreshConfirmed(saleId)
   }
+  function updateReceipt(value: RefundRecord) {
+    value = preservePayout(value)
+    if (value.cash_paid_won > 0) confirmedPayouts.current.set(value.refund_id, value)
+    setReceipt(current => current?.refund_id === value.refund_id ? value : current)
+    setSnapshot(current => current?.sale.sale_id === value.sale_id ? {
+      ...current, refunds: current.refunds.map(record => record.refund_id === value.refund_id ? value : record),
+    } : current)
+  }
   const eligible = snapshot && snapshot.allocations.some(a => a.remaining_quantity > 0) && !snapshot.refunds.some(r => r.scope === 'FULL')
     && (snapshot.sale.channel === 'POS' || (allowReturns && snapshot.returns_enabled && ['OUT_FOR_DELIVERY','DELIVERED'].includes(snapshot.sale.order_status ?? '')))
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Original-tender item corrections</p><h1>Item refunds and returns</h1><p>Repeated partial refunds with original-lot inspection. Each refund remains a separate immutable receipt.</p><Link href="/refunds">Full-sale refunds and net-day reports</Link></div></header>
@@ -67,7 +82,7 @@ export function PartialRefundWorkspace({ enabled, allowReturns, canPost, canPayo
     </section>
     {snapshot && enabled && snapshot.enabled && ready && !pending && !busy && eligible && <PartialRefundEditor key={`${snapshot.sale.sale_id}:${snapshot.refund_count}`} snapshot={snapshot} canPost={canPost} onSubmit={submit} />}
     {snapshot && !eligible && <p>No eligible remaining goods for this workflow. Pre-dispatch cancellation uses the full-sale workflow; completed quantities cannot be refunded twice.</p>}
-    {receipt && !pending && <RefundReceipt key={receipt.refund_id} refund={receipt} userId={canPayout ? userId : ''} onUpdate={setReceipt} />}
+    {receipt && !pending && <RefundReceipt key={receipt.refund_id} refund={receipt} userId={canPayout ? userId : ''} onUpdate={updateReceipt} />}
     {snapshot && <section className="panel"><h2>All refund receipts for this sale</h2><p>Showing {snapshot.refunds.length ? snapshot.offset+1 : 0}–{snapshot.offset+snapshot.refunds.length} of {snapshot.refund_count}. Select a receipt to review its own cash handover, not the latest receipt.</p>
       {snapshot.refunds.map(r => <p key={r.refund_id} style={{ overflowWrap:'anywhere' }}><button className="secondary-action" disabled={busy || Boolean(pending)} onClick={() => setReceipt(r)}>Open refund {r.refund_id}</button> {r.scope === 'PARTIAL' ? 'Item-level' : 'Full-sale'} · {formatWon(r.total_won)}</p>)}
       <button disabled={busy || Boolean(pending) || snapshot.offset===0} onClick={() => void lookup(Math.max(0,snapshot.offset-50),snapshot.sale.sale_id)}>Previous refunds</button>

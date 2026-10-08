@@ -1,7 +1,7 @@
 import { LoginForm } from '@/features/auth/ui/LoginForm'
 import { Icon } from '@/components/ui/Icon'
 export const dynamic = 'force-dynamic'
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; expired?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; expired?: string; logout?: string }> }) {
   const params = await searchParams
   return <main className="login-page">
     <section className="login-copy">
@@ -16,6 +16,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       </ul>
       <div className="login-footer"><Icon name="shield" size={15} />Authorized staff access</div>
     </section>
-    <LoginForm destination={params.next} expired={params.expired === '1'} />
+    <LoginForm destination={params.next} expired={params.expired === '1'} logoutUnconfirmed={params.logout === 'unconfirmed'} />
   </main>
 }
