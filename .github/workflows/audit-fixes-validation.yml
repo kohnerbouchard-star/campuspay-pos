@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   audit-fixes:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/refund-readiness-login-contention-20261008'
+    if: github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["fix/refund-readiness-login-contention-20261008", "fix/refund-readiness-submit-lock-20261008"]'), github.event.pull_request.head.ref)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -40,7 +40,9 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - name: Native financial, authorization and login concurrency regressions
-        run: node scripts/verify-audit-fixes.mjs
+        run: |
+          node scripts/verify-audit-fixes.mjs
+          node scripts/verify-refund-readiness-submit.mjs
       - name: Existing full and partial refund regression suites
         if: ${{ !cancelled() }}
         run: |
