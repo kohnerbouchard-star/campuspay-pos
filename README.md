@@ -1,8 +1,3 @@
-# CampusPay v9 operator package
+# CampusPay stock 050 direct operator download
 
-Download `campuspay-migration-only-v9-EXECUTION-RELEASE.zip` from this private repository tag.
-
-SHA256: `32f0ce080f36c1543b51fbbdd01de5e6d794137967b69fe0ffbf827c233be0d8`
-Size: 401241 bytes.
-
-The exact enabled package passed independent release-delta review. Read its `WINDOWS_HANDOFF.md` before local use. Full maintenance and stopped writers remain required throughout the five original access/funding migrations and afterward until a matching application is separately qualified and approved. Stock migration 050 and promotion are excluded. No production execution was performed by this delivery.
+Download `campuspay-stock050-DIRECT-NO-BACKUP.zip` and verify SHA256 `c91af2d5f05f9faedb930ec24e359a279dc740c77e90dd84cdd7f8c8d6e732fc` (27792 bytes). This package runs only migration 050 on merge commit `4e75bf8883df592fee52e9521ab18a0f0c706f5a` without a new backup, as directed by the operator. Read its included README before running. It does not deploy, promote, or reopen service.
