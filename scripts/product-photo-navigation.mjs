@@ -72,7 +72,7 @@ export async function verifyPhotoNavigation(ctx, admin, product, checks) {
         await expect(editor).toContainText('Pending photo change cancelled.')
         assert.deepEqual(await references(), [])
         assert.deepEqual(errors, [])
-        checks.push(`${width}px photo navigation: keyboard/mouse cancel preserves local draft; confirmed leave discards only local draft; clean navigation has no prompt; staged upload recovers unchanged without save/cancel side effects`)
+        checks.push(`${width}px photo navigation: keyboard cancellation preserves local draft; mouse-confirmed leave discards only local draft; clean navigation has no prompt; staged upload recovers unchanged without save/cancel side effects`)
       } finally { await context.close() }
     }
   } finally { await browser.close() }
