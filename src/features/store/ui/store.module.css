@@ -359,6 +359,7 @@
   .fulfillmentDetail { padding: 20px 16px; }
 }
 @media (max-width: 370px) {
+  .nav a { flex-direction: column; gap: 4px; padding-inline: 4px; }
   .cart { padding: 16px; }
   .cartProductIcon { display: none; }
 }

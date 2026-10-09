@@ -49,6 +49,7 @@ try {
         }
         return {
           overflow: document.documentElement.scrollWidth - innerWidth,
+          overflowElements: [...document.querySelectorAll('body *')].filter(visible).filter(element => element.getBoundingClientRect().right > innerWidth + 1 && !element.closest('.table-scroll')).map(element => ({ tag: element.tagName, className: element.className, text: element.textContent.trim().slice(0, 60) })).slice(0, 12),
           contrastCandidates,
           headings: [...document.querySelectorAll('h1,h2,h3')].filter(visible).map(e => e.textContent),
           smallTargets: controls.filter(e => !e.matches(':disabled')).map(e => ({ name: e.getAttribute('aria-label') || e.textContent?.trim().slice(0,70), width: e.getBoundingClientRect().width, height: e.getBoundingClientRect().height })).filter(e => e.width < 24 || e.height < 24),
