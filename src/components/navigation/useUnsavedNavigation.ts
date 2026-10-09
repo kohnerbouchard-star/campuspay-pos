@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect } from 'react'
+import { isStaffSessionExiting } from '@/features/terminal/session-exit'
 
 /** Guard client-side links as well as full-page exits. Never cancel server work. */
 export function useUnsavedNavigation(dirty: boolean, message: string) {
   useEffect(() => {
     if (!dirty) return
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = '' }
+    const warn = (event: BeforeUnloadEvent) => { if (!isStaffSessionExiting()) { event.preventDefault(); event.returnValue = '' } }
     const navigate = (event: MouseEvent) => {
+      if (isStaffSessionExiting()) return
       if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       const anchor = event.target instanceof Element ? event.target.closest('a[href]') : null
       if (!(anchor instanceof HTMLAnchorElement) || anchor.hasAttribute('download') || anchor.target && anchor.target !== '_self') return

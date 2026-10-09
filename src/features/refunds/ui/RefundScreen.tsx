@@ -34,7 +34,7 @@ export function RefundScreen({ enabled, canPost, canPayout, userId, allowReturns
       const value = RefundSaleSchema.nullable().parse(await apiFetch<unknown>(`/api/refunds/sale?reference=${encodeURIComponent(reference.trim())}`))
       setSale(value); setRefund(value?.refund ?? null)
       if (!value) setMessage('No matching original sale was found.')
-    } catch { setError('The original sale could not be loaded. Verify the reference and installed refund migration.') }
+    } catch { setError('The original sale could not be loaded. Check the reference and connection, then try again.') }
     finally { inFlight.current = false; setBusy(false) }
   }
   function accept(decision: RefundDecision, saleId: string) {
@@ -64,11 +64,11 @@ export function RefundScreen({ enabled, canPost, canPayout, userId, allowReturns
   }
   return <main className="workspace"><header className="workspace-header"><div><p className="eyebrow">Append-only financial corrections</p><h1>Refunds</h1><p>Full-sale refunds, pre-dispatch cancellation, and verified post-dispatch returns. Original receipts are preserved.</p></div></header>
     <p><Link href={`/refunds/items?reference=${encodeURIComponent(reference.trim())}`}>Item refunds and returns — remaining quantities and all refund receipts</Link></p>
-    {!enabled && <p role="status">New refund posting is disabled for this installation. Existing records, recovery, and outstanding cash handover recording remain available after the migration is installed.</p>}
+    {!enabled && <p role="status">New refunds are disabled for this installation. You can still look up existing records, recover an earlier request, or record an eligible outstanding cash handover.</p>}
     {!canPost && <p>Refund issue access is not assigned. Authorized refund records remain available.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}{message && <p role="status">{message}</p>}
     {pending && <section className="panel"><h2>Unresolved refund request</h2><p>Only opaque sale and request IDs were saved. Recover before creating a new refund.</p>{canPost?<button className="primary-action" disabled={busy} onClick={() => void recover()}>Recover refund result</button>:<p>Use the original operator with assigned refund access to check this request.</p>}</section>}
-    <section className="panel"><h2>Find original sale</h2><form className="toolbar" onSubmit={event => { event.preventDefault(); void lookup() }}><label className="field"><span>Receipt or online order number</span><input required maxLength={100} value={reference} onChange={event => setReference(event.target.value)} disabled={busy || Boolean(pending)} /></label><button className="secondary-action" disabled={busy || Boolean(pending)}>Find sale</button></form>
+    <section className="panel"><h2>Find original sale</h2><form className="toolbar refund-lookup" onSubmit={event => { event.preventDefault(); void lookup() }}><label className="field"><span>Receipt or online order number</span><input required maxLength={100} value={reference} onChange={event => setReference(event.target.value)} disabled={busy || Boolean(pending)} /></label><button className="secondary-action" disabled={busy || Boolean(pending)}>Find sale</button></form>
       {sale && <><h3>{sale.receipt_number}</h3><p>{sale.student_name ?? 'Cash customer'}{sale.year_group ? ` · Y${sale.year_group}` : ''} · {sale.student_code ?? 'No student wallet'} · {formatWon(sale.total_won)}</p>{sale.order_number && <p>{sale.order_number} · {sale.order_status}</p>}
         {!refund && !pending && ready && canPost && <RefundForm key={sale.sale_id} sale={sale} busy={busy||!enabled} allowReturns={allowReturns} onSubmit={post} />}</>}
     </section>

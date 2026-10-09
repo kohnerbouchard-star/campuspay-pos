@@ -69,6 +69,10 @@ jobs:
       - run: node scripts/verify-navigation-ux.mjs
       - run: node scripts/verify-workflow-clarity.mjs
       - run: node scripts/verify-workflow-states.mjs
+      - run: node scripts/verify-forced-photo-exit.mjs
+      - run: node scripts/verify-visual-review.mjs
+        env:
+          VISUAL_REVIEW_PHASE: after
       - run: node scripts/verify-security-recovery.mjs
       - run: node scripts/verify-complete-enrollment.mjs
       - run: node scripts/verify-sale-refunds.mjs

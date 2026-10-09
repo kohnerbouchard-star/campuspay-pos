@@ -55,7 +55,7 @@
 .sectionTitle > span { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .sectionTitle .availableCount { color: var(--accent-dark); background: var(--accent-soft); padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .search { display: block; width: 100%; }
-.search input { width: 100%; min-height: 50px; border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; background: white; color: var(--ink); font-size: 16px; }
+.search input { width: 100%; min-height: 50px; border: 1px solid var(--control-border); border-radius: 12px; padding: 13px 15px; background: white; color: var(--ink); font-size: 16px; }
 .search input::placeholder { color: var(--muted); opacity: 1; }
 .catalogSearch { position: relative; }
 .catalogSearch > svg { position: absolute; top: 15px; left: 16px; color: var(--muted); pointer-events: none; }
@@ -105,7 +105,7 @@
 .quantity span { min-width: 24px; text-align: center; font-size: 14px; font-variant-numeric: tabular-nums; }
 .checkoutForm, .form { display: grid; gap: 18px; margin-top: 22px; }
 .field { display: flex; flex-wrap: wrap; gap: 8px; color: var(--ink); font-size: 14px; font-weight: 650; }
-.field :where(input,select,textarea) { width: 100%; min-width: 0; min-height: 48px; padding: 11px 12px; border: 1px solid #bdcbd9; border-radius: 10px; color: var(--ink); background: white; font: inherit; font-size: 16px; font-weight: 400; }
+.field :where(input,select,textarea) { width: 100%; min-width: 0; min-height: 48px; padding: 11px 12px; border: 1px solid var(--control-border); border-radius: 10px; color: var(--ink); background: white; font: inherit; font-size: 16px; font-weight: 400; }
 .field :where(input,select,textarea):focus { border-color: var(--accent); }
 .field :where(input,select,textarea):disabled { background: var(--surface-soft); }
 .field textarea { resize: vertical; line-height: 1.5; }
@@ -359,6 +359,7 @@
   .fulfillmentDetail { padding: 20px 16px; }
 }
 @media (max-width: 370px) {
+  .nav a { flex-direction: column; gap: 4px; padding-inline: 4px; }
   .cart { padding: 16px; }
   .cartProductIcon { display: none; }
 }

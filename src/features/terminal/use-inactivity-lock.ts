@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { logout, recordActivity } from '@/features/auth/client'
 import { ClientApiError } from '@/lib/api/client'
+import { beginStaffSessionExit } from './session-exit'
 import { ACTIVITY_EVENTS, POS_INACTIVITY_MS, RECEIPT_PROTECTION_MS, SESSION_HEARTBEAT_MS, WorkstationActivity } from './inactivity'
 
 type Protection = { key: string; until?: number } | null
@@ -16,6 +17,7 @@ export function useInactivityLock(protection: Protection = null, timeoutMs = POS
   const lock = useCallback(async () => {
     if (locking.current) return
     locking.current = true
+    beginStaffSessionExit()
     try { await logout() }
     catch {
       // Hide the unattended workspace, but do not claim server revocation.
