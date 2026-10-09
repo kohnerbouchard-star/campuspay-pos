@@ -37,7 +37,11 @@ try{
  checks.push('committed lost response stays unconfirmed; safe retry completes without deleting recovery storage');await page.context().close()
  phase='idle-failed-revocation'
  const idleCookies=await ctx.login();page=await pageFor(idleCookies);await page.clock.install()
+ // The sign-out button is server-rendered. Its visibility does not prove the
+ // inactivity effect has hydrated and installed its timer before clock travel.
+ const initialActivity=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/auth/activity'&&response.ok())
  await page.goto(ctx.base+'/cash');await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible()
+ await initialActivity
  await page.evaluate(([k,v])=>sessionStorage.setItem(k,v),[key,marker])
  await page.route('**/api/auth/logout',fail,{times:1})
  await page.clock.fastForward(15*60*1000+1000)
