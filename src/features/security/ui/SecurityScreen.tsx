@@ -135,8 +135,8 @@ export function SecurityScreen({ initialStudent,permissions,initialPurpose }: { 
           {error.needsReview && <button type="button" className="secondary-action" disabled={busy} onClick={() => {
             clearProtectedState()
             setError(null)
-            setMessage('Status checked. A new reset still requires fresh approving employee approval.')
-          }}>Status checked — request fresh approval</button>}
+            setMessage('Local error dismissed. No backend status check was performed. A new reset requires fresh approving employee approval.')
+          }}>Dismiss error — request fresh approval</button>}
         </div>}
       </section>
     </div>

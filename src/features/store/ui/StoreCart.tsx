@@ -15,10 +15,11 @@ export type OrderProposal = {
 }
 export type ReviewedOrder = { input: OrderProposal; quote: OnlineOrderQuote; idempotencyKey: string }
 
-export function StoreCart({ lines, products, locations, session, busy, review, uncertain, onQuantity, onReview, onPlace, onAdjust }: {
+export function StoreCart({ lines, products, locations, session, busy, review, uncertain, onQuantity, onRemoveUnavailable, onReview, onPlace, onAdjust }: {
   lines: CartLine[]; products: CatalogProduct[]; locations: DeliveryLocation[]; session: CustomerProfile
   busy: boolean; review: ReviewedOrder | null; uncertain: boolean
   onQuantity: (product: CatalogProduct, delta: number) => void
+  onRemoveUnavailable: (productId: string) => void
   onReview: (input: OrderProposal) => Promise<void>; onPlace: () => Promise<void>; onAdjust: () => void
 }) {
   const [locationId, setLocationId] = useState('')
@@ -26,6 +27,7 @@ export function StoreCart({ lines, products, locations, session, busy, review, u
   const [note, setNote] = useState('')
   const byId = new Map(products.map((product) => [product.id, product]))
   const subtotal = lines.reduce((total, line) => total + (byId.get(line.productId)?.selling_price_won ?? 0) * line.quantity, 0)
+  const missingLines = lines.filter((line) => !byId.has(line.productId))
   const quote = review?.quote
   const locked = busy || review !== null
   const selected = locations.find((location) => location.location_id === (review?.input.deliveryLocationId ?? locationId))
@@ -39,9 +41,10 @@ export function StoreCart({ lines, products, locations, session, busy, review, u
     {lines.length === 0 ? <div className={styles.empty}><span className={styles.emptyIcon}><Icon name="bag" size={32} /></span><strong>A little something for your day</strong><p>Choose an item from the store to start your order.</p></div> : <>
       <div className={styles.cartLines}>{lines.map((line) => {
         const product = byId.get(line.productId)
-        if (!product) return null
+        if (!product) return <div className={styles.cartLine} key={line.productId}><div className={styles.cartProduct}><div><strong>Item no longer available</strong><small>This product was removed from the current catalog.</small></div></div><div className={styles.cartLineEnd}><span>{line.quantity} in cart</span><button type="button" className={styles.secondary} disabled={locked || uncertain} onClick={() => onRemoveUnavailable(line.productId)}>Remove item</button></div></div>
         return <div className={styles.cartLine} key={line.productId}><div className={styles.cartProduct}><span className={styles.cartProductIcon} data-category-tone={categoryTone(product.category)}><ProductCategoryIcon category={product.category} size={22} /></span><div><strong>{product.name}</strong><small>{formatWon(product.selling_price_won)} each</small></div></div><div className={styles.cartLineEnd}><strong>{formatWon(product.selling_price_won * line.quantity)}</strong><div className={styles.quantity}><button disabled={locked} aria-label={`Remove one ${product.name}`} onClick={() => onQuantity(product, -1)}><Icon name="minus" size={15} /></button><span aria-label={`${line.quantity} ${product.name}`}>{line.quantity}</span><button disabled={locked || line.quantity >= Math.min(product.stock_on_hand, 99)} aria-label={`Add one ${product.name}`} onClick={() => onQuantity(product, 1)}><Icon name="plus" size={15} /></button></div></div></div>
       })}</div>
+      {missingLines.length > 0 && <p className={styles.notice} role="alert">Some items are no longer sold. Remove the unavailable items before reviewing your order.</p>}
       <form className={styles.checkoutForm} onSubmit={(event) => void submit(event)} aria-busy={busy}>
         {review ? <div className={styles.deliveryReview}><strong>{selected?.building} · Floor {selected?.floor} · Room {selected?.room}</strong><span>Recipient: {session.display_name}</span>{review.input.deliveryNote && <p>{review.input.deliveryNote}</p>}</div> : <>
           <DeliverySelector locations={locations} value={locationId} onChange={setLocationId} disabled={busy} />
@@ -53,7 +56,7 @@ export function StoreCart({ lines, products, locations, session, busy, review, u
         <div className={styles.walletSummary}><strong><Icon name="wallet" size={18} />MICA Money wallet</strong><dl className={styles.totals}><div><dt>Wallet balance</dt><dd>{formatWon(quote?.balance_before_won ?? session.balance_won)}</dd></div><div><dt>{quote ? 'After purchase' : 'Estimated after purchase'}</dt><dd>{formatWon(quote?.balance_after_won ?? (session.balance_won - subtotal))}</dd></div></dl></div>
         {!quote && session.balance_won - subtotal < -15000 && <p className={styles.notice} role="status">This cart may exceed your MICA Money spending limit. Review the order to confirm.</p>}
         {uncertain && <p className="uncertain-result" role="alert"><strong>Order result unknown.</strong> Do not start another transaction until this result is recovered. Retry this same order, or <Link href="/store/orders">check My orders</Link>.</p>}
-        <button className={styles.primary} type="submit" disabled={busy || !(review?.input.deliveryLocationId ?? locationId)}>{busy ? (review ? 'Placing your order…' : 'Checking your order…') : review ? `${uncertain ? 'Retry order' : 'Place order'} · ${formatWon(review.quote.total_won)}` : 'Review order'}</button>
+        <button className={styles.primary} type="submit" disabled={busy || missingLines.length > 0 || uncertain || !(review?.input.deliveryLocationId ?? locationId)}>{busy ? (review ? 'Placing your order…' : 'Checking your order…') : review ? `${uncertain ? 'Retry order' : 'Place order'} · ${formatWon(review.quote.total_won)}` : 'Review order'}</button>
         {review && !uncertain && <button type="button" className={styles.secondary} disabled={busy} onClick={onAdjust}>Edit order</button>}
         <small className={styles.muted}>{review ? 'Your wallet is charged only when your order is confirmed.' : 'Review your discount and final total before placing your order. Wallet minimum: −₩15,000.'}</small>
       </form>

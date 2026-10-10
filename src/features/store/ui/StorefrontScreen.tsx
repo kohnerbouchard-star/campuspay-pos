@@ -102,6 +102,9 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
   }
 
   async function reviewOrder(input: OrderProposal) {
+    if (input.items.some((line) => !products.some((product) => product.id === line.productId))) {
+      setError('An item is no longer available. Remove it from your cart before reviewing your order.'); return
+    }
     if (processing.current || pendingId || uncertain || readPendingOrder(session.student_id)) return
     const attempt = ++operation.current
     processing.current = true; setBusy(true); setError(null)
@@ -171,7 +174,7 @@ export function StorefrontScreen({ initialSession }: { initialSession: CustomerP
           }}>Add <Icon name="plus" size={17} /></button></div></div>
         </article>)}</div>}
       </section>
-      {!loading && !pendingId && <StoreCart key={receipt?.order_id ?? 'new-cart'} lines={lines} products={products} locations={locations} session={session} busy={busy} review={review} uncertain={uncertain} onQuantity={(product, delta) => setCart((current) => changeQuantity(current, product.id, delta, Math.min(product.stock_on_hand, 99)))} onReview={reviewOrder} onPlace={submitOrder} onAdjust={() => { if (!processing.current && !pendingId && !uncertain && !readPendingOrder(session.student_id)) { setReview(null); setError(null) } }} />}
+      {!loading && !pendingId && <StoreCart key={receipt?.order_id ?? 'new-cart'} lines={lines} products={products} locations={locations} session={session} busy={busy} review={review} uncertain={uncertain} onQuantity={(product, delta) => setCart((current) => changeQuantity(current, product.id, delta, Math.min(product.stock_on_hand, 99)))} onRemoveUnavailable={(productId) => { if (processing.current || pendingId || uncertain || review) return; setCart((current) => { const next = { ...current }; delete next[productId]; return next }); setAnnouncement('Unavailable item removed from your cart.') }} onReview={reviewOrder} onPlace={submitOrder} onAdjust={() => { if (!processing.current && !pendingId && !uncertain && !readPendingOrder(session.student_id)) { setReview(null); setError(null) } }} />}
     </div>
   </StoreShell>
 }
