@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { readPendingCompletion } from '@/features/students/completion-storage'
 import type { LeaveState } from '@/components/ui/leave-state'
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog'
 import Link from 'next/link'
@@ -13,6 +14,8 @@ import type { ManagedStudent } from '@/features/students/domain'
 import { formatWon } from '@/lib/format/currency'
 import { isStaffSessionExiting } from '@/features/terminal/session-exit'
 export function StudentDetail({student,userId,permissions,fundingEnabled,onChanged,onClose,refreshError=''}:{student:ManagedStudent;userId:string;permissions:readonly Permission[];fundingEnabled:boolean;onChanged():void|Promise<void>;onClose():void;refreshError?:string}) {
+ const [enrollmentRecovery,setEnrollmentRecovery]=useState(false)
+ useEffect(()=>{ try { setEnrollmentRecovery(Boolean(readPendingCompletion(sessionStorage,student.student_id))) } catch { /* Storage unavailable: recovery page still checks storage safely. */ } },[student.student_id])
  const [view,setView]=useState<'funding'|'history'|'status'|null>(null)
  const [childState,setChildState]=useState<LeaveState>('pending')
  const [leaveAction,setLeaveAction]=useState<(()=>void)|null>(null),[leaveError,setLeaveError]=useState('')
@@ -72,6 +75,7 @@ export function StudentDetail({student,userId,permissions,fundingEnabled,onChang
   {!student.active&&<p className="notice">This account is inactive. Funding and spending cannot proceed.</p>}
   {student.card_active&&student.pin_set===false&&<p className="notice">Card issued, but initial PIN setup is incomplete. Reset PIN cannot be used for first issuance.</p>}
 
+  {can('students.enroll')&&enrollmentRecovery&&<div className="uncertain-result" role="alert"><strong>Enrollment result needs recovery.</strong><p>An earlier issuance may have completed. Recover its saved result before attempting another enrollment.</p><Link className="primary-action" href={`/students/${student.student_id}/complete`}>Recover enrollment</Link></div>}
   {((can('students.enroll')&&student.active&&student.pin_set===false&&!student.card_active)||can('students.status.manage')||(student.pin_set!==false&&(can('credentials.reset')||can('credentials.card.replace'))))&&<details className="record-more"><summary>More student actions</summary><div className="action-row">
    {can('students.enroll')&&student.active&&student.pin_set===false&&!student.card_active&&<Link className="secondary-action" href={`/students/${student.student_id}/complete`}>Complete enrollment</Link>}
    {student.pin_set!==false&&can('credentials.reset')&&<Link className="secondary-action" href={`/security?studentId=${student.student_id}&purpose=RESET_STUDENT_PIN`}>Reset PIN</Link>}
