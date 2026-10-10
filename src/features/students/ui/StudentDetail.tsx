@@ -33,7 +33,12 @@ export function StudentDetail({student,userId,permissions,fundingEnabled,onChang
   if(state==='dirty'){setLeaveAction(()=>action);return}
   setLeaveError('');action()
  }
- function openView(next:typeof view){requestLeave(()=>{setChildState('pending');setView(next)})}
+ function openView(next:typeof view){
+  // Reopening the selected view must not manufacture an unresolved operation.
+  // Actual pending child work remains protected by requestLeave when switching views.
+  if(next===view)return
+  requestLeave(()=>{setChildState('pending');setView(next)})
+ }
  const warning=leaveError&&state!=='clean'&&<p className="error-message" role="alert">{leaveError}</p>
  const can=(p:Permission)=>permissions.includes(p)
  return <Dialog title={`Student account · ${student.display_name} · ${student.student_code}`} className="student-detail-dialog"
